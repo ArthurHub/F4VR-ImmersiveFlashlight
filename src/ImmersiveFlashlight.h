@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.h"
+#include "Flashlight.h"
 #include "ModBase.h"
 
 namespace ImFl
@@ -23,7 +24,9 @@ namespace ImFl
         virtual void onFrameUpdate() override;
 
     private:
+        static void addEmbeddedFlashlightKeyword();
 
+        std::unique_ptr<Flashlight> _flashlight;
     };
 
     // The ONE global to rule them ALL

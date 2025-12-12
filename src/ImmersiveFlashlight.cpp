@@ -27,7 +27,7 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onGameLoaded()
     {
-        //noop
+        _flashlight = std::make_unique<Flashlight>();
     }
 
     /**
@@ -35,7 +35,8 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onGameSessionLoaded()
     {
-        //noop
+        // call it here to handle pre-v77 FRIK version potential conflict
+        addEmbeddedFlashlightKeyword();
     }
 
     /**
@@ -44,11 +45,32 @@ namespace ImFl
     void ImmersiveFlashlight::onFrameUpdate()
     {
         const auto player = RE::PlayerCharacter::GetSingleton();
-        if (!player || !player->loadedData) {
+        if (!player || !player->loadedData || !_flashlight) {
             logger::sample(3000, "no player data - noop");
             return;
         }
 
-        // TODO: add logic
+        _flashlight->onFrameUpdate();
+    }
+
+    /**
+     * Add the keyword to have mining helmet style flashlight to the player.
+     */
+    void ImmersiveFlashlight::addEmbeddedFlashlightKeyword()
+    {
+        if (auto* armorObj = RE::TESForm::GetFormByID<RE::TESObjectARMO>(0x21B3B)) {
+            if (const auto keywordObj = RE::TESForm::GetFormByID<RE::BGSKeyword>(0xB34A6)) {
+                if (!armorObj->HasKeyword(keywordObj)) {
+                    logger::info("Add embedded flashlight to: '{}', keyword: 0x{:x}", armorObj->GetFullName(), keywordObj->formID);
+                    armorObj->AddKeyword(keywordObj);
+                } else {
+                    logger::info("Embedded flashlight keyword already exists in '{}'", armorObj->GetFullName());
+                }
+            } else {
+                logger::warn("Failed to add embedded flashlight, keyword not found");
+            }
+        } else {
+            logger::warn("Failed to add embedded flashlight, armor not found");
+        }
     }
 }

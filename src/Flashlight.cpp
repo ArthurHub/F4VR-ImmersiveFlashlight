@@ -1,0 +1,153 @@
+#include "Flashlight.h"
+
+#include "Config.h"
+#include "common/MatrixUtils.h"
+#include "f4vr/F4VROffsets.h"
+#include "f4vr/PlayerNodes.h"
+#include "vrcf/VRControllersManager.h"
+
+using namespace common;
+
+namespace
+{
+    RE::NiNode* getLeftHandNode()
+    {
+        return f4vr::isLeftHandedMode() ? f4vr::getPlayerNodes()->primaryWandNode : f4vr::getPlayerNodes()->SecondaryWandNode;
+    }
+
+    RE::NiNode* getRightHandNode()
+    {
+        return f4vr::isLeftHandedMode() ? f4vr::getPlayerNodes()->SecondaryWandNode : f4vr::getPlayerNodes()->primaryWandNode;
+    }
+
+    void triggerStrongHaptic(const vrcf::Hand hand)
+    {
+        vrcf::VRControllers.triggerHaptic(hand, 0.05f, 0.5f);
+    }
+}
+
+namespace ImFl
+{
+    Flashlight::Flashlight()
+    {
+        setLightValues();
+    }
+
+    /**
+     * Executed every frame to update to handle flashlight location and moving between hand and head.
+     */
+    void Flashlight::onFrameUpdate()
+    {
+        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+            return;
+        }
+
+        checkSwitchingFlashlightHeadHand();
+
+        adjustFlashlightTransformToHandOrHead();
+    }
+
+    /**
+     * Switch between Pipboy flashlight on head or right/left hand based if player switches using button press of the hand near head.
+     */
+    void Flashlight::checkSwitchingFlashlightHeadHand()
+    {
+        // check a bit higher than the HMD to allow hand close to the lower part of the face
+        const auto hmdPos = f4vr::getPlayerNodes()->HmdNode->world.translate + RE::NiPoint3(0, 0, 4);
+        const auto isLeftHandCloseToHMD = MatrixUtils::vec3Len(getLeftHandNode()->world.translate - hmdPos) < 12;
+        const auto isRightHandCloseToHMD = MatrixUtils::vec3Len(getRightHandNode()->world.translate - hmdPos) < 12;
+
+        if (isLeftHandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::Head || g_config.flashlightLocation == FlashlightLocation::LeftArm)) {
+            if (!_flashlightHapticActivated) {
+                _flashlightHapticActivated = true;
+                triggerStrongHaptic(vrcf::Hand::Left);
+            }
+        } else if (isRightHandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::Head || g_config.flashlightLocation == FlashlightLocation::RightArm)) {
+            if (!_flashlightHapticActivated) {
+                _flashlightHapticActivated = true;
+                triggerStrongHaptic(vrcf::Hand::Right);
+            }
+        } else {
+            _flashlightHapticActivated = false;
+            return;
+        }
+
+        const bool isLeftHandGrab = isLeftHandCloseToHMD && vrcf::VRControllers.isReleasedShort(vrcf::Hand::Left, g_config.switchTorchButton);
+        const bool isRightHandGrab = isRightHandCloseToHMD && vrcf::VRControllers.isReleasedShort(vrcf::Hand::Right, g_config.switchTorchButton);
+        if (!isLeftHandGrab && !isRightHandGrab) {
+            return;
+        }
+
+        if (g_config.flashlightLocation == FlashlightLocation::Head) {
+            g_config.setFlashlightLocation(isLeftHandGrab ? FlashlightLocation::LeftArm : FlashlightLocation::RightArm);
+        } else if ((g_config.flashlightLocation == FlashlightLocation::LeftArm && isLeftHandGrab) ||
+            (g_config.flashlightLocation == FlashlightLocation::RightArm && isRightHandGrab)) {
+            g_config.setFlashlightLocation(FlashlightLocation::Head);
+        }
+
+        // toggle the flashlight to reload the light values
+        const auto player = f4vr::getPlayer();
+        f4vr::togglePipboyLight(player);
+        setLightValues();
+        f4vr::togglePipboyLight(player);
+    }
+
+    /**
+     * Adjust the position of the light node to the hand that is holding it or revert to head position.
+     * It is safer than moving the node as that can result in game crash.
+     */
+    void Flashlight::adjustFlashlightTransformToHandOrHead()
+    {
+        const auto lightNode = f4vr::getFirstChild(f4vr::getPlayerNodes()->HeadLightParentNode);
+        if (!lightNode) {
+            return;
+        }
+
+        // revert to original transform
+        lightNode->local.rotate = MatrixUtils::getIdentityMatrix();
+        lightNode->local.translate = RE::NiPoint3(0, 0, 0);
+
+        if (g_config.flashlightLocation != FlashlightLocation::Head) {
+            // update world transforms after reverting to original
+            f4vr::updateTransforms(lightNode);
+
+            // use the right arm node
+            const auto armNode = g_config.flashlightLocation == FlashlightLocation::LeftArm ? getLeftHandNode() : getRightHandNode();
+
+            // calculate relocation transform and set to local
+            lightNode->local = MatrixUtils::calculateRelocation(lightNode, armNode);
+
+            // small adjustment to prevent light on the fingers and shadows from them
+            const float offsetX = f4vr::isInPowerArmor() ? 16.0f : 12.0f;
+            const float offsetY = g_config.flashlightLocation == FlashlightLocation::LeftArm ? -5.0f : 5.0f;
+            lightNode->local.translate += RE::NiPoint3(offsetX, offsetY, 5);
+        }
+    }
+
+    /**
+     * Set the light values to config depending if the flashlight is in hand or on head.
+     * The light object is the standard PA light.
+     */
+    void Flashlight::setLightValues()
+    {
+        if (auto* light = RE::TESForm::GetFormByID<RE::TESObjectLIGH>(0xB48A0)) {
+            if (g_config.flashlightLocation == FlashlightLocation::Head) {
+                light->fade = g_config.flashlightHeadFade;
+                light->data.radius = g_config.flashlightHeadRadius;
+                light->data.fov = g_config.flashlightHeadFov;
+                light->data.color.red = static_cast<std::uint8_t>(g_config.flashlightHeadColorRed);
+                light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightHeadColorGreen);
+                light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightHeadColorBlue);
+            } else {
+                light->fade = g_config.flashlightInHandFade;
+                light->data.radius = g_config.flashlightInHandRadius;
+                light->data.fov = g_config.flashlightInHandFov;
+                light->data.color.red = static_cast<std::uint8_t>(g_config.flashlightInHandColorRed);
+                light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightInHandColorGreen);
+                light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightInHandColorBlue);
+            }
+        } else {
+            logger::warn("Failed to find light object to set flashlight values");
+        }
+    }
+}
