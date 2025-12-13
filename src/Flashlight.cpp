@@ -43,37 +43,55 @@ namespace ImFl
     void Flashlight::checkSwitchingFlashlightOnHeadHand()
     {
         // check a bit higher than the HMD to allow hand close to the lower part of the face
-        const auto hmdPos = f4vr::getPlayerNodes()->HmdNode->world.translate + RE::NiPoint3(0, 0, 4);
-        const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(f4vr::getOffhandWandNode()->world.translate - hmdPos) < 12;
-        const auto isPrimaryHandCloseToHMD = MatrixUtils::vec3Len(f4vr::getPrimaryHandWandNode()->world.translate - hmdPos) < 12;
+        const auto& hmdPos = f4vr::getPlayerNodes()->HmdNode->world.translate + RE::NiPoint3(0, 0, 4);
+        const auto& offhandPos = f4vr::getOffhandWandNode()->world.translate;
+        const auto& primaryHandPos = f4vr::getPrimaryHandWandNode()->world.translate;
 
+        // switch between head and offhand
+        const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(offhandPos - hmdPos) < 12;
         if (isOffhandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::OnHead || g_config.flashlightLocation == FlashlightLocation::InOffhand)) {
-            if (!_flashlightHapticActivated) {
-                _flashlightHapticActivated = true;
-                triggerStrongHaptic(vrcf::Hand::Left);
+            triggerHapticOnce(vrcf::Hand::Offhand);
+            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
+                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InOffhand : FlashlightLocation::OnHead);
             }
-        } else if (isPrimaryHandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::OnHead || g_config.flashlightLocation == FlashlightLocation::InPrimaryHand)) {
-            if (!_flashlightHapticActivated) {
-                _flashlightHapticActivated = true;
-                triggerStrongHaptic(vrcf::Hand::Right);
-            }
-        } else {
-            _flashlightHapticActivated = false;
             return;
         }
 
-        const bool isLeftHandGrab = isOffhandCloseToHMD && vrcf::VRControllers.isReleasedShort(vrcf::Hand::Left, g_config.switchTorchButton);
-        const bool isRightHandGrab = isPrimaryHandCloseToHMD && vrcf::VRControllers.isReleasedShort(vrcf::Hand::Right, g_config.switchTorchButton);
-        if (!isLeftHandGrab && !isRightHandGrab) {
+        // switch between head and primary hand
+        const auto isPrimaryHandCloseToHMD = MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12;
+        if (isPrimaryHandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::OnHead || g_config.flashlightLocation == FlashlightLocation::InPrimaryHand)) {
+            triggerHapticOnce(vrcf::Hand::Primary);
+            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Primary, g_config.switchTorchButton)) {
+                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InPrimaryHand : FlashlightLocation::OnHead);
+            }
             return;
         }
 
-        if (g_config.flashlightLocation == FlashlightLocation::OnHead) {
-            g_config.setFlashlightLocation(isLeftHandGrab ? FlashlightLocation::InOffhand : FlashlightLocation::InPrimaryHand);
-        } else if ((g_config.flashlightLocation == FlashlightLocation::InOffhand && isLeftHandGrab) ||
-            (g_config.flashlightLocation == FlashlightLocation::InPrimaryHand && isRightHandGrab)) {
-            g_config.setFlashlightLocation(FlashlightLocation::OnHead);
+        // switch between offhand and primary hand
+        const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < g_config.debugFlowFlag1;
+        if (isHandsCloseToEachOther && g_config.flashlightLocation != FlashlightLocation::OnHead) {
+            triggerHapticOnce(vrcf::Hand::Left);
+            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
+                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::InPrimaryHand
+                    ? FlashlightLocation::InOffhand
+                    : FlashlightLocation::InPrimaryHand);
+            }
+            return;
         }
+
+        _flashlightHapticActivated = false;
+    }
+
+    /**
+     * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
+     */
+    void Flashlight::switchFlashlightLocation(const FlashlightLocation location)
+    {
+        if (g_config.flashlightLocation == location) {
+            return;
+        }
+
+        g_config.setFlashlightLocation(location);
 
         // toggle the flashlight to reload the light values
         const auto player = f4vr::getPlayer();
@@ -105,7 +123,7 @@ namespace ImFl
             const auto armNode = g_config.flashlightLocation == FlashlightLocation::InOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
 
             // calculate relocation transform and set to local
-            lightNode->local = MatrixUtils::calculateRelocation(lightNode, armNode, RE::NiPoint3::ZERO, MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -60, -90));
+            lightNode->local = MatrixUtils::calculateRelocationWithOffsets(lightNode, armNode, RE::NiPoint3::ZERO, MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -60, -90));
 
             // small adjustment to prevent light on the fingers and shadows from them
             const float offsetX = f4vr::isInPowerArmor() ? 16.0f : 12.0f;
@@ -151,6 +169,14 @@ namespace ImFl
             light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightInPrimaryHandColorGreen);
             light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightInPrimaryHandColorBlue);
             break;
+        }
+    }
+
+    void Flashlight::triggerHapticOnce(const vrcf::Hand hand)
+    {
+        if (!_flashlightHapticActivated) {
+            _flashlightHapticActivated = true;
+            triggerStrongHaptic(hand);
         }
     }
 }
