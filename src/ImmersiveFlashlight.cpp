@@ -61,7 +61,7 @@ namespace ImFl
         if (auto* armorObj = RE::TESForm::GetFormByID<RE::TESObjectARMO>(0x21B3B)) {
             if (const auto keywordObj = RE::TESForm::GetFormByID<RE::BGSKeyword>(0xB34A6)) {
                 if (!armorObj->HasKeyword(keywordObj)) {
-                    logger::info("Add embedded flashlight to: '{}', keyword: 0x{:x}", armorObj->GetFullName(), keywordObj->formID);
+                    logger::info("Add embedded flashlight keyword to: '{}', keyword: 0x{:x}", armorObj->GetFullName(), keywordObj->formID);
                     armorObj->AddKeyword(keywordObj);
                 } else {
                     logger::info("Embedded flashlight keyword already exists in '{}'", armorObj->GetFullName());

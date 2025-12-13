@@ -10,7 +10,7 @@ namespace ImFl
         void onFrameUpdate();
 
     private:
-        void checkSwitchingFlashlightHeadHand();
+        void checkSwitchingFlashlightOnHeadHand();
         static void adjustFlashlightTransformToHandOrHead();
         static void setLightValues();
 

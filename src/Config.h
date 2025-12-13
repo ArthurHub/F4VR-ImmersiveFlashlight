@@ -10,9 +10,9 @@ namespace ImFl
 
     enum class FlashlightLocation : uint8_t
     {
-        Head = 0,
-        LeftArm,
-        RightArm
+        OnHead = 0,
+        InOffhand,
+        InPrimaryHand
     };
 
     class Config : public ConfigBase
@@ -24,23 +24,31 @@ namespace ImFl
         void setFlashlightLocation(FlashlightLocation location);
 
         // Flashlight
-        FlashlightLocation flashlightLocation = FlashlightLocation::Head;
+        FlashlightLocation flashlightLocation = FlashlightLocation::OnHead;
 
         // flashlight values on head
-        float flashlightHeadFade;
-        int flashlightHeadRadius;
-        float flashlightHeadFov;
-        int flashlightHeadColorRed;
-        int flashlightHeadColorGreen;
-        int flashlightHeadColorBlue;
-        float flashlightInHandFade;
+        float flashlightOnHeadFade = 0.0f;
+        int flashlightOnHeadRadius = 0;
+        float flashlightOnHeadFov = 0.0f;
+        int flashlightOnHeadColorRed = 0;
+        int flashlightOnHeadColorGreen = 0;
+        int flashlightOnHeadColorBlue = 0;
 
-        // flashlight values in hand
-        int flashlightInHandRadius;
-        float flashlightInHandFov;
-        int flashlightInHandColorRed;
-        int flashlightInHandColorGreen;
-        int flashlightInHandColorBlue;
+        // flashlight values in offhand hand
+        float flashlightInOffhandFade = 0.0f;
+        int flashlightInOffhandRadius = 0;
+        float flashlightInOffhandFov = 0.0f;
+        int flashlightInOffhandColorRed = 0;
+        int flashlightInOffhandColorGreen = 0;
+        int flashlightInOffhandColorBlue = 0;
+
+        // flashlight values in primary hand
+        float flashlightInPrimaryHandFade = 0.0f;
+        int flashlightInPrimaryHandRadius = 0;
+        float flashlightInPrimaryHandFov = 0.0f;
+        int flashlightInPrimaryHandColorRed = 0;
+        int flashlightInPrimaryHandColorGreen = 0;
+        int flashlightInPrimaryHandColorBlue = 0;
 
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
