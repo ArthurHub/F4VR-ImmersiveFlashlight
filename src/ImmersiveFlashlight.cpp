@@ -1,6 +1,7 @@
 #include "ImmersiveFlashlight.h"
 
 #include "api/FRIKApi.h"
+#include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
 extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info)
@@ -14,8 +15,31 @@ extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_f
     return g_mod->onF4SEPluginLoad(a_f4se);
 }
 
+using namespace frik::api;
+
 namespace ImFl
 {
+    /**
+     * TODO: think about it, is it the best way to handle this dependency indirection.
+     */
+    class FrameUpdateContext : public vrui::UIModAdapter
+    {
+    public:
+        virtual RE::NiPoint3 getInteractionBoneWorldPosition() override
+        {
+            return FRIKApi::inst->getIndexFingerTipPosition(FRIKApi::Hand::Offhand);
+        }
+
+        virtual void setInteractionHandPointing(const bool primaryHand, const bool toPoint) override
+        {
+            // if (toPoint) {
+            //     FRIKApi::inst->setHandPoseFingerPositionsV2(FRIKApi::Hand::Offhand, "InFl_Config", 0, 1, 0, 0, 0);
+            // } else {
+            //     FRIKApi::inst->clearHandPoseFingerPositionsV2(FRIKApi::Hand::Offhand, "InFl_Config");
+            // }
+        }
+    };
+
     /**
      * Run F4SE plugin load and initialize the plugin given the init handle.
      */
@@ -35,7 +59,7 @@ namespace ImFl
 
         _frikInitialized = registerOpenConfigViaFRIK();
         if (_frikInitialized) {
-            _messaging->RegisterListener(onFRIKMessage, frik::api::FRIKApi::FRIK_F4SE_MOD_NAME);
+            _messaging->RegisterListener(onFRIKMessage, FRIKApi::FRIK_F4SE_MOD_NAME);
         }
     }
 
@@ -59,6 +83,11 @@ namespace ImFl
         }
 
         _flashlight->onFrameUpdate();
+
+        _flashlightConfigMode.onFrameUpdate();
+
+        FrameUpdateContext context{};
+        vrui::g_uiManager->onFrameUpdate(&context);
     }
 
     /**
@@ -87,15 +116,15 @@ namespace ImFl
      */
     bool ImmersiveFlashlight::registerOpenConfigViaFRIK()
     {
-        const int err = frik::api::FRIKApi::initialize();
+        const int err = FRIKApi::initialize();
         if (err != 0) {
             logger::error("FRIK API init failed with error: {}!", err);
             return false;
         }
-        logger::info("FRIK (v{}) API (v{}) init successful!", frik::api::FRIKApi::inst->getModVersion(), frik::api::FRIKApi::inst->getVersion());
+        logger::info("FRIK (v{}) API (v{}) init successful!", FRIKApi::inst->getModVersion(), FRIKApi::inst->getVersion());
 
         const std::string modName(Version::PROJECT);
-        frik::api::FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
+        FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
             .buttonIconNifPath = modName + "\\ui_config_btn_flashlight.nif",
             .callbackReceiverName = modName,
             .callbackMessageType = 15,
@@ -109,8 +138,7 @@ namespace ImFl
     void ImmersiveFlashlight::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
     {
         if (aMsg->type == 15) {
-            // TODO: open config
-            logger::warn("ImmersiveFlashlight received FRIK request to open config!");
+            g_imFl._flashlightConfigMode.openConfigMode();
         } else {
             logger::error("ImmersiveFlashlight received unknown FRIK message type: {}!", aMsg->type);
         }

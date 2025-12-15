@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.h"
+#include "ConfigMode.h"
 #include "Flashlight.h"
 #include "ModBase.h"
 
@@ -29,6 +30,8 @@ namespace ImFl
         static void onFRIKMessage(F4SE::MessagingInterface::Message* aMsg);
 
         std::unique_ptr<Flashlight> _flashlight;
+
+        ConfigMode _flashlightConfigMode;
 
         // check if FRIK mod detected and initialized to open config via FRIK config
         bool _frikInitialized = false;
