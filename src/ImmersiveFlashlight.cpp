@@ -92,11 +92,12 @@ namespace ImFl
             logger::error("FRIK API init failed with error: {}!", err);
             return false;
         }
+        logger::info("FRIK (v{}) API (v{}) init successful!", frik::api::FRIKApi::inst->getModVersion(), frik::api::FRIKApi::inst->getVersion());
 
-        logger::info("FRIK API init successful!");
+        const std::string modName(Version::PROJECT);
         frik::api::FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
-            .buttonIconNifPath = "ImmersiveFlashlightVR/ui_config_btn_flashlight.nif",
-            .callbackReceiverName = std::string(Version::PROJECT),
+            .buttonIconNifPath = modName + "\\ui_config_btn_flashlight.nif",
+            .callbackReceiverName = modName,
             .callbackMessageType = 15,
         });
         return true;
