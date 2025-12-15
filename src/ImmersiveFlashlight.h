@@ -25,8 +25,13 @@ namespace ImFl
 
     private:
         static void addEmbeddedFlashlightKeyword();
+        static bool registerOpenConfigViaFRIK();
+        static void onFRIKMessage(F4SE::MessagingInterface::Message* aMsg);
 
         std::unique_ptr<Flashlight> _flashlight;
+
+        // check if FRIK mod detected and initialized to open config via FRIK config
+        bool _frikInitialized = false;
     };
 
     // The ONE global to rule them ALL

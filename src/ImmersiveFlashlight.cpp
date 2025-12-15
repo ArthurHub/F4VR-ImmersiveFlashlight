@@ -1,5 +1,7 @@
 #include "ImmersiveFlashlight.h"
 
+#include "api/FRIKApi.h"
+
 // This is the entry point to the mod.
 extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info)
 {
@@ -27,7 +29,14 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onGameLoaded()
     {
+        addEmbeddedFlashlightKeyword();
+
         _flashlight = std::make_unique<Flashlight>();
+
+        _frikInitialized = registerOpenConfigViaFRIK();
+        if (_frikInitialized) {
+            _messaging->RegisterListener(onFRIKMessage, frik::api::FRIKApi::FRIK_F4SE_MOD_NAME);
+        }
     }
 
     /**
@@ -35,8 +44,7 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onGameSessionLoaded()
     {
-        // call it here to handle pre-v77 FRIK version potential conflict
-        addEmbeddedFlashlightKeyword();
+        // noop
     }
 
     /**
@@ -71,6 +79,39 @@ namespace ImFl
             }
         } else {
             logger::warn("Failed to add embedded flashlight, armor not found");
+        }
+    }
+
+    /**
+     * Register for FRIK main config to have a button to open this mod config.
+     */
+    bool ImmersiveFlashlight::registerOpenConfigViaFRIK()
+    {
+        const int err = frik::api::FRIKApi::initialize();
+        if (err != 0) {
+            logger::error("FRIK API init failed with error: {}!", err);
+            return false;
+        }
+
+        logger::info("FRIK API init successful!");
+        frik::api::FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
+            .buttonIconNifPath = "ImmersiveFlashlightVR/ui_config_btn_flashlight.nif",
+            .callbackReceiverName = std::string(Version::PROJECT),
+            .callbackMessageType = 15,
+        });
+        return true;
+    }
+
+    /**
+     * Receiving the registered open config message from FRIK.
+     */
+    void ImmersiveFlashlight::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
+    {
+        if (aMsg->type == 15) {
+            // TODO: open config
+            logger::warn("ImmersiveFlashlight received FRIK request to open config!");
+        } else {
+            logger::error("ImmersiveFlashlight received unknown FRIK message type: {}!", aMsg->type);
         }
     }
 }
