@@ -25,10 +25,10 @@
 //     RE::NiPoint3 tip = frik::api::FRIKApi::inst->getIndexFingerTipPosition(frik::api::FRIKApi::Hand::Left);
 //
 //     // Override left hand pose
-//     frik::api::FRIKApi::inst->setHandPoseFingerPositions(frik::api::FRIKApi::Hand::Primary, 1.0f, 0.5f, 0.2f, 0.0f, 0.0f);
+//     frik::api::FRIKApi::inst->setHandPoseFingerPositions("MyMod_Interaction", frik::api::FRIKApi::Hand::Primary, frik::api::FRIKApi::HandPoses::Pointing);
 //
 //     // Later:
-//     frik::api::FRIKApi::inst->clearHandPoseFingerPositions(frik::api::FRIKApi::Hand::Primary);
+//     frik::api::FRIKApi::inst->clearHandPose("MyMod_Interaction", frik::api::FRIKApi::Hand::Primary);
 // }
 
 namespace frik::api
@@ -65,12 +65,41 @@ namespace frik::api
         };
 
         /**
+         * Predefined hand poses.
+         */
+        enum class HandPoses : std::uint8_t
+        {
+            // no specific pose is set
+            Unset,
+            // pose set with custom finger positions
+            Custom,
+            Open,
+            Fist,
+            Pointing,
+            HoldingGun,
+            HoldingMelee,
+        };
+
+        /**
+         * The potential state of a set hand pose for specific tag as returned from FRIK.
+         */
+        enum class HandPoseTagState : std::uint8_t
+        {
+            // the tag is not set at all
+            None,
+            // the tag is set and actively used to override the hand pose
+            Active,
+            // the tag is set but currently overridden by another tag
+            Overriden,
+        };
+
+        /**
          * Data needed to register a button to open external mod config from FRIK main config UI.
          */
         struct OpenExternalModConfigData
         {
-            std::string buttonIconNifPath;
-            std::string callbackReceiverName;
+            const char* buttonIconNifPath;
+            const char* callbackReceiverName;
             std::uint32_t callbackMessageType;
         };
 
@@ -83,7 +112,7 @@ namespace frik::api
         /**
          * Get the mod version string. i.e. "0.12.5"
          */
-        std::string_view (FRIK_CALL*getModVersion)();
+        const char* (FRIK_CALL*getModVersion)();
 
         /**
          * Check if FRIK is ready and the skeleton is initialized.
@@ -121,23 +150,38 @@ namespace frik::api
         RE::NiPoint3 (FRIK_CALL*getIndexFingerTipPosition)(Hand hand);
 
         /**
-         * Get the tag currently used tag to set the hand pose for the given hand.
+         * Get the current state of given hand pose tag to identify if it is active in FRIK.
          * Can be used to identify if another system overriding the hand pose and your mod should react accordingly.
          */
-        std::string (FRIK_CALL*getHandPoseSetTag)(Hand hand);
+        HandPoseTagState (FRIK_CALL*getHandPoseSetTagState)(const char* tag, Hand hand);
+
+        /**
+         * Get the current hand pose as active in FRIK.
+         */
+        HandPoses (FRIK_CALL*getCurrentHandPose)(Hand hand);
 
         /**
          * Set a hand pose override to specific values for each finger.
          * Use the tag to unique identify different systems using hand pose overrides.
          * Each value is between 0 and 1 where 0 is bent and 1 is straight.
+         * @return true if successful.
          */
-        void (FRIK_CALL*setHandPoseFingerPositionsV2)(Hand hand, std::string tag, float thumb, float index, float middle, float ring, float pinky);
+        bool (FRIK_CALL*setHandPose)(const char* tag, Hand hand, HandPoses handPose);
+
+        /**
+         * Set a hand pose override to specific values for each finger.
+         * Use the tag to unique identify different systems using hand pose overrides.
+         * Each value is between 0 and 1 where 0 is bent and 1 is straight.
+         * @return true if successful.
+         */
+        bool (FRIK_CALL*setHandPoseCustomFingerPositions)(const char* tag, Hand hand, float thumb, float index, float middle, float ring, float pinky);
 
         /**
          * Clear the set values in "setHandPoseFingerPositions" for FRIK to have control over the hand pose.
          * Only clears the specific tag hand pose override.
+         * @return true if successful.
          */
-        void (FRIK_CALL*clearHandPoseFingerPositionsV2)(Hand hand, std::string tag);
+        bool (FRIK_CALL*clearHandPose)(const char* tag, Hand hand);
 
         /**
          * @deprecated Use setHandPoseFingerPositions2 instead.
@@ -152,7 +196,7 @@ namespace frik::api
         /**
          * Adds a button to open external mod config via a button in FRIK main config UI.
          */
-        void (FRIK_CALL*registerOpenModSettingButtonToMainConfig)(const OpenExternalModConfigData& data);
+        bool (FRIK_CALL*registerOpenModSettingButtonToMainConfig)(const OpenExternalModConfigData& data);
 
         /**
          * Initialize the FRIK API object.

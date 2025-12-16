@@ -173,14 +173,14 @@ namespace ImFl
 
         const auto header = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\title_config.nif", 0.4f);
 
-        _configUI = std::make_shared<UIContainer>("Config", UIContainerLayout::VerticalDown, 0.4f, 1.8f);
-        _configUI->addElement(header);
-        _configUI->addElement(row1ToggleContainer);
-        _configUI->addElement(row2Container);
-        _configUI->addElement(row3Container);
+        _configUI = std::make_shared<UIContainer>("Config", UIContainerLayout::VerticalUp, 0.4f, 1.8f);
         _configUI->addElement(row4Container);
+        _configUI->addElement(row3Container);
+        _configUI->addElement(row2Container);
+        _configUI->addElement(row1ToggleContainer);
+        _configUI->addElement(header);
 
-        g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 15 });
+        g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
 
         g_uiManager->enableDevLayoutViaConfig();
     }

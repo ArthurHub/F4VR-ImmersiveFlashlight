@@ -32,11 +32,11 @@ namespace ImFl
 
         virtual void setInteractionHandPointing(const bool primaryHand, const bool toPoint) override
         {
-            // if (toPoint) {
-            //     FRIKApi::inst->setHandPoseFingerPositionsV2(FRIKApi::Hand::Offhand, "InFl_Config", 0, 1, 0, 0, 0);
-            // } else {
-            //     FRIKApi::inst->clearHandPoseFingerPositionsV2(FRIKApi::Hand::Offhand, "InFl_Config");
-            // }
+            if (toPoint) {
+                FRIKApi::inst->setHandPoseCustomFingerPositions("InFl_Config", FRIKApi::Hand::Offhand, 0, 1, 0, 0, 0);
+            } else {
+                FRIKApi::inst->clearHandPose("InFl_Config", FRIKApi::Hand::Offhand);
+            }
         }
     };
 
@@ -125,8 +125,8 @@ namespace ImFl
 
         const std::string modName(Version::PROJECT);
         FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
-            .buttonIconNifPath = modName + "\\ui_config_btn_flashlight.nif",
-            .callbackReceiverName = modName,
+            .buttonIconNifPath = (modName + "\\ui_config_btn_flashlight.nif").c_str(),
+            .callbackReceiverName = modName.c_str(),
             .callbackMessageType = 15,
         });
         return true;
