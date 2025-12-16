@@ -68,16 +68,16 @@ namespace ImFl
         if (primaryDirection.has_value()) {
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
-                g_config.flashlightInOffhandFade += 0.1f;
+                g_config.flashlightInHandFade += 0.1f;
                 break;
             case vrcf::Direction::Down:
-                g_config.flashlightInOffhandFade -= 0.1f;
+                g_config.flashlightInHandFade -= 0.1f;
                 break;
             case vrcf::Direction::Right:
-                g_config.flashlightInOffhandRadius += 200;
+                g_config.flashlightInHandRadius += 200;
                 break;
             case vrcf::Direction::Left:
-                g_config.flashlightInOffhandRadius -= 200;
+                g_config.flashlightInHandRadius -= 200;
                 break;
             }
             Utils::toggleLightsRefreshValues();
@@ -85,10 +85,10 @@ namespace ImFl
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
-                g_config.flashlightInOffhandFov += 5;
+                g_config.flashlightInHandFov += 5;
                 Utils::toggleLightsRefreshValues();
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
-                g_config.flashlightInOffhandFov -= 5;
+                g_config.flashlightInHandFov -= 5;
                 Utils::toggleLightsRefreshValues();
             }
         }
@@ -181,8 +181,6 @@ namespace ImFl
         _configUI->addElement(header);
 
         g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
-
-        g_uiManager->enableDevLayoutViaConfig();
     }
 
     void ConfigMode::closeConfigMode()

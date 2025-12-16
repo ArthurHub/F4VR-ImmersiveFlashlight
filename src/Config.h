@@ -35,20 +35,20 @@ namespace ImFl
         int flashlightOnHeadColorBlue = 0;
 
         // flashlight values in offhand hand
-        float flashlightInOffhandFade = 0.0f;
-        int flashlightInOffhandRadius = 0;
-        float flashlightInOffhandFov = 0.0f;
-        int flashlightInOffhandColorRed = 0;
-        int flashlightInOffhandColorGreen = 0;
-        int flashlightInOffhandColorBlue = 0;
+        float flashlightInHandFade = 0.0f;
+        int flashlightInHandRadius = 0;
+        float flashlightInHandFov = 0.0f;
+        int flashlightInHandColorRed = 0;
+        int flashlightInHandColorGreen = 0;
+        int flashlightInHandColorBlue = 0;
 
         // flashlight values in primary hand
-        float flashlightInPrimaryHandFade = 0.0f;
-        int flashlightInPrimaryHandRadius = 0;
-        float flashlightInPrimaryHandFov = 0.0f;
-        int flashlightInPrimaryHandColorRed = 0;
-        int flashlightInPrimaryHandColorGreen = 0;
-        int flashlightInPrimaryHandColorBlue = 0;
+        float flashlightOnWeaponFade = 0.0f;
+        int flashlightOnWeaponRadius = 0;
+        float flashlightOnWeaponFov = 0.0f;
+        int flashlightOnWeaponColorRed = 0;
+        int flashlightOnWeaponColorGreen = 0;
+        int flashlightOnWeaponColorBlue = 0;
 
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
