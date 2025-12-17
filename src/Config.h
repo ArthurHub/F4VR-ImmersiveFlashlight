@@ -50,11 +50,20 @@ namespace ImFl
         int flashlightOnWeaponColorGreen = 0;
         int flashlightOnWeaponColorBlue = 0;
 
+        // ref configs to specific flashlight values
+        float* flashlightFade = nullptr;
+        int* flashlightRadius = nullptr;
+        float* flashlightFov = nullptr;
+        int* flashlightColorRed = nullptr;
+        int* flashlightColorGreen = nullptr;
+        int* flashlightColorBlue = nullptr;
+
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
+        void refreshConfigReferences();
     };
 
     // Global singleton for easy access

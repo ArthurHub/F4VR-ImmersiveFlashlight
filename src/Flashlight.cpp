@@ -1,6 +1,7 @@
 #include "Flashlight.h"
 
 #include "Config.h"
+#include "ImmersiveFlashlight.h"
 #include "Utils.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
@@ -29,13 +30,13 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
-            return;
+        const auto isPipboyLightOn = f4vr::isPipboyLightOn(f4vr::getPlayer());
+        if (isPipboyLightOn) {
+            checkSwitchingFlashlightOnHeadHand();
         }
-
-        checkSwitchingFlashlightOnHeadHand();
-
-        adjustFlashlightTransformToHandOrHead();
+        if (isPipboyLightOn || g_imFl.isConfigOpen()) {
+            adjustFlashlightTransformToHandOrHead();
+        }
     }
 
     /**
@@ -69,7 +70,7 @@ namespace ImFl
         }
 
         // switch between offhand and primary hand
-        const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < g_config.debugFlowFlag1;
+        const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12;
         if (isHandsCloseToEachOther && g_config.flashlightLocation != FlashlightLocation::OnHead) {
             triggerHapticOnce(vrcf::Hand::Left);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {

@@ -12,6 +12,7 @@ namespace ImFl
     void Config::setFlashlightLocation(const FlashlightLocation location)
     {
         flashlightLocation = location;
+        refreshConfigReferences();
         saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightLocation));
     }
 
@@ -46,5 +47,43 @@ namespace ImFl
 
         // change hand / head button
         switchTorchButton = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "SwitchTorchButton", 2));
+
+        refreshConfigReferences();
+    }
+
+    /**
+     * Set references to the config by the current flashlight location.
+     * So it will be easy to read and modify without needing to check location each time.
+     */
+    void Config::refreshConfigReferences()
+    {
+        switch (g_config.flashlightLocation) {
+        case FlashlightLocation::OnHead:
+            flashlightFade = &g_config.flashlightOnHeadFade;
+            flashlightRadius = &g_config.flashlightOnHeadRadius;
+            flashlightFov = &g_config.flashlightOnHeadFov;
+            flashlightColorRed = &g_config.flashlightOnHeadColorRed;
+            flashlightColorGreen = &g_config.flashlightOnHeadColorGreen;
+            flashlightColorBlue = &g_config.flashlightOnHeadColorBlue;
+            break;
+
+        case FlashlightLocation::InOffhand:
+            flashlightFade = &g_config.flashlightInHandFade;
+            flashlightRadius = &g_config.flashlightInHandRadius;
+            flashlightFov = &g_config.flashlightInHandFov;
+            flashlightColorRed = &g_config.flashlightInHandColorRed;
+            flashlightColorGreen = &g_config.flashlightInHandColorGreen;
+            flashlightColorBlue = &g_config.flashlightInHandColorBlue;
+            break;
+
+        case FlashlightLocation::InPrimaryHand:
+            flashlightFade = &g_config.flashlightOnWeaponFade;
+            flashlightRadius = &g_config.flashlightOnWeaponRadius;
+            flashlightFov = &g_config.flashlightOnWeaponFov;
+            flashlightColorRed = &g_config.flashlightOnWeaponColorRed;
+            flashlightColorGreen = &g_config.flashlightOnWeaponColorGreen;
+            flashlightColorBlue = &g_config.flashlightOnWeaponColorBlue;
+            break;
+        }
     }
 }

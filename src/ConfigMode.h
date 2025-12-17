@@ -10,10 +10,11 @@ namespace ImFl
     public :
         int isOpen() const;
         void openConfigMode();
+        void showFlahlightCurrentValuesNotification();
         void onFrameUpdate();
 
     private:
-        void handleValuesAdjustment() const;
+        void handleValuesAdjustment();
         void switchFlashlightGobo();
         void switchFlashlightColor();
         void saveConfig();
@@ -27,5 +28,9 @@ namespace ImFl
         std::shared_ptr<vrui::UIToggleButton> _flashlightValuesTglBtn;
 
         bool _disabledInput = false;
+
+        // used to limit how often we notify about last changed values
+        uint64_t _lastValuesUpdateNotificationTime = 0;
+        bool _lastValuesUpdateTime = false;
     };
 }

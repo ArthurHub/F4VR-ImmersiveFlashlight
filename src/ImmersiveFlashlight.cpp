@@ -40,6 +40,11 @@ namespace ImFl
         }
     };
 
+    bool ImmersiveFlashlight::isConfigOpen() const
+    {
+        return _flashlightConfigMode.isOpen();
+    }
+
     /**
      * Run F4SE plugin load and initialize the plugin given the init handle.
      */

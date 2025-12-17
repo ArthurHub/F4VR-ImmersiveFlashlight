@@ -29,31 +29,11 @@ namespace ImFl
             return;
         }
 
-        switch (g_config.flashlightLocation) {
-        case FlashlightLocation::OnHead:
-            light->fade = g_config.flashlightOnHeadFade;
-            light->data.radius = g_config.flashlightOnHeadRadius;
-            light->data.fov = g_config.flashlightOnHeadFov;
-            light->data.color.red = static_cast<std::uint8_t>(g_config.flashlightOnHeadColorRed);
-            light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightOnHeadColorGreen);
-            light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightOnHeadColorBlue);
-            break;
-        case FlashlightLocation::InOffhand:
-            light->fade = g_config.flashlightInHandFade;
-            light->data.radius = g_config.flashlightInHandRadius;
-            light->data.fov = g_config.flashlightInHandFov;
-            light->data.color.red = static_cast<std::uint8_t>(g_config.flashlightInHandColorRed);
-            light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightInHandColorGreen);
-            light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightInHandColorBlue);
-            break;
-        case FlashlightLocation::InPrimaryHand:
-            light->fade = g_config.flashlightOnWeaponFade;
-            light->data.radius = g_config.flashlightOnWeaponRadius;
-            light->data.fov = g_config.flashlightOnWeaponFov;
-            light->data.color.red = static_cast<std::uint8_t>(g_config.flashlightOnWeaponColorRed);
-            light->data.color.green = static_cast<std::uint8_t>(g_config.flashlightOnWeaponColorGreen);
-            light->data.color.blue = static_cast<std::uint8_t>(g_config.flashlightOnWeaponColorBlue);
-            break;
-        }
+        light->fade = *g_config.flashlightFade;
+        light->data.radius = *g_config.flashlightRadius;
+        light->data.fov = *g_config.flashlightFov;
+        light->data.color.red = static_cast<std::uint8_t>(*g_config.flashlightColorRed);
+        light->data.color.green = static_cast<std::uint8_t>(*g_config.flashlightColorGreen);
+        light->data.color.blue = static_cast<std::uint8_t>(*g_config.flashlightColorBlue);
     }
 }

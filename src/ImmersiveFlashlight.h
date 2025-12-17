@@ -18,6 +18,8 @@ namespace ImFl
                 32,
                 true)) {}
 
+        bool isConfigOpen() const;
+
     protected:
         virtual void onModLoaded(const F4SE::LoadInterface* f4SE) override;
         virtual void onGameLoaded() override;

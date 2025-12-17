@@ -54,9 +54,11 @@ namespace ImFl
         disablePlayerInput(_flashlightValuesTglBtn->isToggleOn());
 
         handleValuesAdjustment();
+
+        showFlahlightCurrentValuesNotification();
     }
 
-    void ConfigMode::handleValuesAdjustment() const
+    void ConfigMode::handleValuesAdjustment()
     {
         if (!_flashlightValuesTglBtn->isToggleOn()) {
             return;
@@ -68,29 +70,47 @@ namespace ImFl
         if (primaryDirection.has_value()) {
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
-                g_config.flashlightInHandFade += 0.1f;
+                *g_config.flashlightFade = fminf(*g_config.flashlightFade + 0.1f, 3.0f);
                 break;
             case vrcf::Direction::Down:
-                g_config.flashlightInHandFade -= 0.1f;
+                *g_config.flashlightFade = fmaxf(*g_config.flashlightFade - 0.1f, 0.3f);
                 break;
             case vrcf::Direction::Right:
-                g_config.flashlightInHandRadius += 200;
+                *g_config.flashlightRadius = min(*g_config.flashlightRadius + 200, 10000);
                 break;
             case vrcf::Direction::Left:
-                g_config.flashlightInHandRadius -= 200;
+                *g_config.flashlightRadius = max(*g_config.flashlightRadius - 200, 1000);
                 break;
             }
             Utils::toggleLightsRefreshValues();
+            _lastValuesUpdateTime = true;
         }
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
-                g_config.flashlightInHandFov += 5;
+                *g_config.flashlightFov = fminf(*g_config.flashlightFov + 5, 150);
                 Utils::toggleLightsRefreshValues();
+                _lastValuesUpdateTime = true;
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
-                g_config.flashlightInHandFov -= 5;
+                *g_config.flashlightFov = fmaxf(*g_config.flashlightFov - 5, 5);
                 Utils::toggleLightsRefreshValues();
+                _lastValuesUpdateTime = true;
             }
+        }
+    }
+
+    /**
+     * Show notification with current flashlight values after they were changed.
+     * Try not to spam too much.
+     */
+    void ConfigMode::showFlahlightCurrentValuesNotification()
+    {
+        const auto now = nowMillis();
+        if (_lastValuesUpdateTime && now - _lastValuesUpdateNotificationTime > 3000) {
+            _lastValuesUpdateTime = false;
+            _lastValuesUpdateNotificationTime = now;
+            f4vr::showNotification(std::format("Flashlight values updated:\nIntensity = {:.1f}\nDistance = {}\nField of View = {:.0f}",
+                *g_config.flashlightFade, *g_config.flashlightRadius, *g_config.flashlightFov));
         }
     }
 
