@@ -43,7 +43,7 @@ namespace ImFl
 
     bool ImmersiveFlashlight::isConfigOpen() const
     {
-        return _flashlightConfigMode.isOpen();
+        return _flashlightConfigMode->isOpen();
     }
 
     /**
@@ -62,6 +62,7 @@ namespace ImFl
         addEmbeddedFlashlightKeyword();
 
         _flashlight = std::make_unique<Flashlight>();
+        _flashlightConfigMode = std::make_unique<ConfigMode>();
 
         _frikInitialized = registerOpenConfigViaFRIK();
         if (_frikInitialized) {
@@ -74,7 +75,7 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onGameSessionLoaded()
     {
-        // noop
+        _flashlightConfigMode->closeConfigMode();
     }
 
     /**
@@ -90,7 +91,7 @@ namespace ImFl
 
         _flashlight->onFrameUpdate();
 
-        _flashlightConfigMode.onFrameUpdate();
+        _flashlightConfigMode->onFrameUpdate();
 
         FrameUpdateContext context{};
         vrui::g_uiManager->onFrameUpdate(&context);
@@ -144,7 +145,7 @@ namespace ImFl
     void ImmersiveFlashlight::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
     {
         if (aMsg->type == 15) {
-            g_imFl._flashlightConfigMode.openConfigMode();
+            g_imFl._flashlightConfigMode->openConfigMode();
         } else {
             logger::error("ImmersiveFlashlight received unknown FRIK message type: {}!", aMsg->type);
         }

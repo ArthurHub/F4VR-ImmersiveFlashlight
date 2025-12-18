@@ -40,6 +40,38 @@ namespace
         }
         return -1;
     }
+
+    std::vector<std::string> goboTextureFilePaths;
+
+    void loadGoboTextureFiles()
+    {
+        const fs::path pathBase{ R"(data\Textures\ImmersiveFlashlightVR\Gobos)" };
+        for (const auto& entry : fs::directory_iterator(pathBase)) {
+            if (entry.is_regular_file()) {
+                const auto fullPath = pathBase / entry.path().filename().string();
+                goboTextureFilePaths.emplace_back(fullPath.string());
+            }
+        }
+        if (goboTextureFilePaths.empty()) {
+            logger::warn("No gobo texture files found.");
+            goboTextureFilePaths.emplace_back(R"(data\Textures\Effects\Gobos\FlashlightGobo01.DDS)");
+        } else {
+            logger::info("Loaded {} gobo texture files", goboTextureFilePaths.size());
+        }
+    }
+
+    int findCurrentGoboPathIndex()
+    {
+        if (goboTextureFilePaths.empty()) {
+            loadGoboTextureFiles();
+        }
+        for (std::size_t i = 0; i < goboTextureFilePaths.size(); ++i) {
+            if (goboTextureFilePaths[i] == *ImFl::g_config.flashlightGoboPath) {
+                return static_cast<int>(i);
+            }
+        }
+        return -1;
+    }
 }
 
 namespace ImFl
@@ -49,8 +81,15 @@ namespace ImFl
         return _configUI != nullptr;
     }
 
+    /**
+     * Open.
+     */
     void ConfigMode::openConfigMode()
     {
+        if (isOpen()) {
+            return;
+        }
+
         logger::info("Open config by call...");
         createMainConfigUI();
 
@@ -59,6 +98,35 @@ namespace ImFl
         if (!f4vr::isPipboyLightOn(player)) {
             f4vr::togglePipboyLight(player);
         }
+    }
+
+    /**
+     * Close.
+     */
+    void ConfigMode::closeConfigMode()
+    {
+        if (!isOpen()) {
+            return;
+        }
+
+        // reload config to discard unsaved changes
+        g_config.load();
+        if (f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+            Utils::toggleLightRefreshValues();
+        }
+
+        // unblock player input if needed
+        disablePlayerInput(false);
+
+        // release the UI
+        g_uiManager->detachElement(_configUI, true);
+        _configUI.reset();
+        _beamTuningTglBtn.reset();
+        _onHeadFLBtn.reset();
+        _inHandFLBtn.reset();
+        _onWeaponFLBtn.reset();
+        _configMsg.reset();
+        _beamTuningMsg.reset();
     }
 
     /**
@@ -154,7 +222,19 @@ namespace ImFl
         }
     }
 
-    void ConfigMode::switchBeamGobo() {}
+    /**
+     * Switch the beam gobo to the next preset option.
+     */
+    void ConfigMode::switchBeamGobo()
+    {
+        const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
+        *g_config.flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
+
+        Utils::toggleLightRefreshValues();
+
+        f4vr::showNotification(std::format("Beam gobo updated (Preset: {} out of {}):\nName = {}",
+            nextGoboIndex + 1, goboTextureFilePaths.size(), std::filesystem::path(*g_config.flashlightGoboPath).stem().string()));
+    }
 
     /**
      * Switch the beam color to the next preset option.
@@ -169,7 +249,7 @@ namespace ImFl
         Utils::toggleLightRefreshValues();
 
         f4vr::showNotification(std::format("Beam color updated (Preset: {} out of {}):\nRed = {}\nGreen = {}\nBlue = {}",
-            nextColorIndex, COLOR_OPTIONS.size(), *g_config.flashlightColorRed, *g_config.flashlightColorGreen, *g_config.flashlightColorBlue));
+            nextColorIndex + 1, COLOR_OPTIONS.size(), *g_config.flashlightColorRed, *g_config.flashlightColorGreen, *g_config.flashlightColorBlue));
     }
 
     /**
@@ -292,27 +372,5 @@ namespace ImFl
         _configUI->addElement(header);
 
         g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
-    }
-
-    /**
-     * Close.
-     */
-    void ConfigMode::closeConfigMode()
-    {
-        // reload config to discard unsaved changes
-        g_config.load();
-
-        // unblock player input if needed
-        disablePlayerInput(false);
-
-        // release the UI
-        g_uiManager->detachElement(_configUI, true);
-        _configUI.reset();
-        _beamTuningTglBtn.reset();
-        _onHeadFLBtn.reset();
-        _inHandFLBtn.reset();
-        _onWeaponFLBtn.reset();
-        _configMsg.reset();
-        _beamTuningMsg.reset();
     }
 }

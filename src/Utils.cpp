@@ -50,5 +50,24 @@ namespace ImFl
         light->data.color.red = static_cast<std::uint8_t>(*g_config.flashlightColorRed);
         light->data.color.green = static_cast<std::uint8_t>(*g_config.flashlightColorGreen);
         light->data.color.blue = static_cast<std::uint8_t>(*g_config.flashlightColorBlue);
+        light->goboTexture.textureName = *g_config.flashlightGoboPath;
+        loadGoboTexture(*g_config.flashlightGoboPath);
+    }
+
+    /**
+     * Load the gobo texture into the game so it will be available to the flashlight light.
+     * The game caches the texture so when the path is set on "textureName" it can find it.
+     * Only load each texture once.
+     */
+    void Utils::loadGoboTexture(const std::string& goboFilePath)
+    {
+        if (_goboTextures.contains(goboFilePath)) {
+            return;
+        }
+
+        logger::info("Loading gobo texture: {}", goboFilePath);
+        RE::NiTexture* newGoboTexture = nullptr;
+        f4vr::LoadTextureByPath(goboFilePath.c_str(), 1, newGoboTexture, 0, 0, 0);
+        _goboTextures[goboFilePath] = newGoboTexture;
     }
 }

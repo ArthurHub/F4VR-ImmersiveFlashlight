@@ -33,7 +33,7 @@ namespace ImFl
 
         std::unique_ptr<Flashlight> _flashlight;
 
-        ConfigMode _flashlightConfigMode;
+        std::unique_ptr<ConfigMode> _flashlightConfigMode;
 
         // check if FRIK mod detected and initialized to open config via FRIK config
         bool _frikInitialized = false;

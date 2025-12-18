@@ -11,19 +11,19 @@ namespace ImFl
     public :
         int isOpen() const;
         void openConfigMode();
+        void closeConfigMode();
         void showBeamCurrentValuesNotification();
         void onFrameUpdate();
 
     private:
         void handleBeamTuningAdjustments();
-        void switchBeamGobo();
+        static void switchBeamGobo();
         static void switchBeamColor();
         static void saveConfig();
         static void resetConfig();
         void disablePlayerInput(bool disable);
         void setFlashlightButtonsToggleStateByLocation() const;
         void createMainConfigUI();
-        void closeConfigMode();
 
         // configuration UI
         std::shared_ptr<vrui::UIContainer> _configUI;
