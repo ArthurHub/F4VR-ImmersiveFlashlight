@@ -7,9 +7,24 @@
 namespace ImFl
 {
     /**
+     * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
+     */
+    void Utils::switchFlashlightLocation(const FlashlightLocation location)
+    {
+        if (g_config.flashlightLocation == location) {
+            return;
+        }
+
+        g_config.setFlashlightLocation(location);
+
+        // toggle the flashlight to reload the light values
+        Utils::toggleLightRefreshValues();
+    }
+
+    /**
      * Toggle flashlight off/on and reload the light values from config.
      */
-    void Utils::toggleLightsRefreshValues()
+    void Utils::toggleLightRefreshValues()
     {
         const auto player = f4vr::getPlayer();
         f4vr::togglePipboyLight(player);

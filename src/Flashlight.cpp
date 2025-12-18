@@ -54,7 +54,7 @@ namespace ImFl
         if (isOffhandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::OnHead || g_config.flashlightLocation == FlashlightLocation::InOffhand)) {
             triggerHapticOnce(vrcf::Hand::Offhand);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
-                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InOffhand : FlashlightLocation::OnHead);
+                Utils::switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InOffhand : FlashlightLocation::OnHead);
             }
             return;
         }
@@ -64,7 +64,7 @@ namespace ImFl
         if (isPrimaryHandCloseToHMD && (g_config.flashlightLocation == FlashlightLocation::OnHead || g_config.flashlightLocation == FlashlightLocation::InPrimaryHand)) {
             triggerHapticOnce(vrcf::Hand::Primary);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Primary, g_config.switchTorchButton)) {
-                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InPrimaryHand : FlashlightLocation::OnHead);
+                Utils::switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::OnHead ? FlashlightLocation::InPrimaryHand : FlashlightLocation::OnHead);
             }
             return;
         }
@@ -74,7 +74,7 @@ namespace ImFl
         if (isHandsCloseToEachOther && g_config.flashlightLocation != FlashlightLocation::OnHead) {
             triggerHapticOnce(vrcf::Hand::Left);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
-                switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::InPrimaryHand
+                Utils::switchFlashlightLocation(g_config.flashlightLocation == FlashlightLocation::InPrimaryHand
                     ? FlashlightLocation::InOffhand
                     : FlashlightLocation::InPrimaryHand);
             }
@@ -82,21 +82,6 @@ namespace ImFl
         }
 
         _flashlightHapticActivated = false;
-    }
-
-    /**
-     * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
-     */
-    void Flashlight::switchFlashlightLocation(const FlashlightLocation location)
-    {
-        if (g_config.flashlightLocation == location) {
-            return;
-        }
-
-        g_config.setFlashlightLocation(location);
-
-        // toggle the flashlight to reload the light values
-        Utils::toggleLightsRefreshValues();
     }
 
     /**

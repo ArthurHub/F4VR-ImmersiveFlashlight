@@ -13,7 +13,6 @@ namespace ImFl
 
     private:
         void checkSwitchingFlashlightOnHeadHand();
-        static void switchFlashlightLocation(FlashlightLocation location);
         static void adjustFlashlightTransformToHandOrHead();
         void triggerHapticOnce(vrcf::Hand hand);
 

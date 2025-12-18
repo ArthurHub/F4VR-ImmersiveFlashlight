@@ -22,6 +22,8 @@ namespace ImFl
             ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
 
         void setFlashlightLocation(FlashlightLocation location);
+        void saveFlashlightValues();
+        void resetFlashlightValuesToDefault() const;
 
         // Flashlight
         FlashlightLocation flashlightLocation = FlashlightLocation::OnHead;
