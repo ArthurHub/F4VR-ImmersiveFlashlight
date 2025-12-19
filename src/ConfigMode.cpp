@@ -29,9 +29,9 @@ namespace
 
     int findCurrentColorIndex()
     {
-        const int r = *ImFl::g_config.flashlightColorRed;
-        const int g = *ImFl::g_config.flashlightColorGreen;
-        const int b = *ImFl::g_config.flashlightColorBlue;
+        const int r = *ImFl::Utils::flashlightColorRed;
+        const int g = *ImFl::Utils::flashlightColorGreen;
+        const int b = *ImFl::Utils::flashlightColorBlue;
         for (std::size_t i = 0; i < COLOR_OPTIONS.size(); ++i) {
             const auto& c = COLOR_OPTIONS[i];
             if (c[0] == r && c[1] == g && c[2] == b) {
@@ -66,7 +66,7 @@ namespace
             loadGoboTextureFiles();
         }
         for (std::size_t i = 0; i < goboTextureFilePaths.size(); ++i) {
-            if (goboTextureFilePaths[i] == *ImFl::g_config.flashlightGoboPath) {
+            if (goboTextureFilePaths[i] == *ImFl::Utils::flashlightGoboPath) {
                 return static_cast<int>(i);
             }
         }
@@ -178,16 +178,16 @@ namespace ImFl
         if (primaryDirection.has_value()) {
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
-                *g_config.flashlightFade = fminf(*g_config.flashlightFade + 0.1f, 4.0f);
+                *Utils::flashlightFade = fminf(*Utils::flashlightFade + 0.1f, 4.0f);
                 break;
             case vrcf::Direction::Down:
-                *g_config.flashlightFade = fmaxf(*g_config.flashlightFade - 0.1f, 0.2f);
+                *Utils::flashlightFade = fmaxf(*Utils::flashlightFade - 0.1f, 0.2f);
                 break;
             case vrcf::Direction::Right:
-                *g_config.flashlightRadius = min(*g_config.flashlightRadius + 200, 10000);
+                *Utils::flashlightRadius = min(*Utils::flashlightRadius + 200, 10000);
                 break;
             case vrcf::Direction::Left:
-                *g_config.flashlightRadius = max(*g_config.flashlightRadius - 200, 1000);
+                *Utils::flashlightRadius = max(*Utils::flashlightRadius - 200, 1000);
                 break;
             }
             Utils::toggleLightRefreshValues();
@@ -196,11 +196,11 @@ namespace ImFl
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
-                *g_config.flashlightFov = fminf(*g_config.flashlightFov + 5, 150);
+                *Utils::flashlightFov = fminf(*Utils::flashlightFov + 5, 150);
                 Utils::toggleLightRefreshValues();
                 _lastValuesChangeNotificationPensing = true;
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
-                *g_config.flashlightFov = fmaxf(*g_config.flashlightFov - 5, 5);
+                *Utils::flashlightFov = fmaxf(*Utils::flashlightFov - 5, 5);
                 Utils::toggleLightRefreshValues();
                 _lastValuesChangeNotificationPensing = true;
             }
@@ -218,7 +218,7 @@ namespace ImFl
             _lastValuesChangeNotificationPensing = false;
             _lastValuesUpdateNotificationTime = now;
             f4vr::showNotification(std::format("Beam values updated:\nIntensity = {:.1f}\nDistance = {}\nSpread = {:.0f}\xC2\xB0",
-                *g_config.flashlightFade, *g_config.flashlightRadius, *g_config.flashlightFov));
+                *Utils::flashlightFade, *Utils::flashlightRadius, *Utils::flashlightFov));
         }
     }
 
@@ -228,12 +228,12 @@ namespace ImFl
     void ConfigMode::switchBeamGobo()
     {
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
-        *g_config.flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
+        *Utils::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
 
         Utils::toggleLightRefreshValues();
 
         f4vr::showNotification(std::format("Beam gobo updated (Preset: {} out of {}):\nName = {}",
-            nextGoboIndex + 1, goboTextureFilePaths.size(), std::filesystem::path(*g_config.flashlightGoboPath).stem().string()));
+            nextGoboIndex + 1, goboTextureFilePaths.size(), std::filesystem::path(*Utils::flashlightGoboPath).stem().string()));
     }
 
     /**
@@ -242,14 +242,14 @@ namespace ImFl
     void ConfigMode::switchBeamColor()
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
-        *g_config.flashlightColorRed = COLOR_OPTIONS[nextColorIndex][0];
-        *g_config.flashlightColorGreen = COLOR_OPTIONS[nextColorIndex][1];
-        *g_config.flashlightColorBlue = COLOR_OPTIONS[nextColorIndex][2];
+        *Utils::flashlightColorRed = COLOR_OPTIONS[nextColorIndex][0];
+        *Utils::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex][1];
+        *Utils::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex][2];
 
         Utils::toggleLightRefreshValues();
 
         f4vr::showNotification(std::format("Beam color updated (Preset: {} out of {}):\nRed = {}\nGreen = {}\nBlue = {}",
-            nextColorIndex + 1, COLOR_OPTIONS.size(), *g_config.flashlightColorRed, *g_config.flashlightColorGreen, *g_config.flashlightColorBlue));
+            nextColorIndex + 1, COLOR_OPTIONS.size(), *Utils::flashlightColorRed, *Utils::flashlightColorGreen, *Utils::flashlightColorBlue));
     }
 
     /**
@@ -258,7 +258,11 @@ namespace ImFl
     void ConfigMode::saveConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values saved",
-            g_config.flashlightLocation == FlashlightLocation::OnHead ? "On Head" : g_config.flashlightLocation == FlashlightLocation::InOffhand ? "In Hand" : "On Weapon"));
+            g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
+            ? "On Head"
+            : g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand
+            ? "In Hand"
+            : "On Weapon"));
         g_config.saveFlashlightValues();
     }
 
@@ -268,7 +272,11 @@ namespace ImFl
     void ConfigMode::resetConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default",
-            g_config.flashlightLocation == FlashlightLocation::OnHead ? "On Head" : g_config.flashlightLocation == FlashlightLocation::InOffhand ? "In Hand" : "On Weapon"));
+            g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
+            ? "On Head"
+            : g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand
+            ? "In Hand"
+            : "On Weapon"));
         g_config.resetFlashlightValuesToDefault();
         Utils::toggleLightRefreshValues();
     }
@@ -294,14 +302,14 @@ namespace ImFl
 
     void ConfigMode::setFlashlightButtonsToggleStateByLocation() const
     {
-        switch (g_config.flashlightLocation) {
-        case FlashlightLocation::OnHead:
+        switch (g_config.flashlightConfigLocation) {
+        case FlashlightConfigLocation::OnHead:
             _onHeadFLBtn->setToggleState(true);
             break;
-        case FlashlightLocation::InOffhand:
+        case FlashlightConfigLocation::InOffhand:
             _inHandFLBtn->setToggleState(true);
             break;
-        case FlashlightLocation::InPrimaryHand:
+        case FlashlightConfigLocation::InPrimaryHand:
             _onWeaponFLBtn->setToggleState(true);
             break;
         }
@@ -313,13 +321,13 @@ namespace ImFl
     void ConfigMode::createMainConfigUI()
     {
         _onHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_head_1x2.nif");
-        _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightLocation(FlashlightLocation::OnHead); });
+        _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead); });
 
         _inHandFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_in_hand_1x3.nif");
-        _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightLocation(FlashlightLocation::InOffhand); });
+        _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand); });
 
         _onWeaponFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_weapon_1x4.nif");
-        _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightLocation(FlashlightLocation::InPrimaryHand); });
+        _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand); });
 
         const auto row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
         row1ToggleContainer->addElement(_onHeadFLBtn);

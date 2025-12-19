@@ -8,7 +8,7 @@ namespace ImFl
     static const auto BASE_MOD_PATH = BASE_PATH + "\\" + std::string(Version::PROJECT);
     static const auto INI_PATH = BASE_MOD_PATH + "\\" + std::string(Version::PROJECT) + ".ini";
 
-    enum class FlashlightLocation : uint8_t
+    enum class FlashlightConfigLocation : uint8_t
     {
         OnHead = 0,
         InOffhand,
@@ -21,12 +21,12 @@ namespace ImFl
         explicit Config() :
             ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
 
-        void setFlashlightLocation(FlashlightLocation location);
+        void setFlashlightLocation(FlashlightConfigLocation location);
         void saveFlashlightValues();
-        void resetFlashlightValuesToDefault() const;
+        void resetFlashlightValuesToDefault();
 
         // Flashlight
-        FlashlightLocation flashlightLocation = FlashlightLocation::OnHead;
+        FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
 
         // flashlight values on head
         float flashlightOnHeadFade = 0.0f;
@@ -55,21 +55,11 @@ namespace ImFl
         int flashlightOnWeaponColorBlue = 0;
         std::string flashlightOnWeaponGoboPath;
 
-        // ref configs to specific flashlight values
-        float* flashlightFade = nullptr;
-        int* flashlightRadius = nullptr;
-        float* flashlightFov = nullptr;
-        int* flashlightColorRed = nullptr;
-        int* flashlightColorGreen = nullptr;
-        int* flashlightColorBlue = nullptr;
-        std::string* flashlightGoboPath = nullptr;
-
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
-        void refreshConfigReferences();
     };
 
     // Global singleton for easy access

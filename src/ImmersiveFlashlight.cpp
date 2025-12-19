@@ -1,6 +1,7 @@
 #include "ImmersiveFlashlight.h"
 
 #include "api/FRIKApi.h"
+#include "f4vr/PlayerNodes.h"
 #include "vrui/UIManager.h"
 
 // This is the entry point to the mod.

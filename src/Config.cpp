@@ -1,5 +1,7 @@
 #include "Config.h"
 
+#include "Utils.h"
+
 using namespace common;
 
 namespace
@@ -9,11 +11,10 @@ namespace
 
 namespace ImFl
 {
-    void Config::setFlashlightLocation(const FlashlightLocation location)
+    void Config::setFlashlightLocation(const FlashlightConfigLocation location)
     {
-        flashlightLocation = location;
-        refreshConfigReferences();
-        saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightLocation));
+        flashlightConfigLocation = location;
+        saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightConfigLocation));
     }
 
     void Config::saveFlashlightValues()
@@ -23,8 +24,8 @@ namespace ImFl
             return;
         }
 
-        switch (flashlightLocation) {
-        case FlashlightLocation::OnHead:
+        switch (flashlightConfigLocation) {
+        case FlashlightConfigLocation::OnHead:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", flashlightOnHeadFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadRadius", flashlightOnHeadRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFov", flashlightOnHeadFov);
@@ -34,7 +35,7 @@ namespace ImFl
             ini.SetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath.c_str());
             break;
 
-        case FlashlightLocation::InOffhand:
+        case FlashlightConfigLocation::InOffhand:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", flashlightInHandFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandRadius", flashlightInHandRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFov", flashlightInHandFov);
@@ -44,7 +45,7 @@ namespace ImFl
             ini.SetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", flashlightInHandGoboPath.c_str());
             break;
 
-        case FlashlightLocation::InPrimaryHand:
+        case FlashlightConfigLocation::InPrimaryHand:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", flashlightOnWeaponFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFov", flashlightOnWeaponFov);
@@ -61,25 +62,46 @@ namespace ImFl
     /**
      * Load the default config and set the current flashlight values to the defaults.
      */
-    void Config::resetFlashlightValuesToDefault() const
+    void Config::resetFlashlightValuesToDefault()
     {
         Config defaultConfig;
         defaultConfig.loadEmbeddedDefaultOnly();
-        defaultConfig.flashlightLocation = flashlightLocation;
-        defaultConfig.refreshConfigReferences();
 
-        *flashlightFade = *defaultConfig.flashlightFade;
-        *flashlightRadius = *defaultConfig.flashlightRadius;
-        *flashlightFov = *defaultConfig.flashlightFov;
-        *flashlightColorRed = *defaultConfig.flashlightColorRed;
-        *flashlightColorGreen = *defaultConfig.flashlightColorGreen;
-        *flashlightColorBlue = *defaultConfig.flashlightColorBlue;
+        switch (flashlightConfigLocation) {
+        case FlashlightConfigLocation::OnHead:
+            flashlightOnHeadFade = defaultConfig.flashlightOnHeadFade;
+            flashlightOnHeadRadius = defaultConfig.flashlightOnHeadRadius;
+            flashlightOnHeadFov = defaultConfig.flashlightOnHeadFov;
+            flashlightOnHeadColorRed = defaultConfig.flashlightOnHeadColorRed;
+            flashlightOnHeadColorGreen = defaultConfig.flashlightOnHeadColorGreen;
+            flashlightOnHeadColorBlue = defaultConfig.flashlightOnHeadColorBlue;
+            flashlightOnHeadGoboPath = defaultConfig.flashlightOnHeadGoboPath;
+            break;
+        case FlashlightConfigLocation::InOffhand:
+            flashlightInHandFade = defaultConfig.flashlightInHandFade;
+            flashlightInHandRadius = defaultConfig.flashlightInHandRadius;
+            flashlightInHandFov = defaultConfig.flashlightInHandFov;
+            flashlightInHandColorRed = defaultConfig.flashlightInHandColorRed;
+            flashlightInHandColorGreen = defaultConfig.flashlightInHandColorGreen;
+            flashlightInHandColorBlue = defaultConfig.flashlightInHandColorBlue;
+            flashlightInHandGoboPath = defaultConfig.flashlightInHandGoboPath;
+            break;
+        case FlashlightConfigLocation::InPrimaryHand:
+            flashlightOnWeaponFade = defaultConfig.flashlightOnWeaponFade;
+            flashlightOnWeaponRadius = defaultConfig.flashlightOnWeaponRadius;
+            flashlightOnWeaponFov = defaultConfig.flashlightOnWeaponFov;
+            flashlightOnWeaponColorRed = defaultConfig.flashlightOnWeaponColorRed;
+            flashlightOnWeaponColorGreen = defaultConfig.flashlightOnWeaponColorGreen;
+            flashlightOnWeaponColorBlue = defaultConfig.flashlightOnWeaponColorBlue;
+            flashlightOnWeaponGoboPath = defaultConfig.flashlightOnWeaponGoboPath;
+            break;
+        }
     }
 
     void Config::loadIniConfigInternal(const CSimpleIniA& ini)
     {
         // Flashlight location
-        flashlightLocation = static_cast<FlashlightLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocation", 0));
+        flashlightConfigLocation = static_cast<FlashlightConfigLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocation", 0));
 
         // Head-mounted flashlight defaults
         flashlightOnHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", 1.1));
@@ -110,46 +132,5 @@ namespace ImFl
 
         // change hand / head button
         switchTorchButton = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "SwitchTorchButton", 2));
-
-        refreshConfigReferences();
-    }
-
-    /**
-     * Set references to the config by the current flashlight location.
-     * So it will be easy to read and modify without needing to check location each time.
-     */
-    void Config::refreshConfigReferences()
-    {
-        switch (g_config.flashlightLocation) {
-        case FlashlightLocation::OnHead:
-            flashlightFade = &flashlightOnHeadFade;
-            flashlightRadius = &flashlightOnHeadRadius;
-            flashlightFov = &flashlightOnHeadFov;
-            flashlightColorRed = &flashlightOnHeadColorRed;
-            flashlightColorGreen = &flashlightOnHeadColorGreen;
-            flashlightColorBlue = &flashlightOnHeadColorBlue;
-            flashlightGoboPath = &flashlightOnHeadGoboPath;
-            break;
-
-        case FlashlightLocation::InOffhand:
-            flashlightFade = &flashlightInHandFade;
-            flashlightRadius = &flashlightInHandRadius;
-            flashlightFov = &flashlightInHandFov;
-            flashlightColorRed = &flashlightInHandColorRed;
-            flashlightColorGreen = &flashlightInHandColorGreen;
-            flashlightColorBlue = &flashlightInHandColorBlue;
-            flashlightGoboPath = &flashlightInHandGoboPath;
-            break;
-
-        case FlashlightLocation::InPrimaryHand:
-            flashlightFade = &flashlightOnWeaponFade;
-            flashlightRadius = &flashlightOnWeaponRadius;
-            flashlightFov = &flashlightOnWeaponFov;
-            flashlightColorRed = &flashlightOnWeaponColorRed;
-            flashlightColorGreen = &flashlightOnWeaponColorGreen;
-            flashlightColorBlue = &flashlightOnWeaponColorBlue;
-            flashlightGoboPath = &flashlightOnWeaponGoboPath;
-            break;
-        }
     }
 }

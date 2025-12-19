@@ -1,6 +1,7 @@
 #include "Utils.h"
 
 #include "Config.h"
+#include "api/FRIKApi.h"
 #include "f4vr/F4VROffsets.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -9,16 +10,31 @@ namespace ImFl
     /**
      * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
      */
-    void Utils::switchFlashlightLocation(const FlashlightLocation location)
+    void Utils::switchFlashlightConfigLocation(const FlashlightConfigLocation location)
     {
-        if (g_config.flashlightLocation == location) {
+        if (g_config.flashlightConfigLocation == location) {
+            return;
+        }
+        g_config.setFlashlightLocation(location);
+        refreshFlashlightLocation();
+    }
+
+    /**
+     * Refresh the current flashlight location based on config and game state.
+     * Update the config references and reload the light values if location changed.
+     */
+    void Utils::refreshFlashlightLocation()
+    {
+        const auto newFlashlightLocation = getFlashlightLocation();
+        if (flashlightLocation == newFlashlightLocation) {
             return;
         }
 
-        g_config.setFlashlightLocation(location);
+        flashlightLocation = newFlashlightLocation;
+        refreshConfigReferences();
 
         // toggle the flashlight to reload the light values
-        Utils::toggleLightRefreshValues();
+        toggleLightRefreshValues();
     }
 
     /**
@@ -44,14 +60,14 @@ namespace ImFl
             return;
         }
 
-        light->fade = *g_config.flashlightFade;
-        light->data.radius = *g_config.flashlightRadius;
-        light->data.fov = *g_config.flashlightFov;
-        light->data.color.red = static_cast<std::uint8_t>(*g_config.flashlightColorRed);
-        light->data.color.green = static_cast<std::uint8_t>(*g_config.flashlightColorGreen);
-        light->data.color.blue = static_cast<std::uint8_t>(*g_config.flashlightColorBlue);
-        light->goboTexture.textureName = *g_config.flashlightGoboPath;
-        loadGoboTexture(*g_config.flashlightGoboPath);
+        light->fade = *flashlightFade;
+        light->data.radius = *flashlightRadius;
+        light->data.fov = *flashlightFov;
+        light->data.color.red = static_cast<std::uint8_t>(*flashlightColorRed);
+        light->data.color.green = static_cast<std::uint8_t>(*flashlightColorGreen);
+        light->data.color.blue = static_cast<std::uint8_t>(*flashlightColorBlue);
+        light->goboTexture.textureName = *flashlightGoboPath;
+        loadGoboTexture(*flashlightGoboPath);
     }
 
     /**
@@ -69,5 +85,72 @@ namespace ImFl
         RE::NiTexture* newGoboTexture = nullptr;
         f4vr::LoadTextureByPath(goboFilePath.c_str(), 1, newGoboTexture, 0, 0, 0);
         _goboTextures[goboFilePath] = newGoboTexture;
+    }
+
+    /**
+     * Get the real flashlight location based on config and current game state.
+     * A flashlight cannot be in primary hand if weapon is drawn, it switches to on-weapon.
+     * But only for non-melee weapons, melee weapons force flashlight to offhand.
+     */
+    FlashlightLocation Utils::getFlashlightLocation()
+    {
+        if (g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead) {
+            return FlashlightLocation::OnHead;
+        }
+
+        if (g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand) {
+            return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon() ? FlashlightLocation::OnWeapon : FlashlightLocation::InOffhand;
+        }
+
+        const auto weaponNode = f4vr::getWeaponNode();
+        if (!f4vr::isNodeVisible(weaponNode)) {
+            return FlashlightLocation::InPrimaryHand;
+        }
+
+        if (f4vr::isMeleeWeaponEquipped()) {
+            return FlashlightLocation::InOffhand;
+        }
+
+        return FlashlightLocation::OnWeapon;
+    }
+
+    /**
+     * Set references to the config by the current flashlight location.
+     * So it will be easy to read and modify without needing to check location each time.
+     */
+    void Utils::refreshConfigReferences()
+    {
+        switch (flashlightLocation) {
+        case FlashlightLocation::OnHead:
+            flashlightFade = &g_config.flashlightOnHeadFade;
+            flashlightRadius = &g_config.flashlightOnHeadRadius;
+            flashlightFov = &g_config.flashlightOnHeadFov;
+            flashlightColorRed = &g_config.flashlightOnHeadColorRed;
+            flashlightColorGreen = &g_config.flashlightOnHeadColorGreen;
+            flashlightColorBlue = &g_config.flashlightOnHeadColorBlue;
+            flashlightGoboPath = &g_config.flashlightOnHeadGoboPath;
+            break;
+
+        case FlashlightLocation::InOffhand:
+        case FlashlightLocation::InPrimaryHand:
+            flashlightFade = &g_config.flashlightInHandFade;
+            flashlightRadius = &g_config.flashlightInHandRadius;
+            flashlightFov = &g_config.flashlightInHandFov;
+            flashlightColorRed = &g_config.flashlightInHandColorRed;
+            flashlightColorGreen = &g_config.flashlightInHandColorGreen;
+            flashlightColorBlue = &g_config.flashlightInHandColorBlue;
+            flashlightGoboPath = &g_config.flashlightInHandGoboPath;
+            break;
+
+        case FlashlightLocation::OnWeapon:
+            flashlightFade = &g_config.flashlightOnWeaponFade;
+            flashlightRadius = &g_config.flashlightOnWeaponRadius;
+            flashlightFov = &g_config.flashlightOnWeaponFov;
+            flashlightColorRed = &g_config.flashlightOnWeaponColorRed;
+            flashlightColorGreen = &g_config.flashlightOnWeaponColorGreen;
+            flashlightColorBlue = &g_config.flashlightOnWeaponColorBlue;
+            flashlightGoboPath = &g_config.flashlightOnWeaponGoboPath;
+            break;
+        }
     }
 }
