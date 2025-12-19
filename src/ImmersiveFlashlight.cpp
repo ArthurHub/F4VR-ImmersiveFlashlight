@@ -1,7 +1,6 @@
 #include "ImmersiveFlashlight.h"
 
 #include "api/FRIKApi.h"
-#include "f4vr/PlayerNodes.h"
 #include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
@@ -63,7 +62,7 @@ namespace ImFl
         addEmbeddedFlashlightKeyword();
 
         _flashlight = std::make_unique<Flashlight>();
-        _flashlightConfigMode = std::make_unique<ConfigMode>();
+        _flashlightConfigMode = std::make_unique<FlashlightConfigMode>();
 
         _frikInitialized = registerOpenConfigViaFRIK();
         if (_frikInitialized) {
@@ -90,12 +89,12 @@ namespace ImFl
             return;
         }
 
+        FrameUpdateContext context{};
+        vrui::g_uiManager->onFrameUpdate(&context);
+
         _flashlight->onFrameUpdate();
 
         _flashlightConfigMode->onFrameUpdate();
-
-        FrameUpdateContext context{};
-        vrui::g_uiManager->onFrameUpdate(&context);
     }
 
     /**

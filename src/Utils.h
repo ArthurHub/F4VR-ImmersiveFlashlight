@@ -21,6 +21,7 @@ namespace ImFl
         static void refreshFlashlightLocation();
         static void toggleLightRefreshValues();
         static void setLightValues();
+        static void turnFlashlightOn();
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;
 

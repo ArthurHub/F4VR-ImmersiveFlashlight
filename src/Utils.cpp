@@ -43,6 +43,9 @@ namespace ImFl
     void Utils::toggleLightRefreshValues()
     {
         const auto player = f4vr::getPlayer();
+        if (!f4vr::isPipboyLightOn(player)) {
+            return;
+        }
         f4vr::togglePipboyLight(player);
         setLightValues();
         f4vr::togglePipboyLight(player);
@@ -68,6 +71,17 @@ namespace ImFl
         light->data.color.blue = static_cast<std::uint8_t>(*flashlightColorBlue);
         light->goboTexture.textureName = *flashlightGoboPath;
         loadGoboTexture(*flashlightGoboPath);
+    }
+
+    /**
+     * Turns flashlight on if it's off.
+     */
+    void Utils::turnFlashlightOn()
+    {
+        const auto player = f4vr::getPlayer();
+        if (!f4vr::isPipboyLightOn(player)) {
+            f4vr::togglePipboyLight(player);
+        }
     }
 
     /**

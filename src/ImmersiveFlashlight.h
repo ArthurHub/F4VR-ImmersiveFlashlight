@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Config.h"
-#include "ConfigMode.h"
 #include "Flashlight.h"
+#include "FlashlightConfigMode.h"
 #include "ModBase.h"
 
 namespace ImFl
@@ -33,7 +33,7 @@ namespace ImFl
 
         std::unique_ptr<Flashlight> _flashlight;
 
-        std::unique_ptr<ConfigMode> _flashlightConfigMode;
+        std::unique_ptr<FlashlightConfigMode> _flashlightConfigMode;
 
         // check if FRIK mod detected and initialized to open config via FRIK config
         bool _frikInitialized = false;

@@ -32,8 +32,15 @@ namespace ImFl
 {
     Flashlight::Flashlight()
     {
+        // initial setup of flashlight location and values
         Utils::refreshFlashlightLocation();
         Utils::setLightValues();
+
+        // refresh flashlight values on config change
+        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string& key) {
+            Utils::refreshFlashlightLocation();
+            Utils::toggleLightRefreshValues();
+        });
     }
 
     /**

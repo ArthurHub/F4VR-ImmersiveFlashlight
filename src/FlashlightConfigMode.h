@@ -3,10 +3,11 @@
 #include "Config.h"
 #include "vrui/UIContainer.h"
 #include "vrui/UIToggleButton.h"
+#include "vrui/UIToggleGroupContainer.h"
 
 namespace ImFl
 {
-    class ConfigMode
+    class FlashlightConfigMode
     {
     public :
         int isOpen() const;
@@ -21,6 +22,9 @@ namespace ImFl
         static void switchBeamColor();
         static void saveConfig();
         static void resetConfig();
+        static void switchingToOnHeadConfig();
+        static void switchingToInHandConfig();
+        void trySwitchingToOnWeaponConfig() const;
         void disablePlayerInput(bool disable);
         void setFlashlightButtonsToggleStateByLocation() const;
         void createMainConfigUI();
@@ -31,6 +35,7 @@ namespace ImFl
         std::shared_ptr<vrui::UIToggleButton> _onHeadFLBtn;
         std::shared_ptr<vrui::UIToggleButton> _inHandFLBtn;
         std::shared_ptr<vrui::UIToggleButton> _onWeaponFLBtn;
+        std::shared_ptr<vrui::UIToggleGroupContainer> _row1ToggleContainer;
         std::shared_ptr<vrui::UIWidget> _configMsg;
         std::shared_ptr<vrui::UIWidget> _beamTuningMsg;
 

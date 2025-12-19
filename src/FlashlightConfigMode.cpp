@@ -1,4 +1,4 @@
-#include "ConfigMode.h"
+#include "FlashlightConfigMode.h"
 
 #include "Config.h"
 #include "Utils.h"
@@ -15,16 +15,21 @@ using namespace common;
 
 namespace
 {
-    constexpr std::array<std::array<int, 3>, 9> COLOR_OPTIONS = { {
-        { 235, 224, 190 }, // Warm Light a bit yellowish
-        { 240, 230, 225 }, // Mostly White
-        { 255, 255, 255 }, // Full White
-        { 255, 200, 150 }, // Warm White
-        { 235, 224, 203 }, // Soft Warm White
-        { 239, 104, 65 }, // Red
-        { 148, 222, 165 }, // Green
-        { 87, 155, 217 }, // Blue
-        { 101, 83, 202 }, // Purple
+    struct ColorOption
+    {
+        std::array<int, 3> rgb;
+        std::string_view name;
+    };
+
+    constexpr std::array<ColorOption, 8> COLOR_OPTIONS{ {
+        { .rgb = { 255, 255, 255 }, .name = "Full White" },
+        { .rgb = { 240, 230, 225 }, .name = "Mostly White" },
+        { .rgb = { 235, 224, 190 }, .name = "Warm White" },
+        { .rgb = { 255, 200, 150 }, .name = "Warm Dim White (yellowish)" },
+        { .rgb = { 255, 150, 150 }, .name = "Red" },
+        { .rgb = { 150, 255, 150 }, .name = "Green" },
+        { .rgb = { 150, 150, 255 }, .name = "Blue" },
+        { .rgb = { 190, 100, 255 }, .name = "Purple" },
     } };
 
     int findCurrentColorIndex()
@@ -33,7 +38,7 @@ namespace
         const int g = *ImFl::Utils::flashlightColorGreen;
         const int b = *ImFl::Utils::flashlightColorBlue;
         for (std::size_t i = 0; i < COLOR_OPTIONS.size(); ++i) {
-            const auto& c = COLOR_OPTIONS[i];
+            const auto& c = COLOR_OPTIONS[i].rgb;
             if (c[0] == r && c[1] == g && c[2] == b) {
                 return static_cast<int>(i);
             }
@@ -76,7 +81,7 @@ namespace
 
 namespace ImFl
 {
-    int ConfigMode::isOpen() const
+    int FlashlightConfigMode::isOpen() const
     {
         return _configUI != nullptr;
     }
@@ -84,7 +89,7 @@ namespace ImFl
     /**
      * Open.
      */
-    void ConfigMode::openConfigMode()
+    void FlashlightConfigMode::openConfigMode()
     {
         if (isOpen()) {
             return;
@@ -92,18 +97,13 @@ namespace ImFl
 
         logger::info("Open config by call...");
         createMainConfigUI();
-
-        // turn flashlight on if it's off
-        auto player = f4vr::getPlayer();
-        if (!f4vr::isPipboyLightOn(player)) {
-            f4vr::togglePipboyLight(player);
-        }
+        Utils::turnFlashlightOn();
     }
 
     /**
      * Close.
      */
-    void ConfigMode::closeConfigMode()
+    void FlashlightConfigMode::closeConfigMode()
     {
         if (!isOpen()) {
             return;
@@ -125,6 +125,7 @@ namespace ImFl
         _onHeadFLBtn.reset();
         _inHandFLBtn.reset();
         _onWeaponFLBtn.reset();
+        _row1ToggleContainer.reset();
         _configMsg.reset();
         _beamTuningMsg.reset();
     }
@@ -132,14 +133,9 @@ namespace ImFl
     /**
      * Handle main config on every frame update.
      */
-    void ConfigMode::onFrameUpdate()
+    void FlashlightConfigMode::onFrameUpdate()
     {
         if (!isOpen()) {
-            // TODO: remove after testing
-            if (vrcf::VRControllers.isLongPressed(vrcf::Hand::Offhand, vr::k_EButton_A)) {
-                openConfigMode();
-            }
-
             return;
         }
 
@@ -147,6 +143,8 @@ namespace ImFl
         if (frik::api::FRIKApi::inst->isConfigOpen()) {
             closeConfigMode();
         }
+
+        _configUI->setPosition(0, 0, f4vr::isNodeVisible(f4vr::getWeaponNode()) ? 6.0f : 0.0f);
 
         _configMsg->setVisibility(!_beamTuningTglBtn->isToggleOn());
         _beamTuningMsg->setVisibility(_beamTuningTglBtn->isToggleOn());
@@ -166,7 +164,7 @@ namespace ImFl
      * Radius - the distance the beam reaches - primary thumbstick left/right
      * FOV - the spread of the beam - offhand thumbstick up/down
      */
-    void ConfigMode::handleBeamTuningAdjustments()
+    void FlashlightConfigMode::handleBeamTuningAdjustments()
     {
         if (!_beamTuningTglBtn->isToggleOn()) {
             return;
@@ -211,7 +209,7 @@ namespace ImFl
      * Show notification with current flashlight values after they were changed.
      * Try not to spam too much.
      */
-    void ConfigMode::showBeamCurrentValuesNotification()
+    void FlashlightConfigMode::showBeamCurrentValuesNotification()
     {
         const auto now = nowMillis();
         if (_lastValuesChangeNotificationPensing && now - _lastValuesUpdateNotificationTime > 3000) {
@@ -225,37 +223,39 @@ namespace ImFl
     /**
      * Switch the beam gobo to the next preset option.
      */
-    void ConfigMode::switchBeamGobo()
+    void FlashlightConfigMode::switchBeamGobo()
     {
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
         *Utils::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
 
         Utils::toggleLightRefreshValues();
 
-        f4vr::showNotification(std::format("Beam gobo updated (Preset: {} out of {}):\nName = {}",
-            nextGoboIndex + 1, goboTextureFilePaths.size(), std::filesystem::path(*Utils::flashlightGoboPath).stem().string()));
+        auto goboFileName = std::filesystem::path(*Utils::flashlightGoboPath).stem().string();
+        std::ranges::replace(goboFileName, '_', ' ');
+        f4vr::showNotification(std::format("Beam Gobo: {}\nPreset: {} out of {}",
+            goboFileName, nextGoboIndex + 1, goboTextureFilePaths.size()));
     }
 
     /**
      * Switch the beam color to the next preset option.
      */
-    void ConfigMode::switchBeamColor()
+    void FlashlightConfigMode::switchBeamColor()
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
-        *Utils::flashlightColorRed = COLOR_OPTIONS[nextColorIndex][0];
-        *Utils::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex][1];
-        *Utils::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex][2];
+        *Utils::flashlightColorRed = COLOR_OPTIONS[nextColorIndex].rgb[0];
+        *Utils::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex].rgb[1];
+        *Utils::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
 
         Utils::toggleLightRefreshValues();
 
-        f4vr::showNotification(std::format("Beam color updated (Preset: {} out of {}):\nRed = {}\nGreen = {}\nBlue = {}",
-            nextColorIndex + 1, COLOR_OPTIONS.size(), *Utils::flashlightColorRed, *Utils::flashlightColorGreen, *Utils::flashlightColorBlue));
+        f4vr::showNotification(std::format("Beam Color: {}\nPreset: {} out of {}",
+            COLOR_OPTIONS[nextColorIndex].name, nextColorIndex + 1, COLOR_OPTIONS.size()));
     }
 
     /**
      * Save the flashlight values only for the current selected location.
      */
-    void ConfigMode::saveConfig()
+    void FlashlightConfigMode::saveConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values saved",
             g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
@@ -269,7 +269,7 @@ namespace ImFl
     /**
      * Reset to default the flashlight values only for the current selected location.
      */
-    void ConfigMode::resetConfig()
+    void FlashlightConfigMode::resetConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default",
             g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
@@ -281,10 +281,35 @@ namespace ImFl
         Utils::toggleLightRefreshValues();
     }
 
+    void FlashlightConfigMode::switchingToOnHeadConfig()
+    {
+        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
+        Utils::turnFlashlightOn();
+    }
+
+    void FlashlightConfigMode::switchingToInHandConfig()
+    {
+        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
+        Utils::turnFlashlightOn();
+    }
+
+    /**
+     * Switch to on-weapon config if NON melee weapon is equipped, otherwise show notification.
+     */
+    void FlashlightConfigMode::trySwitchingToOnWeaponConfig() const
+    {
+        if (!f4vr::isNodeVisible(f4vr::getWeaponNode()) || f4vr::isMeleeWeaponEquipped()) {
+            f4vr::showNotification("Equip a NON Melee weapon to tune on-weapon flashlight values");
+            setFlashlightButtonsToggleStateByLocation();
+            return;
+        }
+        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+    }
+
     /**
      * If to disable player input to prevent movement while in config mode.
      */
-    void ConfigMode::disablePlayerInput(const bool disable)
+    void FlashlightConfigMode::disablePlayerInput(const bool disable)
     {
         if (disable) {
             if (!_inputDisabled) {
@@ -300,16 +325,21 @@ namespace ImFl
         }
     }
 
-    void ConfigMode::setFlashlightButtonsToggleStateByLocation() const
+    void FlashlightConfigMode::setFlashlightButtonsToggleStateByLocation() const
     {
-        switch (g_config.flashlightConfigLocation) {
-        case FlashlightConfigLocation::OnHead:
+        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+            _row1ToggleContainer->clearToggleState();
+            return;
+        }
+        switch (Utils::flashlightLocation) {
+        case FlashlightLocation::OnHead:
             _onHeadFLBtn->setToggleState(true);
             break;
-        case FlashlightConfigLocation::InOffhand:
+        case FlashlightLocation::InOffhand:
+        case FlashlightLocation::InPrimaryHand:
             _inHandFLBtn->setToggleState(true);
             break;
-        case FlashlightConfigLocation::InPrimaryHand:
+        case FlashlightLocation::OnWeapon:
             _onWeaponFLBtn->setToggleState(true);
             break;
         }
@@ -318,21 +348,21 @@ namespace ImFl
     /**
      * Create all the main config UI elements.
      */
-    void ConfigMode::createMainConfigUI()
+    void FlashlightConfigMode::createMainConfigUI()
     {
         _onHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_head_1x2.nif");
-        _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead); });
+        _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnHeadConfig(); });
 
         _inHandFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_in_hand_1x3.nif");
-        _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand); });
+        _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToInHandConfig(); });
 
         _onWeaponFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_weapon_1x4.nif");
-        _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand); });
+        _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { trySwitchingToOnWeaponConfig(); });
 
-        const auto row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
-        row1ToggleContainer->addElement(_onHeadFLBtn);
-        row1ToggleContainer->addElement(_inHandFLBtn);
-        row1ToggleContainer->addElement(_onWeaponFLBtn);
+        _row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
+        _row1ToggleContainer->addElement(_onHeadFLBtn);
+        _row1ToggleContainer->addElement(_inHandFLBtn);
+        _row1ToggleContainer->addElement(_onWeaponFLBtn);
         setFlashlightButtonsToggleStateByLocation();
 
         _beamTuningTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_beam_tuning_2x2.nif");
@@ -376,7 +406,7 @@ namespace ImFl
         _configUI->addElement(row4Container);
         _configUI->addElement(row3Container);
         _configUI->addElement(row2Container);
-        _configUI->addElement(row1ToggleContainer);
+        _configUI->addElement(_row1ToggleContainer);
         _configUI->addElement(header);
 
         g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
