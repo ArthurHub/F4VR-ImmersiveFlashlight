@@ -63,6 +63,11 @@ namespace ImFl
             return;
         }
 
+        // global to all flashlight locations
+        light->data.nearDistance = g_config.flashlightNearDistance;
+        light->data.flags = static_cast<RE::TES_LIGHT_FLAGS>(std::stoul(g_config.flashlightFlagsBitmask, nullptr, 2));
+
+        // specific to current flashlight location
         light->fade = *flashlightFade;
         light->data.radius = *flashlightRadius;
         light->data.fov = *flashlightFov;

@@ -26,9 +26,9 @@ namespace
         { .rgb = { 240, 230, 225 }, .name = "Mostly White" },
         { .rgb = { 235, 224, 190 }, .name = "Warm White" },
         { .rgb = { 255, 200, 150 }, .name = "Warm Dim White (yellowish)" },
-        { .rgb = { 255, 150, 150 }, .name = "Red" },
-        { .rgb = { 150, 255, 150 }, .name = "Green" },
-        { .rgb = { 150, 150, 255 }, .name = "Blue" },
+        { .rgb = { 255, 210, 210 }, .name = "Red" },
+        { .rgb = { 210, 255, 210 }, .name = "Green" },
+        { .rgb = { 210, 210, 255 }, .name = "Blue" },
         { .rgb = { 190, 100, 255 }, .name = "Purple" },
     } };
 

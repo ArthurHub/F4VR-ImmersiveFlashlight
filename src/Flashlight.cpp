@@ -37,7 +37,7 @@ namespace ImFl
         Utils::setLightValues();
 
         // refresh flashlight values on config change
-        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string& key) {
+        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) {
             Utils::refreshFlashlightLocation();
             Utils::toggleLightRefreshValues();
         });
@@ -130,21 +130,23 @@ namespace ImFl
             // use the right arm node
             RE::NiNode* attachNode;
             RE::NiMatrix3 rotationOffset;
+            RE::NiPoint3 positionOffset;
             if (Utils::flashlightLocation == FlashlightLocation::OnWeapon) {
                 attachNode = f4vr::getWeaponNode();
                 rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
+                positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
             } else {
                 attachNode = Utils::flashlightLocation == FlashlightLocation::InOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -60, -90);
+                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -60 - g_config.flashlightInHandControllerAngleOffset, -90);
+                const float rightHandAdjust = Utils::flashlightLocation == FlashlightLocation::InOffhand && !f4vr::isLeftHandedMode() ? 1.0f : -1.0f;
+                // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
+                positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * RE::NiPoint3(5.0f, -3.0f * rightHandAdjust, -3.0f);
             }
 
             // calculate relocation transform and set to local
-            lightNode->local = MatrixUtils::calculateRelocationWithOffsets(lightNode, attachNode, RE::NiPoint3::ZERO, rotationOffset);
-
-            // small adjustment to prevent light on the fingers and shadows from them
-            const float offsetX = f4vr::isInPowerArmor() ? 16.0f : 12.0f;
-            const float offsetY = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -5.0f : 5.0f;
-            lightNode->local.translate += RE::NiPoint3(offsetX, offsetY, 5);
+            lightNode->local = MatrixUtils::calculateRelocation(lightNode, attachNode, positionOffset, rotationOffset);
+        } else if (fNotEqual(g_config.flashlightOnHeadAngleOffset, 0)) {
+            lightNode->local.rotate = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -g_config.flashlightOnHeadAngleOffset, 0);
         }
     }
 

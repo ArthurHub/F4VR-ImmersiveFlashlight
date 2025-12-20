@@ -36,8 +36,9 @@ namespace ImFl
         int flashlightOnHeadColorGreen = 0;
         int flashlightOnHeadColorBlue = 0;
         std::string flashlightOnHeadGoboPath;
+        float flashlightOnHeadAngleOffset;
 
-        // flashlight values in offhand hand
+        // flashlight values in hands
         float flashlightInHandFade = 0.0f;
         int flashlightInHandRadius = 0;
         float flashlightInHandFov = 0.0f;
@@ -45,8 +46,9 @@ namespace ImFl
         int flashlightInHandColorGreen = 0;
         int flashlightInHandColorBlue = 0;
         std::string flashlightInHandGoboPath;
+        float flashlightInHandControllerAngleOffset;
 
-        // flashlight values in primary hand
+        // flashlight values attached to weapon
         float flashlightOnWeaponFade = 0.0f;
         int flashlightOnWeaponRadius = 0;
         float flashlightOnWeaponFov = 0.0f;
@@ -54,6 +56,10 @@ namespace ImFl
         int flashlightOnWeaponColorGreen = 0;
         int flashlightOnWeaponColorBlue = 0;
         std::string flashlightOnWeaponGoboPath;
+
+        // global to all flashlight locations
+        float flashlightNearDistance;
+        std::string flashlightFlagsBitmask;
 
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
