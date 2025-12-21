@@ -28,7 +28,7 @@ namespace
         { .rgb = { 255, 200, 150 }, .name = "Warm Dim White (yellowish)" },
         { .rgb = { 255, 210, 210 }, .name = "Red" },
         { .rgb = { 210, 255, 210 }, .name = "Green" },
-        { .rgb = { 210, 210, 255 }, .name = "Blue" },
+        { .rgb = { 190, 190, 255 }, .name = "Blue" },
         { .rgb = { 190, 100, 255 }, .name = "Purple" },
     } };
 
@@ -258,12 +258,12 @@ namespace ImFl
     void FlashlightConfigMode::saveConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values saved",
-            g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
+            Utils::flashlightLocation == FlashlightLocation::OnHead
             ? "On Head"
-            : g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand
-            ? "In Hand"
-            : "On Weapon"));
-        g_config.saveFlashlightValues();
+            : Utils::flashlightLocation == FlashlightLocation::OnWeapon
+            ? "On Weapon"
+            : "In Hand"));
+        g_config.saveFlashlightValues(Utils::flashlightLocation);
     }
 
     /**
@@ -272,12 +272,12 @@ namespace ImFl
     void FlashlightConfigMode::resetConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default",
-            g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead
+            Utils::flashlightLocation == FlashlightLocation::OnHead
             ? "On Head"
-            : g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand
-            ? "In Hand"
-            : "On Weapon"));
-        g_config.resetFlashlightValuesToDefault();
+            : Utils::flashlightLocation == FlashlightLocation::OnWeapon
+            ? "On Weapon"
+            : "In Hand"));
+        g_config.resetFlashlightValuesToDefault(Utils::flashlightLocation);
         Utils::toggleLightRefreshValues();
     }
 

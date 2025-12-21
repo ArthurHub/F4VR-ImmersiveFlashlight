@@ -4,17 +4,6 @@
 
 namespace ImFl
 {
-    /**
-     * The possible flashlight locations in-game.
-     */
-    enum class FlashlightLocation : uint8_t
-    {
-        OnHead = 0,
-        InOffhand,
-        InPrimaryHand,
-        OnWeapon
-    };
-
     struct Utils
     {
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);

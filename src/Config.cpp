@@ -17,15 +17,15 @@ namespace ImFl
         saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightConfigLocation));
     }
 
-    void Config::saveFlashlightValues()
+    void Config::saveFlashlightValues(const FlashlightLocation location)
     {
         CSimpleIniA ini;
         if (!loadIniFromFile(ini)) {
             return;
         }
 
-        switch (flashlightConfigLocation) {
-        case FlashlightConfigLocation::OnHead:
+        switch (location) {
+        case FlashlightLocation::OnHead:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", flashlightOnHeadFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadRadius", flashlightOnHeadRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFov", flashlightOnHeadFov);
@@ -35,7 +35,8 @@ namespace ImFl
             ini.SetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath.c_str());
             break;
 
-        case FlashlightConfigLocation::InOffhand:
+        case FlashlightLocation::InOffhand:
+        case FlashlightLocation::InPrimaryHand:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", flashlightInHandFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandRadius", flashlightInHandRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFov", flashlightInHandFov);
@@ -45,7 +46,7 @@ namespace ImFl
             ini.SetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", flashlightInHandGoboPath.c_str());
             break;
 
-        case FlashlightConfigLocation::InPrimaryHand:
+        case FlashlightLocation::OnWeapon:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", flashlightOnWeaponFade);
             ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius);
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFov", flashlightOnWeaponFov);
@@ -62,13 +63,13 @@ namespace ImFl
     /**
      * Load the default config and set the current flashlight values to the defaults.
      */
-    void Config::resetFlashlightValuesToDefault()
+    void Config::resetFlashlightValuesToDefault(const FlashlightLocation location)
     {
         Config defaultConfig;
         defaultConfig.loadEmbeddedDefaultOnly();
 
-        switch (flashlightConfigLocation) {
-        case FlashlightConfigLocation::OnHead:
+        switch (location) {
+        case FlashlightLocation::OnHead:
             flashlightOnHeadFade = defaultConfig.flashlightOnHeadFade;
             flashlightOnHeadRadius = defaultConfig.flashlightOnHeadRadius;
             flashlightOnHeadFov = defaultConfig.flashlightOnHeadFov;
@@ -77,7 +78,8 @@ namespace ImFl
             flashlightOnHeadColorBlue = defaultConfig.flashlightOnHeadColorBlue;
             flashlightOnHeadGoboPath = defaultConfig.flashlightOnHeadGoboPath;
             break;
-        case FlashlightConfigLocation::InOffhand:
+        case FlashlightLocation::InOffhand:
+        case FlashlightLocation::InPrimaryHand:
             flashlightInHandFade = defaultConfig.flashlightInHandFade;
             flashlightInHandRadius = defaultConfig.flashlightInHandRadius;
             flashlightInHandFov = defaultConfig.flashlightInHandFov;
@@ -86,7 +88,7 @@ namespace ImFl
             flashlightInHandColorBlue = defaultConfig.flashlightInHandColorBlue;
             flashlightInHandGoboPath = defaultConfig.flashlightInHandGoboPath;
             break;
-        case FlashlightConfigLocation::InPrimaryHand:
+        case FlashlightLocation::OnWeapon:
             flashlightOnWeaponFade = defaultConfig.flashlightOnWeaponFade;
             flashlightOnWeaponRadius = defaultConfig.flashlightOnWeaponRadius;
             flashlightOnWeaponFov = defaultConfig.flashlightOnWeaponFov;
