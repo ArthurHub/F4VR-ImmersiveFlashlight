@@ -1,18 +1,19 @@
-# F4VR Immersive Flashlight
+# Immersive Flashlight VR
 
-Fallout 4 VR mod for immersive and highly configurable flashlight replacement.
+A highly versatile and configurable Pip-Boy flashlight replacement mod that allows the player to hold the flashlight in hand, attach it to the head, or mount it on a weapon, with separate per-mode settings for beam intensity, distance, spread, color, and gobo.
 
 ## Nexus
 
-TBD
+[Immersive Flashlight VR](https://www.nexusmods.com/fallout4/mods/99342)
 
 ## Wiki
 
-- [Home](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki)
+- [Main](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki)
+- [FAQ \ Troubleshoot](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki/FAQ-%5C-Troubleshoot)
 
 ## Developers
 
-- [Getting Started](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki/Dev-%E2%80%90-Getting-Started)
+- [Development](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki/Development)
 
 ## Support
 
@@ -22,13 +23,6 @@ If you like my work, consider helping out.
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G61G72WH)
 
-## Credits
+## Credit
 
-Modding is built on the community.
-I couldn't do it without people public code.
-
-- rollingrock
-- alandtse
-- Ryan-rsm-McKenzie
-- [CommonLib](https://github.com/alandtse/CommonLibVR/tree/vr) contributors
-- [F4SE Team](https://skse.silverlock.org/)
+- [Credit and Thanks](https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki#credits--thanks)
