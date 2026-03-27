@@ -2,11 +2,14 @@
 
 #include "Config.h"
 
+#include <optional>
+
 namespace ImFl
 {
     struct Utils
     {
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);
+        static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
         static void refreshFlashlightLocation();
         static void toggleLightRefreshValues();
         static void setLightValues();
@@ -15,7 +18,7 @@ namespace ImFl
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;
 
-        // ref configs to specific flashlight values
+        // References to the config values for the active runtime flashlight location.
         static inline float* flashlightFade = nullptr;
         static inline int* flashlightRadius = nullptr;
         static inline float* flashlightFov = nullptr;
@@ -30,5 +33,6 @@ namespace ImFl
         static void refreshConfigReferences();
 
         inline static std::unordered_map<std::string, RE::NiTexture*> _goboTextures;
+        inline static std::optional<FlashlightLocation> _runtimeLocationOverride;
     };
 }

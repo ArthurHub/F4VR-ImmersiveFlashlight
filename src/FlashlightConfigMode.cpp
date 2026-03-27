@@ -65,6 +65,12 @@ namespace
         return "Unknown";
     }
 
+    void setConfigModeFlashlightLocation(const ImFl::FlashlightLocation location)
+    {
+        ImFl::Utils::setFlashlightRuntimeLocationOverride(location);
+        ImFl::Utils::turnFlashlightOn();
+    }
+
     void loadGoboTextureFiles()
     {
         const fs::path pathBase{ R"(data\Textures\ImmersiveFlashlightVR\Gobos)" };
@@ -149,6 +155,7 @@ namespace ImFl
         }
 
         // reload config to discard unsaved changes
+        Utils::setFlashlightRuntimeLocationOverride(std::nullopt);
         g_config.load();
         if (f4vr::isPipboyLightOn(f4vr::getPlayer())) {
             Utils::toggleLightRefreshValues();
@@ -162,6 +169,7 @@ namespace ImFl
         _configUI.reset();
         _beamTuningTglBtn.reset();
         _onHeadFLBtn.reset();
+        _onPAHeadFLBtn.reset();
         _inHandFLBtn.reset();
         _onWeaponFLBtn.reset();
         _row1ToggleContainer.reset();
@@ -312,14 +320,17 @@ namespace ImFl
 
     void FlashlightConfigMode::switchingToOnHeadConfig()
     {
-        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
-        Utils::turnFlashlightOn();
+        setConfigModeFlashlightLocation(FlashlightLocation::OnHead);
+    }
+
+    void FlashlightConfigMode::switchingToOnPAHeadConfig()
+    {
+        setConfigModeFlashlightLocation(FlashlightLocation::OnPAHead);
     }
 
     void FlashlightConfigMode::switchingToInHandConfig()
     {
-        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
-        Utils::turnFlashlightOn();
+        setConfigModeFlashlightLocation(FlashlightLocation::InOffhand);
     }
 
     /**
@@ -332,7 +343,7 @@ namespace ImFl
             setFlashlightButtonsToggleStateByLocation();
             return;
         }
-        Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+        setConfigModeFlashlightLocation(FlashlightLocation::OnWeapon);
     }
 
     /**
@@ -362,8 +373,10 @@ namespace ImFl
         }
         switch (Utils::flashlightLocation) {
         case FlashlightLocation::OnHead:
-        case FlashlightLocation::OnPAHead:
             _onHeadFLBtn->setToggleState(true);
+            break;
+        case FlashlightLocation::OnPAHead:
+            _onPAHeadFLBtn->setToggleState(true);
             break;
         case FlashlightLocation::InOffhand:
         case FlashlightLocation::InPrimaryHand:
@@ -383,6 +396,10 @@ namespace ImFl
         _onHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_head_1x2.nif");
         _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnHeadConfig(); });
 
+        // Reuse the head button art until a dedicated PA-head asset is added.
+        _onPAHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_pa_head_ui_btn_2x3.nif");
+        _onPAHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnPAHeadConfig(); });
+
         _inHandFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_in_hand_1x3.nif");
         _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToInHandConfig(); });
 
@@ -391,6 +408,7 @@ namespace ImFl
 
         _row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
         _row1ToggleContainer->addElement(_onHeadFLBtn);
+        _row1ToggleContainer->addElement(_onPAHeadFLBtn);
         _row1ToggleContainer->addElement(_inHandFLBtn);
         _row1ToggleContainer->addElement(_onWeaponFLBtn);
         setFlashlightButtonsToggleStateByLocation();
@@ -440,5 +458,6 @@ namespace ImFl
         _configUI->addElement(header);
 
         g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
+        Utils::setFlashlightRuntimeLocationOverride(Utils::flashlightLocation);
     }
 }

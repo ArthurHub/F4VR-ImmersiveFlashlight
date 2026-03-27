@@ -20,6 +20,19 @@ namespace ImFl
     }
 
     /**
+     * Temporarily override the resolved runtime flashlight location.
+     * Used by config mode to preview and edit locations independent of current gameplay state.
+     */
+    void Utils::setFlashlightRuntimeLocationOverride(const std::optional<FlashlightLocation> locationOverride)
+    {
+        if (_runtimeLocationOverride == locationOverride) {
+            return;
+        }
+        _runtimeLocationOverride = locationOverride;
+        refreshFlashlightLocation();
+    }
+
+    /**
      * Refresh the current flashlight location based on config and game state.
      * Update the config references and reload the light values if location changed.
      */
@@ -89,6 +102,9 @@ namespace ImFl
         }
     }
 
+    /**
+     * Check if the active runtime location is any head-mounted flashlight variant.
+     */
     bool Utils::isHeadMountedFlashlight()
     {
         return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead;
@@ -113,11 +129,14 @@ namespace ImFl
 
     /**
      * Get the real flashlight location based on config and current game state.
-     * A flashlight cannot be in primary hand if weapon is drawn, it switches to on-weapon.
-     * But only for non-melee weapons, melee weapons force flashlight to offhand.
+     * A temporary override takes priority, otherwise gameplay state decides between head, PA head, hand, and weapon.
      */
     FlashlightLocation Utils::getFlashlightLocation()
     {
+        if (_runtimeLocationOverride.has_value()) {
+            return _runtimeLocationOverride.value();
+        }
+
         if (g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead) {
             return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
         }

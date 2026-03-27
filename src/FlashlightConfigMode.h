@@ -23,6 +23,7 @@ namespace ImFl
         static void saveConfig();
         static void resetConfig();
         static void switchingToOnHeadConfig();
+        static void switchingToOnPAHeadConfig();
         static void switchingToInHandConfig();
         void trySwitchingToOnWeaponConfig() const;
         void disablePlayerInput(bool disable);
@@ -33,6 +34,7 @@ namespace ImFl
         std::shared_ptr<vrui::UIContainer> _configUI;
         std::shared_ptr<vrui::UIToggleButton> _beamTuningTglBtn;
         std::shared_ptr<vrui::UIToggleButton> _onHeadFLBtn;
+        std::shared_ptr<vrui::UIToggleButton> _onPAHeadFLBtn;
         std::shared_ptr<vrui::UIToggleButton> _inHandFLBtn;
         std::shared_ptr<vrui::UIToggleButton> _onWeaponFLBtn;
         std::shared_ptr<vrui::UIToggleGroupContainer> _row1ToggleContainer;
