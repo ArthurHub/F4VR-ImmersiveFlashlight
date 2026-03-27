@@ -7,7 +7,6 @@
 #include "vrcf/VRControllersManager.h"
 #include "vrui/UIButton.h"
 #include "vrui/UIManager.h"
-#include "vrui/UIMultiStateToggleButton.h"
 #include "vrui/UIToggleGroupContainer.h"
 
 using namespace vrui;
@@ -15,6 +14,9 @@ using namespace common;
 
 namespace
 {
+    constexpr auto FLASHLIGHT_FLAGS_WITH_SHADOWS = "0000010000100001";
+    constexpr auto FLASHLIGHT_FLAGS_NO_SHADOWS = "0100000000100001";
+
     struct ColorOption
     {
         std::array<int, 3> rgb;
@@ -47,6 +49,11 @@ namespace
     }
 
     std::vector<std::string> goboTextureFilePaths;
+
+    bool areFlashlightShadowsEnabled()
+    {
+        return ImFl::g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;
+    }
 
     std::string_view getFlashlightLocationLabel(const ImFl::FlashlightLocation location)
     {
@@ -301,6 +308,16 @@ namespace ImFl
     }
 
     /**
+     * Toggle the shadows on/off for the flashlight beam. This is a global setting that affects all flashlight locations.
+     */
+    void FlashlightConfigMode::toggleBeamShadows(const bool shadowsEnabled)
+    {
+        g_config.setFlashlightFlagsBitmask(shadowsEnabled ? FLASHLIGHT_FLAGS_WITH_SHADOWS : FLASHLIGHT_FLAGS_NO_SHADOWS);
+        Utils::toggleLightRefreshValues();
+        f4vr::showNotification(std::format("Flashlight Shadows: {}\nMake sure Shadow Quality is set to HIGH in settings", shadowsEnabled ? "On" : "Off"));
+    }
+
+    /**
      * Save the flashlight values only for the current selected location.
      */
     void FlashlightConfigMode::saveConfig()
@@ -423,10 +440,15 @@ namespace ImFl
         const auto switchColorBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui_config_btn_switch_color_1x5.nif");
         switchColorBtn->setOnPressHandler([this](UIWidget*) { switchBeamColor(); });
 
+        const auto beamShadowsTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_shadows_2x4.nif");
+        beamShadowsTglBtn->setToggleState(areFlashlightShadowsEnabled());
+        beamShadowsTglBtn->setOnToggleHandler([](UIWidget*, const bool shadowsEnabled) { toggleBeamShadows(shadowsEnabled); });
+
         const auto row2Container = std::make_shared<UIContainer>("Row2", UIContainerLayout::HorizontalCenter, 0.3f);
         row2Container->addElement(_beamTuningTglBtn);
         row2Container->addElement(switchGoboBtn);
         row2Container->addElement(switchColorBtn);
+        row2Container->addElement(beamShadowsTglBtn);
 
         const auto saveBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\UI_Common\\btn_save.nif");
         saveBtn->setOnPressHandler([this](UIWidget*) { saveConfig(); });

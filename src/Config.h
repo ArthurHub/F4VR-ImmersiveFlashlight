@@ -35,6 +35,7 @@ namespace ImFl
             ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
 
         void setFlashlightLocation(FlashlightConfigLocation location);
+        void setFlashlightFlagsBitmask(const std::string& bitmask);
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 

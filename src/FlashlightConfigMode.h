@@ -20,6 +20,7 @@ namespace ImFl
         void handleBeamTuningAdjustments();
         static void switchBeamGobo();
         static void switchBeamColor();
+        static void toggleBeamShadows(bool shadowsEnabled);
         static void saveConfig();
         static void resetConfig();
         static void switchingToOnHeadConfig();

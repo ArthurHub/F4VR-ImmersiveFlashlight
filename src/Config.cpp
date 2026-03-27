@@ -17,6 +17,12 @@ namespace ImFl
         saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightConfigLocation));
     }
 
+    void Config::setFlashlightFlagsBitmask(const std::string& bitmask)
+    {
+        flashlightFlagsBitmask = bitmask;
+        saveIniConfigValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", flashlightFlagsBitmask.c_str());
+    }
+
     void Config::saveFlashlightValues(const FlashlightLocation location)
     {
         CSimpleIniA ini;
