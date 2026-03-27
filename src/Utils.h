@@ -8,6 +8,9 @@ namespace ImFl
 {
     struct Utils
     {
+        static constexpr const char* FLASHLIGHT_FLAGS_WITH_SHADOWS = "0000010000100001";
+        static constexpr const char* FLASHLIGHT_FLAGS_NO_SHADOWS = "0100000000100001";
+
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);
         static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
         static void refreshFlashlightLocation();
@@ -15,6 +18,8 @@ namespace ImFl
         static void setLightValues();
         static void turnFlashlightOn();
         static bool isHeadMountedFlashlight();
+        static bool areFlashlightShadowsEnabled();
+        static bool isVRFPSStabilizerModInstalled();
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;
 

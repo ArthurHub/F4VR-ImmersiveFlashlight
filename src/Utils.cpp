@@ -110,6 +110,11 @@ namespace ImFl
         return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead;
     }
 
+    bool Utils::areFlashlightShadowsEnabled()
+    {
+        return g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;
+    }
+
     /**
      * Load the gobo texture into the game so it will be available to the flashlight light.
      * The game caches the texture so when the path is set on "textureName" it can find it.
@@ -205,5 +210,17 @@ namespace ImFl
             flashlightGoboPath = &g_config.flashlightOnWeaponGoboPath;
             break;
         }
+    }
+
+    /**
+     * Check if the "VR FPS Stabilizer - Fallout" mod is loaded to warn the user about the incompatibility.
+     */
+    bool Utils::isVRFPSStabilizerModInstalled()
+    {
+        if (common::isDLLModLoaded("VRFPSStabilizerFallout")) {
+            logger::info("Detected incompatible 'VR FPS Stabilizer - Fallout' mod");
+            return true;
+        }
+        return false;
     }
 }

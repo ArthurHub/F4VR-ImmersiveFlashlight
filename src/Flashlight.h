@@ -16,10 +16,12 @@ namespace ImFl
         void checkSwitchingFlashlightOnHeadHand();
         static void adjustFlashlightTransformToHandOrHead();
         void triggerHapticOnce(vrcf::Hand hand);
+        void maybeShowFPSStabilizerModWarning();
 
         // to stop continuous flashlight haptic feedback
         bool _flashlightHapticActivated = false;
         bool _wasInPowerArmor = false;
         int _flashlightOnRecentlyFrames = 0;
+        uint64_t _lastVRFPSStabilizerWarningTime = 0;
     };
 }

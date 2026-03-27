@@ -14,9 +14,6 @@ using namespace common;
 
 namespace
 {
-    constexpr auto FLASHLIGHT_FLAGS_WITH_SHADOWS = "0000010000100001";
-    constexpr auto FLASHLIGHT_FLAGS_NO_SHADOWS = "0100000000100001";
-
     struct ColorOption
     {
         std::array<int, 3> rgb;
@@ -52,7 +49,7 @@ namespace
 
     bool areFlashlightShadowsEnabled()
     {
-        return ImFl::g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;
+        return ImFl::Utils::areFlashlightShadowsEnabled();
     }
 
     std::string_view getFlashlightLocationLabel(const ImFl::FlashlightLocation location)
@@ -312,7 +309,7 @@ namespace ImFl
      */
     void FlashlightConfigMode::toggleBeamShadows(const bool shadowsEnabled)
     {
-        g_config.setFlashlightFlagsBitmask(shadowsEnabled ? FLASHLIGHT_FLAGS_WITH_SHADOWS : FLASHLIGHT_FLAGS_NO_SHADOWS);
+        g_config.setFlashlightFlagsBitmask(shadowsEnabled ? Utils::FLASHLIGHT_FLAGS_WITH_SHADOWS : Utils::FLASHLIGHT_FLAGS_NO_SHADOWS);
         Utils::toggleLightRefreshValues();
         f4vr::showNotification(std::format("Flashlight Shadows: {}\nMake sure Shadow Quality is set to HIGH in settings", shadowsEnabled ? "On" : "Off"));
     }

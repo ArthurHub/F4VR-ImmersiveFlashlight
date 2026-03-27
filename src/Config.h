@@ -84,6 +84,7 @@ namespace ImFl
         // global to all flashlight locations
         float flashlightNearDistance = 0;
         std::string flashlightFlagsBitmask;
+        bool warnAboutFPSStabilizerMod = false;
 
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;

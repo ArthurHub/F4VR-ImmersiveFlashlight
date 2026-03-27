@@ -54,7 +54,7 @@ namespace ImFl
 
         handlePowerArmorTransition(isFlashlightOn);
 
-        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+        if (!isFlashlightOn) {
             return;
         }
 
@@ -63,6 +63,8 @@ namespace ImFl
         checkSwitchingFlashlightOnHeadHand();
 
         adjustFlashlightTransformToHandOrHead();
+
+        maybeShowFPSStabilizerModWarning();
     }
 
     /**
@@ -187,6 +189,26 @@ namespace ImFl
         if (!_flashlightHapticActivated) {
             _flashlightHapticActivated = true;
             triggerStrongHaptic(hand);
+        }
+    }
+
+    /**
+     * VR FPS Stabilizer mod lowers the quality of shadows. It causes the flashlight shadows to be funky, which can be confusing for users as it looks 
+     * like a bug or conflict with this mod. Warn the user about it if they have the mod installed and flashlight shadows enabled in config.
+     */
+    void Flashlight::maybeShowFPSStabilizerModWarning()
+    {
+        if (!g_config.warnAboutFPSStabilizerMod || !Utils::areFlashlightShadowsEnabled()) {
+            return;
+        }
+        if (!isNowTimePassed(_lastVRFPSStabilizerWarningTime, 5 * 60 * 1000)) {
+            return;
+        }
+
+        if (Utils::isVRFPSStabilizerModInstalled()) {
+            f4vr::showNotification(
+                "Warning: VR FPS Stabilizer mod detected.\nIt conflicts with flashlight shadows.\nDisable the mod or turn shadows off in Immersive Flashlight VR config.");
+            _lastVRFPSStabilizerWarningTime = nowMillis();
         }
     }
 }
