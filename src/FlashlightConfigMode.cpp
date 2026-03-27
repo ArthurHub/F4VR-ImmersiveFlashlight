@@ -141,6 +141,7 @@ namespace ImFl
         }
 
         logger::info("Open config by call...");
+        Utils::refreshFlashlightLocation();
         createMainConfigUI();
         Utils::turnFlashlightOn();
     }
