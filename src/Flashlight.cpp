@@ -32,6 +32,8 @@ namespace ImFl
 {
     Flashlight::Flashlight()
     {
+        _wasInPowerArmor = f4vr::isInPowerArmor();
+
         // initial setup of flashlight location and values
         Utils::refreshFlashlightLocation();
         Utils::setLightValues();
@@ -48,6 +50,10 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
+        const bool isFlashlightOn = f4vr::isPipboyLightOn(f4vr::getPlayer());
+
+        handlePowerArmorTransition(isFlashlightOn);
+
         if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
             return;
         }
@@ -57,6 +63,27 @@ namespace ImFl
         checkSwitchingFlashlightOnHeadHand();
 
         adjustFlashlightTransformToHandOrHead();
+    }
+
+    /**
+     * Restore the flashlight once on a power armor enter or exit state change if it was on recently.
+     * The recent-on window covers the vanilla behavior where the light may turn off shortly before the PA flag flips.
+     */
+    void Flashlight::handlePowerArmorTransition(bool isFlashlightOn)
+    {
+        const bool isInPowerArmor = f4vr::isInPowerArmor();
+        if (isInPowerArmor != _wasInPowerArmor) {
+            _wasInPowerArmor = isInPowerArmor;
+            const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
+            if (wasFlashlightOnRecently && !isFlashlightOn) {
+                logger::info("Restoring flashlight after power armor transition");
+                Utils::refreshFlashlightLocation();
+                Utils::setLightValues();
+                Utils::turnFlashlightOn();
+                isFlashlightOn = true;
+            }
+        }
+        _flashlightOnRecentlyFrames = isFlashlightOn ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
     }
 
     /**
