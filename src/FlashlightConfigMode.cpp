@@ -51,12 +51,34 @@ namespace
     void loadGoboTextureFiles()
     {
         const fs::path pathBase{ R"(data\Textures\ImmersiveFlashlightVR\Gobos)" };
-        for (const auto& entry : fs::directory_iterator(pathBase)) {
-            if (entry.is_regular_file()) {
-                const auto fullPath = pathBase / entry.path().filename().string();
-                goboTextureFilePaths.emplace_back(fullPath.string());
+        goboTextureFilePaths.clear();
+
+        try {
+            if (!fs::exists(pathBase) || !fs::is_directory(pathBase)) {
+                logger::warn("Gobo texture directory not found: {}", pathBase.string());
+            } else {
+                for (const auto& entry : fs::directory_iterator(pathBase)) {
+                    if (!entry.is_regular_file()) {
+                        continue;
+                    }
+
+                    auto extension = entry.path().extension().string();
+                    std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+                        return static_cast<char>(std::tolower(c));
+                    });
+
+                    if (extension != ".dds") {
+                        continue;
+                    }
+
+                    const auto fullPath = pathBase / entry.path().filename().string();
+                    goboTextureFilePaths.emplace_back(fullPath.string());
+                }
             }
+        } catch (const fs::filesystem_error& e) {
+            logger::warn("Failed to enumerate gobo texture files in {}: {}", pathBase.string(), e.what());
         }
+
         if (goboTextureFilePaths.empty()) {
             logger::warn("No gobo texture files found.");
             goboTextureFilePaths.emplace_back(R"(data\Textures\Effects\Gobos\FlashlightGobo01.DDS)");
