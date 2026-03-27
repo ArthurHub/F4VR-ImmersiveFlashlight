@@ -89,6 +89,11 @@ namespace ImFl
         }
     }
 
+    bool Utils::isHeadMountedFlashlight()
+    {
+        return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead;
+    }
+
     /**
      * Load the gobo texture into the game so it will be available to the flashlight light.
      * The game caches the texture so when the path is set on "textureName" it can find it.
@@ -114,7 +119,7 @@ namespace ImFl
     FlashlightLocation Utils::getFlashlightLocation()
     {
         if (g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead) {
-            return FlashlightLocation::OnHead;
+            return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
         }
 
         if (g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand) {
@@ -148,6 +153,16 @@ namespace ImFl
             flashlightColorGreen = &g_config.flashlightOnHeadColorGreen;
             flashlightColorBlue = &g_config.flashlightOnHeadColorBlue;
             flashlightGoboPath = &g_config.flashlightOnHeadGoboPath;
+            break;
+
+        case FlashlightLocation::OnPAHead:
+            flashlightFade = &g_config.flashlightOnPAHeadFade;
+            flashlightRadius = &g_config.flashlightOnPAHeadRadius;
+            flashlightFov = &g_config.flashlightOnPAHeadFov;
+            flashlightColorRed = &g_config.flashlightOnPAHeadColorRed;
+            flashlightColorGreen = &g_config.flashlightOnPAHeadColorGreen;
+            flashlightColorBlue = &g_config.flashlightOnPAHeadColorBlue;
+            flashlightGoboPath = &g_config.flashlightOnPAHeadGoboPath;
             break;
 
         case FlashlightLocation::InOffhand:

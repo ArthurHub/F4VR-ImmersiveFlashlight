@@ -48,6 +48,23 @@ namespace
 
     std::vector<std::string> goboTextureFilePaths;
 
+    std::string_view getFlashlightLocationLabel(const ImFl::FlashlightLocation location)
+    {
+        switch (location) {
+        case ImFl::FlashlightLocation::OnHead:
+            return "On Head";
+        case ImFl::FlashlightLocation::OnPAHead:
+            return "On PA Head";
+        case ImFl::FlashlightLocation::OnWeapon:
+            return "On Weapon";
+        case ImFl::FlashlightLocation::InOffhand:
+        case ImFl::FlashlightLocation::InPrimaryHand:
+            return "In Hand";
+        }
+
+        return "Unknown";
+    }
+
     void loadGoboTextureFiles()
     {
         const fs::path pathBase{ R"(data\Textures\ImmersiveFlashlightVR\Gobos)" };
@@ -279,12 +296,7 @@ namespace ImFl
      */
     void FlashlightConfigMode::saveConfig()
     {
-        f4vr::showNotification(std::format("{} flashlight beam values saved",
-            Utils::flashlightLocation == FlashlightLocation::OnHead
-            ? "On Head"
-            : Utils::flashlightLocation == FlashlightLocation::OnWeapon
-            ? "On Weapon"
-            : "In Hand"));
+        f4vr::showNotification(std::format("{} flashlight beam values saved", getFlashlightLocationLabel(Utils::flashlightLocation)));
         g_config.saveFlashlightValues(Utils::flashlightLocation);
     }
 
@@ -293,12 +305,7 @@ namespace ImFl
      */
     void FlashlightConfigMode::resetConfig()
     {
-        f4vr::showNotification(std::format("{} flashlight beam values reset to default",
-            Utils::flashlightLocation == FlashlightLocation::OnHead
-            ? "On Head"
-            : Utils::flashlightLocation == FlashlightLocation::OnWeapon
-            ? "On Weapon"
-            : "In Hand"));
+        f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(Utils::flashlightLocation)));
         g_config.resetFlashlightValuesToDefault(Utils::flashlightLocation);
         Utils::toggleLightRefreshValues();
     }
@@ -355,6 +362,7 @@ namespace ImFl
         }
         switch (Utils::flashlightLocation) {
         case FlashlightLocation::OnHead:
+        case FlashlightLocation::OnPAHead:
             _onHeadFLBtn->setToggleState(true);
             break;
         case FlashlightLocation::InOffhand:

@@ -14,6 +14,7 @@ namespace ImFl
     enum class FlashlightLocation : uint8_t
     {
         OnHead = 0,
+        OnPAHead,
         InOffhand,
         InPrimaryHand,
         OnWeapon
@@ -49,6 +50,16 @@ namespace ImFl
         int flashlightOnHeadColorBlue = 0;
         std::string flashlightOnHeadGoboPath;
         float flashlightOnHeadAngleOffset = 0;
+
+        // flashlight values on power armor head
+        float flashlightOnPAHeadFade = 0.0f;
+        int flashlightOnPAHeadRadius = 0;
+        float flashlightOnPAHeadFov = 0.0f;
+        int flashlightOnPAHeadColorRed = 0;
+        int flashlightOnPAHeadColorGreen = 0;
+        int flashlightOnPAHeadColorBlue = 0;
+        std::string flashlightOnPAHeadGoboPath;
+        float flashlightOnPAHeadAngleOffset = 0;
 
         // flashlight values in hands
         float flashlightInHandFade = 0.0f;

@@ -14,7 +14,7 @@ namespace
 {
     bool isAllowedToSwitchHeadAndPrimaryHand()
     {
-        if (ImFl::Utils::flashlightLocation != ImFl::FlashlightLocation::OnHead) {
+        if (!ImFl::Utils::isHeadMountedFlashlight()) {
             // allow switching from primary hand to head with or without a weapon
             return ImFl::Utils::flashlightLocation == ImFl::FlashlightLocation::InPrimaryHand || ImFl::Utils::flashlightLocation == ImFl::FlashlightLocation::OnWeapon;
         }
@@ -71,10 +71,10 @@ namespace ImFl
 
         // switch between head and offhand
         const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(offhandPos - hmdPos) < 12;
-        if (isOffhandCloseToHMD && (Utils::flashlightLocation == FlashlightLocation::OnHead || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
+        if (isOffhandCloseToHMD && (Utils::isHeadMountedFlashlight() || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
             triggerHapticOnce(vrcf::Hand::Offhand);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
-                Utils::switchFlashlightConfigLocation(Utils::flashlightLocation == FlashlightLocation::OnHead
+                Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight()
                     ? FlashlightConfigLocation::InOffhand
                     : FlashlightConfigLocation::OnHead);
             }
@@ -86,7 +86,7 @@ namespace ImFl
         if (isPrimaryHandCloseToHMD && isAllowedToSwitchHeadAndPrimaryHand()) {
             triggerHapticOnce(vrcf::Hand::Primary);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Primary, g_config.switchTorchButton)) {
-                Utils::switchFlashlightConfigLocation(Utils::flashlightLocation == FlashlightLocation::OnHead
+                Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight()
                     ? FlashlightConfigLocation::InPrimaryHand
                     : FlashlightConfigLocation::OnHead);
             }
@@ -95,7 +95,7 @@ namespace ImFl
 
         // switch between offhand and primary hand
         const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12;
-        if (isHandsCloseToEachOther && Utils::flashlightLocation != FlashlightLocation::OnHead) {
+        if (isHandsCloseToEachOther && !Utils::isHeadMountedFlashlight()) {
             triggerHapticOnce(vrcf::Hand::Left);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
                 Utils::switchFlashlightConfigLocation(g_config.flashlightConfigLocation == FlashlightConfigLocation::InPrimaryHand
@@ -123,7 +123,7 @@ namespace ImFl
         lightNode->local.rotate = MatrixUtils::getIdentityMatrix();
         lightNode->local.translate = RE::NiPoint3(0, 0, 0);
 
-        if (Utils::flashlightLocation != FlashlightLocation::OnHead) {
+        if (!Utils::isHeadMountedFlashlight()) {
             // update world transforms after reverting to original
             f4vr::updateTransforms(lightNode);
 
@@ -145,8 +145,13 @@ namespace ImFl
 
             // calculate relocation transform and set to local
             lightNode->local = MatrixUtils::calculateRelocation(lightNode, attachNode, positionOffset, rotationOffset);
-        } else if (fNotEqual(g_config.flashlightOnHeadAngleOffset, 0)) {
-            lightNode->local.rotate = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -g_config.flashlightOnHeadAngleOffset, 0);
+        } else {
+            const float headAngleOffset = Utils::flashlightLocation == FlashlightLocation::OnPAHead
+                ? g_config.flashlightOnPAHeadAngleOffset
+                : g_config.flashlightOnHeadAngleOffset;
+            if (fNotEqual(headAngleOffset, 0)) {
+                lightNode->local.rotate = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -headAngleOffset, 0);
+            }
         }
     }
 

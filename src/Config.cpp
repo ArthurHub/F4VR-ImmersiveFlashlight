@@ -35,6 +35,16 @@ namespace ImFl
             ini.SetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath.c_str());
             break;
 
+        case FlashlightLocation::OnPAHead:
+            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnPAHeadFade);
+            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadRadius", flashlightOnPAHeadRadius);
+            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFov", flashlightOnPAHeadFov);
+            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorRed", flashlightOnPAHeadColorRed);
+            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorGreen", flashlightOnPAHeadColorGreen);
+            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorBlue", flashlightOnPAHeadColorBlue);
+            ini.SetValue(DEFAULT_SECTION, "sFlashlightOnPAHeadGoboPath", flashlightOnPAHeadGoboPath.c_str());
+            break;
+
         case FlashlightLocation::InOffhand:
         case FlashlightLocation::InPrimaryHand:
             ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", flashlightInHandFade);
@@ -78,6 +88,16 @@ namespace ImFl
             flashlightOnHeadColorBlue = defaultConfig.flashlightOnHeadColorBlue;
             flashlightOnHeadGoboPath = defaultConfig.flashlightOnHeadGoboPath;
             break;
+        case FlashlightLocation::OnPAHead:
+            flashlightOnPAHeadFade = defaultConfig.flashlightOnPAHeadFade;
+            flashlightOnPAHeadRadius = defaultConfig.flashlightOnPAHeadRadius;
+            flashlightOnPAHeadFov = defaultConfig.flashlightOnPAHeadFov;
+            flashlightOnPAHeadColorRed = defaultConfig.flashlightOnPAHeadColorRed;
+            flashlightOnPAHeadColorGreen = defaultConfig.flashlightOnPAHeadColorGreen;
+            flashlightOnPAHeadColorBlue = defaultConfig.flashlightOnPAHeadColorBlue;
+            flashlightOnPAHeadGoboPath = defaultConfig.flashlightOnPAHeadGoboPath;
+            flashlightOnPAHeadAngleOffset = defaultConfig.flashlightOnPAHeadAngleOffset;
+            break;
         case FlashlightLocation::InOffhand:
         case FlashlightLocation::InPrimaryHand:
             flashlightInHandFade = defaultConfig.flashlightInHandFade;
@@ -114,6 +134,16 @@ namespace ImFl
         flashlightOnHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorBlue", 190));
         flashlightOnHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
         flashlightOnHeadAngleOffset = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadAngleOffset", 0.0));
+
+        // Power armor head-mounted flashlight defaults
+        flashlightOnPAHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnHeadFade));
+        flashlightOnPAHeadRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadRadius", flashlightOnHeadRadius));
+        flashlightOnPAHeadFov = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFov", flashlightOnHeadFov));
+        flashlightOnPAHeadColorRed = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorRed", flashlightOnHeadColorRed));
+        flashlightOnPAHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorGreen", flashlightOnHeadColorGreen));
+        flashlightOnPAHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorBlue", flashlightOnHeadColorBlue));
+        flashlightOnPAHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnPAHeadGoboPath", flashlightOnHeadGoboPath.c_str());
+        flashlightOnPAHeadAngleOffset = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadAngleOffset", flashlightOnHeadAngleOffset));
 
         // In hand flashlight defaults
         flashlightInHandFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", 1.3));
