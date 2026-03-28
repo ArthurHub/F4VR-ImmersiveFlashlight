@@ -98,6 +98,26 @@ namespace ImFl
         const auto& offhandPos = f4vr::getOffhandWandNode()->world.translate;
         const auto& primaryHandPos = f4vr::getPrimaryHandWandNode()->world.translate;
 
+        // debug hand position to understand why a player doesn't have ability to switch from hand to head
+        if (logger::isDebugEnabled()) {
+            const auto offhandToHmdDiff = offhandPos - hmdPos;
+            const auto primaryHandToHmdDiff = primaryHandPos - hmdPos;
+            const auto primaryHandToOffhandDiff = primaryHandPos - offhandPos;
+            logger::sample("Head/hand debug:\n"
+                " HMD=({:.2f}, {:.2f}, {:.2f})\n"
+                " Offhand=({:.2f}, {:.2f}, {:.2f})\n"
+                " Offhand-HMD=({:.2f}, {:.2f}, {:.2f}), isOffhandCloseToHMD={}\n"
+                " Primary=({:.2f}, {:.2f}, {:.2f})"
+                " Primary-HMD=({:.2f}, {:.2f}, {:.2f}), isPrimaryHandCloseToHMD={}\n"
+                " Primary-Offhand=({:.2f}, {:.2f}, {:.2f}), isHandsCloseToEachOther={}",
+                hmdPos.x, hmdPos.y, hmdPos.z,
+                offhandPos.x, offhandPos.y, offhandPos.z,
+                offhandToHmdDiff.x, offhandToHmdDiff.y, offhandToHmdDiff.z, MatrixUtils::vec3Len(offhandPos - hmdPos) < 12,
+                primaryHandPos.x, primaryHandPos.y, primaryHandPos.z,
+                primaryHandToHmdDiff.x, primaryHandToHmdDiff.y, primaryHandToHmdDiff.z, MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12,
+                primaryHandToOffhandDiff.x, primaryHandToOffhandDiff.y, primaryHandToOffhandDiff.z, MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12);
+        }
+
         // switch between head and offhand
         const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(offhandPos - hmdPos) < 12;
         if (isOffhandCloseToHMD && (Utils::isHeadMountedFlashlight() || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
@@ -188,12 +208,13 @@ namespace ImFl
     {
         if (!_flashlightHapticActivated) {
             _flashlightHapticActivated = true;
+            logger::debug("Haptic triggered on hand: {}", Utils::getHandLabel(hand));
             triggerStrongHaptic(hand);
         }
     }
 
     /**
-     * VR FPS Stabilizer mod lowers the quality of shadows. It causes the flashlight shadows to be funky, which can be confusing for users as it looks 
+     * VR FPS Stabilizer mod lowers the quality of shadows. It causes the flashlight shadows to be funky, which can be confusing for users as it looks
      * like a bug or conflict with this mod. Warn the user about it if they have the mod installed and flashlight shadows enabled in config.
      */
     void Flashlight::maybeShowFPSStabilizerModWarning()

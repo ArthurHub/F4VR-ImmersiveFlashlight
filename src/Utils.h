@@ -4,6 +4,8 @@
 
 #include <optional>
 
+#include "vrcf/VRControllersManager.h"
+
 namespace ImFl
 {
     struct Utils
@@ -18,8 +20,10 @@ namespace ImFl
         static void setLightValues();
         static void turnFlashlightOn();
         static bool isHeadMountedFlashlight();
+        static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
         static bool areFlashlightShadowsEnabled();
         static bool isVRFPSStabilizerModInstalled();
+        static const char* getHandLabel(vrcf::Hand hand);
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;
 

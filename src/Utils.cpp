@@ -15,6 +15,7 @@ namespace ImFl
         if (g_config.flashlightConfigLocation == location) {
             return;
         }
+        logger::info("Switch flashlight location from {} to {}", getFlashlightConfigLocationLabel(g_config.flashlightConfigLocation), getFlashlightConfigLocationLabel(location));
         g_config.setFlashlightLocation(location);
         refreshFlashlightLocation();
     }
@@ -59,6 +60,7 @@ namespace ImFl
         if (!f4vr::isPipboyLightOn(player)) {
             return;
         }
+        logger::debug("Toggle light refresh values...");
         f4vr::togglePipboyLight(player);
         setLightValues();
         f4vr::togglePipboyLight(player);
@@ -110,6 +112,45 @@ namespace ImFl
         return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead;
     }
 
+    /**
+     * Get a readable label for a flashlight config location.
+     */
+    const char* Utils::getFlashlightConfigLocationLabel(const FlashlightConfigLocation location)
+    {
+        switch (location) {
+        case FlashlightConfigLocation::OnHead:
+            return "OnHead";
+        case FlashlightConfigLocation::InOffhand:
+            return "InOffhand";
+        case FlashlightConfigLocation::InPrimaryHand:
+            return "InPrimaryHand";
+        default:
+            return "Unknown";
+        }
+    }
+
+    /**
+     * Get a readable label for a VR controller hand enum.
+     */
+    const char* Utils::getHandLabel(const vrcf::Hand hand)
+    {
+        switch (hand) {
+        case vrcf::Hand::Left:
+            return "Left";
+        case vrcf::Hand::Right:
+            return "Right";
+        case vrcf::Hand::Primary:
+            return "Primary";
+        case vrcf::Hand::Offhand:
+            return "Offhand";
+        default:
+            return "Unknown";
+        }
+    }
+
+    /**
+     * Check if flashlight shadows are currently enabled in config.
+     */
     bool Utils::areFlashlightShadowsEnabled()
     {
         return g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;

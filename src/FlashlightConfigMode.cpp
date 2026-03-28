@@ -311,7 +311,11 @@ namespace ImFl
     {
         g_config.setFlashlightFlagsBitmask(shadowsEnabled ? Utils::FLASHLIGHT_FLAGS_WITH_SHADOWS : Utils::FLASHLIGHT_FLAGS_NO_SHADOWS);
         Utils::toggleLightRefreshValues();
-        f4vr::showNotification(std::format("Flashlight Shadows: {}\nMake sure Shadow Quality is set to HIGH in settings", shadowsEnabled ? "On" : "Off"));
+        if (shadowsEnabled) {
+            f4vr::showNotification(std::format("Flashlight Shadows: On\nMake sure Shadow Quality is set to HIGH in settings"));
+        } else {
+            f4vr::showNotification(std::format("Flashlight Shadows: Off"));
+        }
     }
 
     /**
