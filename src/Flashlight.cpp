@@ -43,7 +43,6 @@ namespace ImFl
             Utils::refreshFlashlightLocation();
             Utils::toggleLightRefreshValues();
         });
-
     }
 
     /**
@@ -87,7 +86,7 @@ namespace ImFl
                 Utils::setLightValues();
                 Utils::turnFlashlightOn();
                 isFlashlightOn = true;
-                _flashlightMesh.invalidate();  // skeleton changed — force re-attach next frame
+                _flashlightMesh.invalidate(); // skeleton changed — force re-attach next frame
             }
         }
         _flashlightOnRecentlyFrames = isFlashlightOn ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
@@ -191,7 +190,7 @@ namespace ImFl
                 positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
             } else {
                 attachNode = Utils::flashlightLocation == FlashlightLocation::InOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -60 - g_config.flashlightInHandControllerAngleOffset, -90);
+                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -35 - g_config.flashlightInHandControllerAngleOffset, -90);
                 const float rightHandAdjust = Utils::flashlightLocation == FlashlightLocation::InOffhand && !f4vr::isLeftHandedMode() ? 1.0f : -1.0f;
                 // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
                 positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * RE::NiPoint3(5.0f, -3.0f * rightHandAdjust, -3.0f);
@@ -211,7 +210,7 @@ namespace ImFl
 
     void Flashlight::onGameSessionLoaded()
     {
-        _flashlightMesh.invalidate();  // skeleton pointers may have changed on save load
+        _flashlightMesh.invalidate(); // skeleton pointers may have changed on save load
     }
 
     void Flashlight::triggerHapticOnce(const vrcf::Hand hand)

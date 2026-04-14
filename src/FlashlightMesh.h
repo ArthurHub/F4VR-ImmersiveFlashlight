@@ -32,7 +32,7 @@ namespace ImFl
         static RE::NiNode* resolveParentNode();
         static bool isMeshLocation();
 
-        RE::NiNode* _meshNode = nullptr;
+        RE::NiPointer<RE::NiNode> _meshNode;
         RE::NiNode* _attachedTo = nullptr;
         FlashlightLocation _attachedForLocation = FlashlightLocation::OnHead;
 

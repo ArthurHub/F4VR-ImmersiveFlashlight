@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "Utils.h"
+#include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -29,19 +30,19 @@ namespace ImFl
         }
 
         // re-attach if the skeleton pointer changed (e.g. after PA transition) or location changed
-        if (_meshNode && (parent != _attachedTo || Utils::flashlightLocation != _attachedForLocation)) {
+        if (_attachedTo && (parent != _attachedTo || Utils::flashlightLocation != _attachedForLocation)) {
             detach();
         }
 
-        if (!_meshNode) {
+        if (!_attachedTo) {
             attach(parent);
         }
     }
 
     /**
-     * Detaches the mesh and clears tracking state so the next onFrameUpdate call
-     * re-attaches from scratch. Call after power armor transitions and game session loads
-     * since the skeleton node pointers may have changed.
+     * Detaches the mesh but keeps the cached clone alive so the next onFrameUpdate call
+     * re-attaches without re-cloning. Call after power armor transitions and game session
+     * loads since the skeleton node pointers may have changed.
      */
     void FlashlightMesh::invalidate()
     {
@@ -52,40 +53,45 @@ namespace ImFl
     }
 
     /**
-     * Loads and clones the flashlight NIF, sets the configured position offset,
-     * attaches it as a child of parentNode, and refreshes the bone tree caches.
-     * Sets _loadFailed on any error to prevent repeated log spam.
+     * Attaches the flashlight mesh to parentNode. Clones the NIF on first use; subsequent
+     * calls re-use the cached node. Always re-applies the configured position offset.
      */
     void FlashlightMesh::attach(RE::NiNode* parentNode)
     {
-        const auto clone = f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME);
+        if (!_meshNode) {
+            _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
+            logger::info("FlashlightMesh: cloned NIF for location {}", static_cast<int>(Utils::flashlightLocation));
+        } else {
+            logger::info("FlashlightMesh: re-attaching cached node for location {}", static_cast<int>(Utils::flashlightLocation));
+        }
 
-        clone->local.translate = RE::NiPoint3(g_config.flashlightMeshOffsetX, g_config.flashlightMeshOffsetY, g_config.flashlightMeshOffsetZ);
+        parentNode->AttachChild(_meshNode.get(), true);
 
-        logger::info("FlashlightMesh: attach for location {}", static_cast<int>(Utils::flashlightLocation));
-        parentNode->AttachChild(clone, true);
-
-        _meshNode = clone;
         _attachedTo = parentNode;
         _attachedForLocation = Utils::flashlightLocation;
+
+        const float sign = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
+        _meshNode->local.translate = RE::NiPoint3(-g_config.flashlightMeshOffsetX, g_config.flashlightMeshOffsetY, sign * g_config.flashlightMeshOffsetZ);
+        _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * (25 - g_config.flashlightInHandControllerAngleOffset), 0, 90);
     }
 
     /**
-     * Removes the mesh node from its parent and refreshes the bone tree caches.
-     * Clears all tracking state.
+     * Removes the mesh node from its parent, keeping the clone alive in _meshNode
+     * so the next attach() can re-use it without re-cloning the NIF.
      */
     void FlashlightMesh::detach()
     {
-        if (!_meshNode) {
+        if (!_attachedTo) {
             return;
         }
 
-        if (_meshNode->parent) {
+        if (_meshNode && _meshNode->parent) {
             logger::debug<>("FlashlightMesh: detached");
-            _meshNode->parent->DetachChild(_meshNode);
+            RE::NiPointer<RE::NiAVObject> held;
+            _meshNode->parent->DetachChild(_meshNode.get(), held);
+            // held goes out of scope; _meshNode keeps the clone alive
         }
 
-        _meshNode = nullptr;
         _attachedTo = nullptr;
         _attachedForLocation = FlashlightLocation::OnHead;
     }
@@ -97,10 +103,14 @@ namespace ImFl
     RE::NiNode* FlashlightMesh::resolveParentNode()
     {
         if (Utils::flashlightLocation == FlashlightLocation::InOffhand) {
-            return f4vr::getOffhandWandNode();
+            return f4vr::isLeftHandedMode()
+                ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand")
+                : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         if (Utils::flashlightLocation == FlashlightLocation::InPrimaryHand) {
-            return f4vr::getPrimaryHandWandNode();
+            return !f4vr::isLeftHandedMode()
+                ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand")
+                : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         return nullptr;
     }
