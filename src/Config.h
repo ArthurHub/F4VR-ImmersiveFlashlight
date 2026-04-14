@@ -89,6 +89,12 @@ namespace ImFl
         // button to use to switch flashlight between head and hand
         int switchTorchButton = 2;
 
+        // flashlight mesh model in hand
+        bool showFlashlightMesh = true;
+        float flashlightMeshOffsetX = 0.0f;
+        float flashlightMeshOffsetY = 3.0f;
+        float flashlightMeshOffsetZ = -5.0f;
+
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
     };

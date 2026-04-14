@@ -177,5 +177,11 @@ namespace ImFl
 
         // change hand / head button
         switchTorchButton = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "SwitchTorchButton", 2));
+
+        // flashlight mesh model in hand
+        showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
+        flashlightMeshOffsetX = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetX", 0.0));
+        flashlightMeshOffsetY = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetY", 3.0));
+        flashlightMeshOffsetZ = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetZ", -5.0));
     }
 }

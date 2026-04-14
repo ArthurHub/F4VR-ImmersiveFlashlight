@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FlashlightMesh.h"
 #include "vrcf/VRControllersManager.h"
 
 namespace ImFl
@@ -10,6 +11,7 @@ namespace ImFl
         explicit Flashlight();
 
         void onFrameUpdate();
+        void onGameSessionLoaded();
 
     private:
         void handlePowerArmorTransition(bool isFlashlightOn);
@@ -23,5 +25,7 @@ namespace ImFl
         bool _wasInPowerArmor = false;
         int _flashlightOnRecentlyFrames = 0;
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
+
+        FlashlightMesh _flashlightMesh;
     };
 }

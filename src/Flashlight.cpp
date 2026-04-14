@@ -43,6 +43,7 @@ namespace ImFl
             Utils::refreshFlashlightLocation();
             Utils::toggleLightRefreshValues();
         });
+
     }
 
     /**
@@ -55,10 +56,13 @@ namespace ImFl
         handlePowerArmorTransition(isFlashlightOn);
 
         if (!isFlashlightOn) {
+            _flashlightMesh.onFrameUpdate(false);
             return;
         }
 
         Utils::refreshFlashlightLocation();
+
+        _flashlightMesh.onFrameUpdate(true);
 
         checkSwitchingFlashlightOnHeadHand();
 
@@ -83,6 +87,7 @@ namespace ImFl
                 Utils::setLightValues();
                 Utils::turnFlashlightOn();
                 isFlashlightOn = true;
+                _flashlightMesh.invalidate();  // skeleton changed — force re-attach next frame
             }
         }
         _flashlightOnRecentlyFrames = isFlashlightOn ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
@@ -202,6 +207,11 @@ namespace ImFl
                 lightNode->local.rotate = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -headAngleOffset, 0);
             }
         }
+    }
+
+    void Flashlight::onGameSessionLoaded()
+    {
+        _flashlightMesh.invalidate();  // skeleton pointers may have changed on save load
     }
 
     void Flashlight::triggerHapticOnce(const vrcf::Hand hand)

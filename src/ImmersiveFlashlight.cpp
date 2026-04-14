@@ -76,6 +76,9 @@ namespace ImFl
     void ImmersiveFlashlight::onGameSessionLoaded()
     {
         _flashlightConfigMode->closeConfigMode();
+        if (_flashlight) {
+            _flashlight->onGameSessionLoaded();
+        }
     }
 
     /**
