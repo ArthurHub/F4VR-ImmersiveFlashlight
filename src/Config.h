@@ -95,6 +95,13 @@ namespace ImFl
         float flashlightMeshOffsetY = 3.0f;
         float flashlightMeshOffsetZ = -5.0f;
 
+        // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
+        float flashlightHandPoseThumb = 0.35f;
+        float flashlightHandPoseIndex = 0.2f;
+        float flashlightHandPoseMiddle = 0.2f;
+        float flashlightHandPoseRing = 0.15f;
+        float flashlightHandPosePinky = 0.1f;
+
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
     };

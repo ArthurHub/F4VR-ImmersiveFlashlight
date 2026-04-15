@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "Utils.h"
+#include "api/FRIKApi.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
@@ -36,6 +37,18 @@ namespace ImFl
 
         if (!_attachedTo) {
             attach(parent);
+        }
+
+        if (frik::api::FRIKApi::inst && isMeshLocation()) {
+            const auto hand = Utils::flashlightLocation == FlashlightLocation::InOffhand
+                ? frik::api::FRIKApi::Hand::Offhand
+                : frik::api::FRIKApi::Hand::Primary;
+            frik::api::FRIKApi::inst->setHandPoseCustomFingerPositions("ImFl_Hold", hand,
+                g_config.flashlightHandPoseThumb,
+                g_config.flashlightHandPoseIndex,
+                g_config.flashlightHandPoseMiddle,
+                g_config.flashlightHandPoseRing,
+                g_config.flashlightHandPosePinky);
         }
     }
 
@@ -73,6 +86,18 @@ namespace ImFl
         const float sign = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
         _meshNode->local.translate = RE::NiPoint3(-g_config.flashlightMeshOffsetX, g_config.flashlightMeshOffsetY, sign * g_config.flashlightMeshOffsetZ);
         _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * (25 - g_config.flashlightInHandControllerAngleOffset), 0, 90);
+
+        if (frik::api::FRIKApi::inst && isMeshLocation()) {
+            const auto hand = Utils::flashlightLocation == FlashlightLocation::InOffhand
+                ? frik::api::FRIKApi::Hand::Offhand
+                : frik::api::FRIKApi::Hand::Primary;
+            frik::api::FRIKApi::inst->setHandPoseCustomFingerPositions("ImFl_Hold", hand,
+                g_config.flashlightHandPoseThumb,
+                g_config.flashlightHandPoseIndex,
+                g_config.flashlightHandPoseMiddle,
+                g_config.flashlightHandPoseRing,
+                g_config.flashlightHandPosePinky);
+        }
     }
 
     /**
@@ -90,6 +115,13 @@ namespace ImFl
             RE::NiPointer<RE::NiAVObject> held;
             _meshNode->parent->DetachChild(_meshNode.get(), held);
             // held goes out of scope; _meshNode keeps the clone alive
+        }
+
+        if (frik::api::FRIKApi::inst && isMeshLocation()) {
+            const auto hand = _attachedForLocation == FlashlightLocation::InOffhand
+                ? frik::api::FRIKApi::Hand::Offhand
+                : frik::api::FRIKApi::Hand::Primary;
+            frik::api::FRIKApi::inst->clearHandPose("ImFl_Hold", hand);
         }
 
         _attachedTo = nullptr;

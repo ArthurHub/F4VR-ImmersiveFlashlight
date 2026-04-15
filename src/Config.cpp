@@ -183,5 +183,12 @@ namespace ImFl
         flashlightMeshOffsetX = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetX", 0.0));
         flashlightMeshOffsetY = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetY", 3.0));
         flashlightMeshOffsetZ = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetZ", -5.0));
+
+        // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
+        flashlightHandPoseThumb = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseThumb", 0.35));
+        flashlightHandPoseIndex = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseIndex", 0.20));
+        flashlightHandPoseMiddle = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseMiddle", 0.20));
+        flashlightHandPoseRing = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseRing", 0.15));
+        flashlightHandPosePinky = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPosePinky", 0.10));
     }
 }
