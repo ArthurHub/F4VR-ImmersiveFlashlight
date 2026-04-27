@@ -126,16 +126,17 @@ namespace ImFl
      */
     bool ImmersiveFlashlight::registerOpenConfigViaFRIK()
     {
-        const int err = FRIKApi::initialize();
+        const int err = FRIKApi::initialize(3);
         if (err != 0) {
             logger::error("FRIK API init failed with error: {}!", err);
             return false;
         }
         logger::info("FRIK (v{}) API (v{}) init successful!", FRIKApi::inst->getModVersion(), FRIKApi::inst->getVersion());
 
-        const std::string modName(Version::PROJECT);
+        static std::string modName(Version::PROJECT);
+        static std::string buttonIconNifPath = modName + "\\ui_config_btn_flashlight_1x1.nif";
         FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
-            .buttonIconNifPath = (modName + "\\ui_config_btn_flashlight_1x1.nif").c_str(),
+            .buttonIconNifPath = buttonIconNifPath.c_str(),
             .callbackReceiverName = modName.c_str(),
             .callbackMessageType = 15,
         });

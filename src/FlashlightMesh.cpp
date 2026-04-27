@@ -7,26 +7,76 @@
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
+namespace
+{
+    constexpr const char* HAND_POSE_TAG = "ImFl_Hold";
+
+    /** Returns true when the initialized FRIK API supports v4 hand-pose features. */
+    bool isFrikApiV4()
+    {
+        return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->getVersion() >= 4;
+    }
+
+    /** Maps an Immersive Flashlight location to the matching FRIK hand. */
+    frik::api::FRIKApi::Hand getFrikHand(const ImFl::FlashlightLocation location)
+    {
+        return location == ImFl::FlashlightLocation::InOffhand
+            ? frik::api::FRIKApi::Hand::Offhand
+            : frik::api::FRIKApi::Hand::Primary;
+    }
+
+    /** 
+     * Returns true when the flashlight location should have a hand mesh. 
+     */
+    bool isMeshLocation(const ImFl::FlashlightLocation location)
+    {
+        return location == ImFl::FlashlightLocation::InOffhand
+            || location == ImFl::FlashlightLocation::InPrimaryHand;
+    }
+
+    /** 
+     * Applies the configured flashlight holding pose through the FRIK API. 
+     */
+    bool setFlashlightHandPose(const frik::api::FRIKApi::Hand hand)
+    {
+        const frik::api::FRIKApi::HandPoseData pose = {
+            .thumb = { .prox = ImFl::g_config.flashlightHandPoseThumb, .mid = ImFl::g_config.flashlightHandPoseThumb, .dist = ImFl::g_config.flashlightHandPoseThumb },
+            .index = { .prox = ImFl::g_config.flashlightHandPoseIndex, .mid = ImFl::g_config.flashlightHandPoseIndex, .dist = ImFl::g_config.flashlightHandPoseIndex },
+            .middle = { .prox = ImFl::g_config.flashlightHandPoseMiddle, .mid = ImFl::g_config.flashlightHandPoseMiddle, .dist = ImFl::g_config.flashlightHandPoseMiddle },
+            .ring = { .prox = ImFl::g_config.flashlightHandPoseRing, .mid = ImFl::g_config.flashlightHandPoseRing, .dist = ImFl::g_config.flashlightHandPoseRing },
+            .pinky = { .prox = ImFl::g_config.flashlightHandPosePinky, .mid = ImFl::g_config.flashlightHandPosePinky, .dist = ImFl::g_config.flashlightHandPosePinky },
+        };
+        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, pose, false);
+    }
+
+    /** Returns true when FRIK is actively using our hand-pose tag. */
+    frik::api::FRIKApi::HandPoseTagState getFlashlightHandPoseState(const frik::api::FRIKApi::Hand hand)
+    {
+        if (!isFrikApiV4()) {
+            return frik::api::FRIKApi::HandPoseTagState::None;
+        }
+        return frik::api::FRIKApi::inst->getHandPoseSetTagState(HAND_POSE_TAG, hand);
+    }
+}
+
 namespace ImFl
 {
-    /**
-     * Called every frame. Attaches the mesh when the flashlight is on in a hand mode,
-     * detaches it otherwise, and re-attaches if the parent node or location changed.
-     */
+    /** Updates mesh attachment, visibility, and FRIK hand-pose state for the current frame. */
     void FlashlightMesh::onFrameUpdate(const bool isFlashlightOn)
     {
         if (!g_config.showFlashlightMesh) {
+            hide(true);
             return;
         }
 
-        if (!isFlashlightOn || !isMeshLocation()) {
-            detach();
+        if (!isFlashlightOn || !isMeshLocation(Utils::flashlightLocation)) {
+            hide(true);
             return;
         }
 
         const auto parent = resolveParentNode();
         if (!parent) {
-            detach();
+            hide(true);
             return;
         }
 
@@ -35,40 +85,42 @@ namespace ImFl
             detach();
         }
 
+        const auto handPoseLocation = Utils::flashlightLocation;
+        if (_handPoseSet && _handPoseSetForLocation != handPoseLocation) {
+            clearHandPose();
+        }
+
+        const auto hand = getFrikHand(handPoseLocation);
+        auto handPoseState = _handPoseSet ? getFlashlightHandPoseState(hand) : frik::api::FRIKApi::HandPoseTagState::None;
+        if (handPoseState == frik::api::FRIKApi::HandPoseTagState::None) {
+            _handPoseSet = false;
+        }
+
+        if (!_handPoseSet && setFlashlightHandPose(hand)) {
+            _handPoseSet = true;
+            _handPoseSetForLocation = handPoseLocation;
+            handPoseState = getFlashlightHandPoseState(hand);
+        }
+
+        if (handPoseState != frik::api::FRIKApi::HandPoseTagState::Active) {
+            hide(false);
+            return;
+        }
+
         if (!_attachedTo) {
             attach(parent);
         }
 
-        if (frik::api::FRIKApi::inst && isMeshLocation()) {
-            const auto hand = Utils::flashlightLocation == FlashlightLocation::InOffhand
-                ? frik::api::FRIKApi::Hand::Offhand
-                : frik::api::FRIKApi::Hand::Primary;
-            frik::api::FRIKApi::inst->setHandPoseCustomFingerPositions("ImFl_Hold", hand,
-                g_config.flashlightHandPoseThumb,
-                g_config.flashlightHandPoseIndex,
-                g_config.flashlightHandPoseMiddle,
-                g_config.flashlightHandPoseRing,
-                g_config.flashlightHandPosePinky);
-        }
+        show();
     }
 
-    /**
-     * Detaches the mesh but keeps the cached clone alive so the next onFrameUpdate call
-     * re-attaches without re-cloning. Call after power armor transitions and game session
-     * loads since the skeleton node pointers may have changed.
-     */
+    /** Forces the cached mesh to detach so it can reattach to fresh skeleton nodes later. */
     void FlashlightMesh::invalidate()
     {
-        if (!g_config.showFlashlightMesh) {
-            return;
-        }
         detach();
     }
 
-    /**
-     * Attaches the flashlight mesh to parentNode. Clones the NIF on first use; subsequent
-     * calls re-use the cached node. Always re-applies the configured position offset.
-     */
+    /** Attaches the cached flashlight mesh to the requested parent node, cloning it if needed. */
     void FlashlightMesh::attach(RE::NiNode* parentNode)
     {
         if (!_meshNode) {
@@ -86,24 +138,9 @@ namespace ImFl
         const float sign = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
         _meshNode->local.translate = RE::NiPoint3(-g_config.flashlightMeshOffsetX, g_config.flashlightMeshOffsetY, sign * g_config.flashlightMeshOffsetZ);
         _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * (25 - g_config.flashlightInHandControllerAngleOffset), 0, 90);
-
-        if (frik::api::FRIKApi::inst && isMeshLocation()) {
-            const auto hand = Utils::flashlightLocation == FlashlightLocation::InOffhand
-                ? frik::api::FRIKApi::Hand::Offhand
-                : frik::api::FRIKApi::Hand::Primary;
-            frik::api::FRIKApi::inst->setHandPoseCustomFingerPositions("ImFl_Hold", hand,
-                g_config.flashlightHandPoseThumb,
-                g_config.flashlightHandPoseIndex,
-                g_config.flashlightHandPoseMiddle,
-                g_config.flashlightHandPoseRing,
-                g_config.flashlightHandPosePinky);
-        }
     }
 
-    /**
-     * Removes the mesh node from its parent, keeping the clone alive in _meshNode
-     * so the next attach() can re-use it without re-cloning the NIF.
-     */
+    /** Detaches the mesh from its current parent while keeping the cloned node cached. */
     void FlashlightMesh::detach()
     {
         if (!_attachedTo) {
@@ -117,20 +154,51 @@ namespace ImFl
             // held goes out of scope; _meshNode keeps the clone alive
         }
 
-        if (frik::api::FRIKApi::inst && isMeshLocation()) {
-            const auto hand = _attachedForLocation == FlashlightLocation::InOffhand
-                ? frik::api::FRIKApi::Hand::Offhand
-                : frik::api::FRIKApi::Hand::Primary;
-            frik::api::FRIKApi::inst->clearHandPose("ImFl_Hold", hand);
-        }
+        clearHandPose();
 
         _attachedTo = nullptr;
         _attachedForLocation = FlashlightLocation::OnHead;
     }
 
-    /**
-     * Returns the VR controller wand node for the current flashlight location,
-     * or nullptr if the location has no mesh (head, PA head, weapon).
+    /** 
+     * Hides the cached mesh and optionally clears this mod's FRIK hand-pose tag. 
+     */
+    void FlashlightMesh::hide(const bool clearPose) const
+    {
+        if (_meshNode && f4vr::isNodeVisible(_meshNode.get())) {
+            f4vr::setNodeVisibility(_meshNode.get(), false);
+            logger::info("FlashlightMesh: hidden");
+        }
+        if (clearPose) {
+            clearHandPose();
+        }
+    }
+
+    /** 
+     * Shows the cached mesh if it has already been cloned. 
+     */
+    void FlashlightMesh::show() const
+    {
+        if (_meshNode && !f4vr::isNodeVisible(_meshNode.get())) {
+            f4vr::setNodeVisibility(_meshNode.get(), true);
+            logger::info("FlashlightMesh: shown");
+        }
+    }
+
+    /** 
+     * Clears this mod's FRIK hand-pose tag for the currently attached location. 
+     */
+    void FlashlightMesh::clearHandPose() const
+    {
+        if (_handPoseSet && frik::api::FRIKApi::inst && isMeshLocation(_handPoseSetForLocation)) {
+            frik::api::FRIKApi::inst->clearHandPose(HAND_POSE_TAG, getFrikHand(_handPoseSetForLocation));
+            _handPoseSet = false;
+            _handPoseSetForLocation = FlashlightLocation::OnHead;
+        }
+    }
+
+    /** 
+     * Resolves the skeleton hand node for the current mesh-capable flashlight location. 
      */
     RE::NiNode* FlashlightMesh::resolveParentNode()
     {
@@ -145,15 +213,5 @@ namespace ImFl
                 : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         return nullptr;
-    }
-
-    /**
-     * Returns true when the current flashlight location warrants showing the hand mesh
-     * (InOffhand or InPrimaryHand). Head and weapon modes are excluded.
-     */
-    bool FlashlightMesh::isMeshLocation()
-    {
-        return Utils::flashlightLocation == FlashlightLocation::InOffhand
-            || Utils::flashlightLocation == FlashlightLocation::InPrimaryHand;
     }
 }
