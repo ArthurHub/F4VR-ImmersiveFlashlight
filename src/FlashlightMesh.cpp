@@ -69,6 +69,11 @@ namespace ImFl
             return;
         }
 
+        if (f4vr::isInPowerArmor()) {
+            hide(true);
+            return;
+        }
+
         if (!isFlashlightOn || !isMeshLocation(Utils::flashlightLocation)) {
             hide(true);
             return;
