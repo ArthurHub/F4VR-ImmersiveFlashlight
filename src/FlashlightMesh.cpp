@@ -25,8 +25,8 @@ namespace
             : frik::api::FRIKApi::Hand::Primary;
     }
 
-    /** 
-     * Returns true when the flashlight location should have a hand mesh. 
+    /**
+     * Returns true when the flashlight location should have a hand mesh.
      */
     bool isMeshLocation(const ImFl::FlashlightLocation location)
     {
@@ -34,8 +34,8 @@ namespace
             || location == ImFl::FlashlightLocation::InPrimaryHand;
     }
 
-    /** 
-     * Applies the configured flashlight holding pose through the FRIK API. 
+    /**
+     * Applies the configured flashlight holding pose through the FRIK API.
      */
     bool setFlashlightHandPose(const frik::api::FRIKApi::Hand hand)
     {
@@ -140,9 +140,21 @@ namespace ImFl
         _attachedTo = parentNode;
         _attachedForLocation = Utils::flashlightLocation;
 
+        setMeshTransform(g_config.flashlightMeshTransform);
+    }
+
+    /**
+     * Set the mesh node's local transform based on the provided config transform, applying location-specific adjustments.
+     */
+    void FlashlightMesh::setMeshTransform(const RE::NiTransform& transform) const
+    {
         const float sign = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
-        _meshNode->local.translate = RE::NiPoint3(-g_config.flashlightMeshOffsetX, g_config.flashlightMeshOffsetY, sign * g_config.flashlightMeshOffsetZ);
-        _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * (25 - g_config.flashlightInHandControllerAngleOffset), 0, 90);
+        _meshNode->local.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
+
+        float heading, roll, attitude;
+        common::MatrixUtils::getEulerAnglesFromMatrixDegrees(transform.rotate, &heading, &roll, &attitude);
+        _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * heading, roll, attitude);
+        _meshNode->local.scale = transform.scale;
     }
 
     /** Detaches the mesh from its current parent while keeping the cloned node cached. */
@@ -165,8 +177,8 @@ namespace ImFl
         _attachedForLocation = FlashlightLocation::OnHead;
     }
 
-    /** 
-     * Hides the cached mesh and optionally clears this mod's FRIK hand-pose tag. 
+    /**
+     * Hides the cached mesh and optionally clears this mod's FRIK hand-pose tag.
      */
     void FlashlightMesh::hide(const bool clearPose) const
     {
@@ -179,8 +191,8 @@ namespace ImFl
         }
     }
 
-    /** 
-     * Shows the cached mesh if it has already been cloned. 
+    /**
+     * Shows the cached mesh if it has already been cloned.
      */
     void FlashlightMesh::show() const
     {
@@ -190,8 +202,8 @@ namespace ImFl
         }
     }
 
-    /** 
-     * Clears this mod's FRIK hand-pose tag for the currently attached location. 
+    /**
+     * Clears this mod's FRIK hand-pose tag for the currently attached location.
      */
     void FlashlightMesh::clearHandPose() const
     {
@@ -202,8 +214,8 @@ namespace ImFl
         }
     }
 
-    /** 
-     * Resolves the skeleton hand node for the current mesh-capable flashlight location. 
+    /**
+     * Resolves the skeleton hand node for the current mesh-capable flashlight location.
      */
     RE::NiNode* FlashlightMesh::resolveParentNode()
     {

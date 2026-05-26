@@ -1,6 +1,7 @@
 #include "Config.h"
 
 #include "Utils.h"
+#include "common/MatrixUtils.h"
 
 using namespace common;
 
@@ -180,9 +181,8 @@ namespace ImFl
 
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
-        flashlightMeshOffsetX = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetX", 0.0));
-        flashlightMeshOffsetY = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetY", 3.0));
-        flashlightMeshOffsetZ = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightMeshOffsetZ", -5.0));
+        flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform",
+            common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
 
         // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
         flashlightHandPoseThumb = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseThumb", 0.35));

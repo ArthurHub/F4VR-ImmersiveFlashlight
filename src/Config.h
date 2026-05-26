@@ -91,9 +91,8 @@ namespace ImFl
 
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;
-        float flashlightMeshOffsetX = 0.0f;
-        float flashlightMeshOffsetY = 3.0f;
-        float flashlightMeshOffsetZ = -5.0f;
+        // Primary-hand pose of the mesh. Offhand mirrors Z translate and heading at attach time.
+        RE::NiTransform flashlightMeshTransform{};
 
         // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
         float flashlightHandPoseThumb = 0.35f;
