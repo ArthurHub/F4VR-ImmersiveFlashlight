@@ -103,7 +103,6 @@ namespace ImFl
             flashlightOnPAHeadColorGreen = defaultConfig.flashlightOnPAHeadColorGreen;
             flashlightOnPAHeadColorBlue = defaultConfig.flashlightOnPAHeadColorBlue;
             flashlightOnPAHeadGoboPath = defaultConfig.flashlightOnPAHeadGoboPath;
-            flashlightOnPAHeadAngleOffset = defaultConfig.flashlightOnPAHeadAngleOffset;
             break;
         case FlashlightLocation::InOffhand:
         case FlashlightLocation::InPrimaryHand:
@@ -140,7 +139,8 @@ namespace ImFl
         flashlightOnHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorGreen", 224));
         flashlightOnHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorBlue", 190));
         flashlightOnHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
-        flashlightOnHeadAngleOffset = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadAngleOffset", 0.0));
+        flashlightOnHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnHeadTransform",
+            common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
 
         // Power armor head-mounted flashlight defaults
         flashlightOnPAHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnHeadFade));
@@ -150,7 +150,7 @@ namespace ImFl
         flashlightOnPAHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorGreen", flashlightOnHeadColorGreen));
         flashlightOnPAHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorBlue", flashlightOnHeadColorBlue));
         flashlightOnPAHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnPAHeadGoboPath", flashlightOnHeadGoboPath.c_str());
-        flashlightOnPAHeadAngleOffset = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadAngleOffset", flashlightOnHeadAngleOffset));
+        flashlightOnPAHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnPAHeadTransform", flashlightOnHeadTransform);
 
         // In hand flashlight defaults
         flashlightInHandFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", 1.3));
@@ -160,7 +160,10 @@ namespace ImFl
         flashlightInHandColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorGreen", 230));
         flashlightInHandColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorBlue", 225));
         flashlightInHandGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
-        flashlightInHandControllerAngleOffset = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandControllerAngleOffset", 0.0));
+        flashlightInOffhandTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransform",
+            common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
+        flashlightInPrimaryHandTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransform",
+            common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
 
         // Attached to weapon flashlight defaults
         flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));

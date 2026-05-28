@@ -51,7 +51,7 @@ namespace ImFl
         int flashlightOnHeadColorGreen = 0;
         int flashlightOnHeadColorBlue = 0;
         std::string flashlightOnHeadGoboPath;
-        float flashlightOnHeadAngleOffset = 0;
+        RE::NiTransform flashlightOnHeadTransform{};
 
         // flashlight values on power armor head
         float flashlightOnPAHeadFade = 0.0f;
@@ -61,7 +61,7 @@ namespace ImFl
         int flashlightOnPAHeadColorGreen = 0;
         int flashlightOnPAHeadColorBlue = 0;
         std::string flashlightOnPAHeadGoboPath;
-        float flashlightOnPAHeadAngleOffset = 0;
+        RE::NiTransform flashlightOnPAHeadTransform{};
 
         // flashlight values in hands
         float flashlightInHandFade = 0.0f;
@@ -71,7 +71,9 @@ namespace ImFl
         int flashlightInHandColorGreen = 0;
         int flashlightInHandColorBlue = 0;
         std::string flashlightInHandGoboPath;
-        float flashlightInHandControllerAngleOffset = 0;
+        // Per-hand pose of the flashlight light node relative to the hand wand node.
+        RE::NiTransform flashlightInOffhandTransform{};
+        RE::NiTransform flashlightInPrimaryHandTransform{};
 
         // flashlight values attached to weapon
         float flashlightOnWeaponFade = 0.0f;

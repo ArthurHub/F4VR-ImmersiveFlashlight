@@ -164,6 +164,9 @@ namespace ImFl
     /**
      * Adjust the position of the light node to the hand that is holding it or revert to head position.
      * It is safer than moving the node as that can result in game crash.
+     *
+     * Per-location pose comes from the configured `tFlashlight*Transform` values; no hardcoded
+     * tilt/offset constants live here. Offhand and primary hand have independent transforms.
      */
     void Flashlight::adjustFlashlightTransformToHandOrHead()
     {
@@ -180,7 +183,6 @@ namespace ImFl
             // update world transforms after reverting to original
             f4vr::updateTransforms(lightNode);
 
-            // use the right arm node
             RE::NiNode* attachNode;
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
@@ -189,22 +191,22 @@ namespace ImFl
                 rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
                 positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
             } else {
-                attachNode = Utils::flashlightLocation == FlashlightLocation::InOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -35 - g_config.flashlightInHandControllerAngleOffset, -90);
-                const float rightHandAdjust = Utils::flashlightLocation == FlashlightLocation::InOffhand && !f4vr::isLeftHandedMode() ? 1.0f : -1.0f;
+                const bool isOffhand = Utils::flashlightLocation == FlashlightLocation::InOffhand;
+                attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
+                const auto& handTransform = isOffhand ? g_config.flashlightInOffhandTransform : g_config.flashlightInPrimaryHandTransform;
+                rotationOffset = handTransform.rotate;
                 // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
-                positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * RE::NiPoint3(5.0f, -3.0f * rightHandAdjust, -3.0f);
+                positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * handTransform.translate;
             }
 
             // calculate relocation transform and set to local
             lightNode->local = MatrixUtils::calculateRelocation(lightNode, attachNode, positionOffset, rotationOffset);
         } else {
-            const float headAngleOffset = Utils::flashlightLocation == FlashlightLocation::OnPAHead
-                ? g_config.flashlightOnPAHeadAngleOffset
-                : g_config.flashlightOnHeadAngleOffset;
-            if (fNotEqual(headAngleOffset, 0)) {
-                lightNode->local.rotate = MatrixUtils::getMatrixFromEulerAnglesDegrees(0, -headAngleOffset, 0);
-            }
+            const auto& headTransform = Utils::flashlightLocation == FlashlightLocation::OnPAHead
+                ? g_config.flashlightOnPAHeadTransform
+                : g_config.flashlightOnHeadTransform;
+            lightNode->local.rotate = headTransform.rotate;
+            lightNode->local.translate = headTransform.translate;
         }
     }
 
