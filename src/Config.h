@@ -2,6 +2,7 @@
 
 #include "ConfigBase.h"
 #include "Resources.h"
+#include "api/FRIKApi.h"
 
 namespace ImFl
 {
@@ -94,12 +95,9 @@ namespace ImFl
         // Primary-hand pose of the mesh. Offhand mirrors Z translate and heading at attach time.
         RE::NiTransform flashlightMeshTransform{};
 
-        // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
-        float flashlightHandPoseThumb = 0.35f;
-        float flashlightHandPoseIndex = 0.2f;
-        float flashlightHandPoseMiddle = 0.2f;
-        float flashlightHandPoseRing = 0.15f;
-        float flashlightHandPosePinky = 0.1f;
+        // Hand pose to apply (via FRIK API) while holding the flashlight mesh.
+        // Loaded as a 22-float packed list, see ConfigBase::getHandPoseValue.
+        frik::api::FRIKApi::HandPoseData flashlightHandPose{};
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

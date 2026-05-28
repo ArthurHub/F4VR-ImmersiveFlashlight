@@ -39,14 +39,7 @@ namespace
      */
     bool setFlashlightHandPose(const frik::api::FRIKApi::Hand hand)
     {
-        const frik::api::FRIKApi::HandPoseData pose = {
-            .thumb = { .prox = ImFl::g_config.flashlightHandPoseThumb, .mid = ImFl::g_config.flashlightHandPoseThumb, .dist = ImFl::g_config.flashlightHandPoseThumb },
-            .index = { .prox = ImFl::g_config.flashlightHandPoseIndex, .mid = ImFl::g_config.flashlightHandPoseIndex, .dist = ImFl::g_config.flashlightHandPoseIndex },
-            .middle = { .prox = ImFl::g_config.flashlightHandPoseMiddle, .mid = ImFl::g_config.flashlightHandPoseMiddle, .dist = ImFl::g_config.flashlightHandPoseMiddle },
-            .ring = { .prox = ImFl::g_config.flashlightHandPoseRing, .mid = ImFl::g_config.flashlightHandPoseRing, .dist = ImFl::g_config.flashlightHandPoseRing },
-            .pinky = { .prox = ImFl::g_config.flashlightHandPosePinky, .mid = ImFl::g_config.flashlightHandPosePinky, .dist = ImFl::g_config.flashlightHandPosePinky },
-        };
-        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, pose, false);
+        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, ImFl::g_config.flashlightHandPose, false);
     }
 
     /** Returns true when FRIK is actively using our hand-pose tag. */

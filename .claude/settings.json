@@ -4,7 +4,8 @@
       "Bash(cmake --build --preset default --config Debug)",
       "Bash(cmake --list-presets=build)",
       "Bash(cmake --list-presets)",
-      "Bash(cmake --build c:/Stuff/GitHub/Mine/F4VR-ImmersiveFlashlight/build --config Debug)"
+      "Bash(cmake --build c:/Stuff/GitHub/Mine/F4VR-ImmersiveFlashlight/build --config Debug)",
+      "Bash(cmake --build build --config Debug)"
     ]
   }
 }

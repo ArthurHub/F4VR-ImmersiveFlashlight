@@ -184,11 +184,16 @@ namespace ImFl
         flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform",
             common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
 
-        // finger curl values when holding the flashlight (0=fully bent, 1=fully straight)
-        flashlightHandPoseThumb = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseThumb", 0.35));
-        flashlightHandPoseIndex = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseIndex", 0.20));
-        flashlightHandPoseMiddle = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseMiddle", 0.20));
-        flashlightHandPoseRing = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPoseRing", 0.15));
-        flashlightHandPosePinky = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightHandPosePinky", 0.10));
+        // Hand pose applied via FRIK API while holding the flashlight.
+        // Default below matches the previous per-finger curl defaults (prox=mid=dist, splay/palm zero).
+        static constexpr std::array<float, 22> DEFAULT_HAND_POSE = {
+            0.35f, 0.35f, 0.35f, 0.0f, // thumb
+            0.20f, 0.20f, 0.20f, 0.0f, // index
+            0.20f, 0.20f, 0.20f, 0.0f, // middle
+            0.15f, 0.15f, 0.15f, 0.0f, // ring
+            0.10f, 0.10f, 0.10f, 0.0f, // pinky
+            0.0f, 0.0f                 // palmPitch, palmYaw
+        };
+        flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPose", DEFAULT_HAND_POSE));
     }
 }
