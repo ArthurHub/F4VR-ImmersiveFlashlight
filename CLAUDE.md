@@ -55,6 +55,12 @@ There are two related enums:
 
 Config stores independent beam settings (fade, radius, FOV, RGB, gobo path, angle offset) for each location. `Utils::setFlashlightRuntimeLocationOverride()` enables temporary override used during config UI preview.
 
+### Grip Style
+
+Hand-held locations (`InOffhand` / `InPrimaryHand`) have an additional `FlashlightGripStyle` dimension: `Forward` (thumb-up grip, controller top up) and `Overhand` (fist/ice-pick grip, controller flipped around its barrel so the top faces down while the light still points forward). `Utils::refreshGripStyle()` runs each frame and picks the style from `Config::flashlightGripMode` — `Auto` measures the angle between the wand's local +Z and world up and applies hysteresis (`fFlashlightGripOverhandTiltDegrees` + `fFlashlightGripHysteresisDegrees`); `ForwardOnly` / `OverhandOnly` lock the style.
+
+Each grip style has its own light transform (`tFlashlightIn{Offhand,PrimaryHand}Transform[Overhand]`), mesh transform (`tFlashlightMeshTransform[Overhand]`), and FRIK hand pose (`hFlashlightHandPose[Overhand]`). Light transform is re-resolved every frame; mesh transform and hand pose are re-applied by `FlashlightMesh` when the grip style changes mid-attach (no detach/reattach — same parent node).
+
 ### Config Hot-Reload
 
 `Config` subscribes to `thomasmonkman-filewatch` change events on the INI file. Changes made externally while the game is running are automatically applied without restart via `refreshFlashlightLocation()` / `setLightValues()`.

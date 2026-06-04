@@ -61,6 +61,8 @@ namespace ImFl
 
         Utils::refreshFlashlightLocation();
 
+        Utils::refreshGripStyle();
+
         _flashlightMesh.onFrameUpdate(true);
 
         checkSwitchingFlashlightOnHeadHand();
@@ -103,7 +105,7 @@ namespace ImFl
         const auto& primaryHandPos = f4vr::getPrimaryHandWandNode()->world.translate;
 
         // debug hand position to understand why a player doesn't have ability to switch from hand to head
-        if (logger::isDebugEnabled()) {
+        if (logger::isTraceEnabled()) {
             const auto offhandToHmdDiff = offhandPos - hmdPos;
             const auto primaryHandToHmdDiff = primaryHandPos - hmdPos;
             const auto primaryHandToOffhandDiff = primaryHandPos - offhandPos;
@@ -192,8 +194,11 @@ namespace ImFl
                 positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
             } else {
                 const bool isOffhand = Utils::flashlightLocation == FlashlightLocation::InOffhand;
+                const bool isOverhand = Utils::flashlightGripStyle == FlashlightGripStyle::Overhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                const auto& handTransform = isOffhand ? g_config.flashlightInOffhandTransform : g_config.flashlightInPrimaryHandTransform;
+                const auto& handTransform = isOffhand
+                    ? (isOverhand ? g_config.flashlightInOffhandTransformOverhand : g_config.flashlightInOffhandTransform)
+                    : (isOverhand ? g_config.flashlightInPrimaryHandTransformOverhand : g_config.flashlightInPrimaryHandTransform);
                 rotationOffset = handTransform.rotate;
                 // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
                 positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * handTransform.translate;

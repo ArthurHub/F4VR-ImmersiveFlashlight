@@ -35,11 +35,31 @@ namespace
     }
 
     /**
-     * Applies the configured flashlight holding pose through the FRIK API.
+     * Picks the hand pose matching the active grip style.
+     */
+    const frik::api::FRIKApi::HandPoseData& activeHandPose()
+    {
+        return ImFl::Utils::flashlightGripStyle == ImFl::FlashlightGripStyle::Overhand
+            ? ImFl::g_config.flashlightHandPoseOverhand
+            : ImFl::g_config.flashlightHandPose;
+    }
+
+    /**
+     * Picks the mesh transform matching the active grip style.
+     */
+    const RE::NiTransform& activeMeshTransform()
+    {
+        return ImFl::Utils::flashlightGripStyle == ImFl::FlashlightGripStyle::Overhand
+            ? ImFl::g_config.flashlightMeshTransformOverhand
+            : ImFl::g_config.flashlightMeshTransform;
+    }
+
+    /**
+     * Applies the flashlight hand pose for the active grip style through the FRIK API.
      */
     bool setFlashlightHandPose(const frik::api::FRIKApi::Hand hand)
     {
-        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, ImFl::g_config.flashlightHandPose, false);
+        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, activeHandPose(), false);
     }
 
     /** Returns true when FRIK is actively using our hand-pose tag. */
@@ -83,8 +103,14 @@ namespace ImFl
             detach();
         }
 
+        // grip style changes don't require re-attach (same parent), just re-apply transform.
+        if (_attachedTo && _attachedForGripStyle != Utils::flashlightGripStyle) {
+            setMeshTransform(activeMeshTransform());
+            _attachedForGripStyle = Utils::flashlightGripStyle;
+        }
+
         const auto handPoseLocation = Utils::flashlightLocation;
-        if (_handPoseSet && _handPoseSetForLocation != handPoseLocation) {
+        if (_handPoseSet && (_handPoseSetForLocation != handPoseLocation || _handPoseSetForGripStyle != Utils::flashlightGripStyle)) {
             clearHandPose();
         }
 
@@ -97,6 +123,7 @@ namespace ImFl
         if (!_handPoseSet && setFlashlightHandPose(hand)) {
             _handPoseSet = true;
             _handPoseSetForLocation = handPoseLocation;
+            _handPoseSetForGripStyle = Utils::flashlightGripStyle;
             handPoseState = getFlashlightHandPoseState(hand);
         }
 
@@ -132,8 +159,9 @@ namespace ImFl
 
         _attachedTo = parentNode;
         _attachedForLocation = Utils::flashlightLocation;
+        _attachedForGripStyle = Utils::flashlightGripStyle;
 
-        setMeshTransform(g_config.flashlightMeshTransform);
+        setMeshTransform(activeMeshTransform());
     }
 
     /**
@@ -204,6 +232,7 @@ namespace ImFl
             frik::api::FRIKApi::inst->clearHandPose(HAND_POSE_TAG, getFrikHand(_handPoseSetForLocation));
             _handPoseSet = false;
             _handPoseSetForLocation = FlashlightLocation::OnHead;
+            _handPoseSetForGripStyle = FlashlightGripStyle::Forward;
         }
     }
 

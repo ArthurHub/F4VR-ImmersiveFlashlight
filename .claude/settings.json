@@ -8,7 +8,8 @@
       "Bash(cmake --build build --config Debug)",
       "Bash(cmake --build --preset default --config Release)",
       "Bash(cmake --build --list-presets)",
-      "Bash(cmake --build build --config Debug --target ImmersiveFlashlightVR)"
+      "Bash(cmake --build build --config Debug --target ImmersiveFlashlightVR)",
+      "PowerShell(cmake --build build --config Debug 2>&1)"
     ]
   }
 }

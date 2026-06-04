@@ -29,6 +29,28 @@ namespace ImFl
         InPrimaryHand
     };
 
+    /**
+     * How the player is holding the flashlight in-hand.
+     * Forward: thumb-up grip, controller forward axis ~aligned with light direction.
+     * Overhand: fist grip (ice-pick style), controller forward axis ~pointing down/back, light still forward.
+     */
+    enum class FlashlightGripStyle : uint8_t
+    {
+        Forward = 0,
+        Overhand
+    };
+
+    /**
+     * Controls grip-style selection. Auto picks based on controller orientation;
+     * the locked modes ignore the controller and always use the named style.
+     */
+    enum class FlashlightGripMode : uint8_t
+    {
+        Auto = 0,
+        ForwardOnly,
+        OverhandOnly
+    };
+
     class Config : public ConfigBase
     {
     public:
@@ -71,9 +93,12 @@ namespace ImFl
         int flashlightInHandColorGreen = 0;
         int flashlightInHandColorBlue = 0;
         std::string flashlightInHandGoboPath;
-        // Per-hand pose of the flashlight light node relative to the hand wand node.
+        // Per-hand pose of the flashlight light node relative to the hand wand node, for the Forward grip.
         RE::NiTransform flashlightInOffhandTransform{};
         RE::NiTransform flashlightInPrimaryHandTransform{};
+        // Same, for the Overhand (fist) grip.
+        RE::NiTransform flashlightInOffhandTransformOverhand{};
+        RE::NiTransform flashlightInPrimaryHandTransformOverhand{};
 
         // flashlight values attached to weapon
         float flashlightOnWeaponFade = 0.0f;
@@ -94,12 +119,25 @@ namespace ImFl
 
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;
-        // Primary-hand pose of the mesh. Offhand mirrors Z translate and heading at attach time.
+        // Primary-hand pose of the mesh for the Forward grip. Offhand mirrors Z translate and heading at attach time.
         RE::NiTransform flashlightMeshTransform{};
+        // Same, for the Overhand (fist) grip.
+        RE::NiTransform flashlightMeshTransformOverhand{};
 
         // Hand pose to apply (via FRIK API) while holding the flashlight mesh.
         // Loaded as a 22-float packed list, see ConfigBase::getHandPoseValue.
         frik::api::FRIKApi::HandPoseData flashlightHandPose{};
+        // Same, for the Overhand (fist) grip.
+        frik::api::FRIKApi::HandPoseData flashlightHandPoseOverhand{};
+
+        // Grip-style selection: Auto/ForwardOnly/OverhandOnly. See FlashlightGripMode.
+        FlashlightGripMode flashlightGripMode = FlashlightGripMode::Auto;
+        // Auto-detect tuning. Angle (degrees) between the controller's top axis and world up: 0 = top
+        // pointing straight up (Forward grip), 180 = top pointing straight down (Overhand fist grip).
+        // The grip switches to Overhand when the tilt exceeds this threshold; it switches back to
+        // Forward when the tilt drops below threshold - hysteresis (a stable deadband).
+        float flashlightGripOverhandTiltDegrees = 0.0f;
+        float flashlightGripHysteresisDegrees = 0.0f;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

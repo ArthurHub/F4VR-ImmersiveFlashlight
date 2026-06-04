@@ -164,6 +164,10 @@ namespace ImFl
             common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
         flashlightInPrimaryHandTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransform",
             common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
+        flashlightInOffhandTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhand",
+            common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
+        flashlightInPrimaryHandTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhand",
+            common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
 
         // Attached to weapon flashlight defaults
         flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));
@@ -186,6 +190,8 @@ namespace ImFl
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
         flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform",
             common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
+        flashlightMeshTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhand",
+            common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
 
         // Hand pose applied via FRIK API while holding the flashlight.
         // Default below matches the previous per-finger curl defaults (prox=mid=dist, splay/palm zero).
@@ -198,5 +204,22 @@ namespace ImFl
             0.0f, 0.0f                 // palmPitch, palmYaw
         };
         flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPose", DEFAULT_HAND_POSE));
+
+        // Overhand grip is a fist around the flashlight body — fingers fully curled by default.
+        static constexpr std::array<float, 22> DEFAULT_HAND_POSE_OVERHAND = {
+            0.0f, 0.0f, 0.0f, 0.0f, // thumb
+            0.0f, 0.0f, 0.0f, 0.0f, // index
+            0.0f, 0.0f, 0.0f, 0.0f, // middle
+            0.0f, 0.0f, 0.0f, 0.0f, // ring
+            0.0f, 0.0f, 0.0f, 0.0f, // pinky
+            0.0f, 0.0f              // palmPitch, palmYaw
+        };
+        flashlightHandPoseOverhand = frik::api::FRIKApi::HandPoseData::fromFloats(
+            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
+
+        // Grip-style controls
+        flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));
+        flashlightGripOverhandTiltDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripOverhandTiltDegrees", 120.0));
+        flashlightGripHysteresisDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripHysteresisDegrees", 30.0));
     }
 }

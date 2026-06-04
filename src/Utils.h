@@ -16,16 +16,19 @@ namespace ImFl
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);
         static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
         static void refreshFlashlightLocation();
+        static void refreshGripStyle();
         static void toggleLightRefreshValues();
         static void setLightValues();
         static void turnFlashlightOn();
         static bool isHeadMountedFlashlight();
         static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
+        static const char* getGripStyleLabel(FlashlightGripStyle style);
         static bool areFlashlightShadowsEnabled();
         static bool isVRFPSStabilizerModInstalled();
         static const char* getHandLabel(vrcf::Hand hand);
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;
+        static inline FlashlightGripStyle flashlightGripStyle = FlashlightGripStyle::Forward;
 
         // References to the config values for the active runtime flashlight location.
         static inline float* flashlightFade = nullptr;

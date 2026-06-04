@@ -38,8 +38,10 @@ namespace ImFl
         RE::NiPointer<RE::NiNode> _meshNode;
         RE::NiNode* _attachedTo = nullptr;
         FlashlightLocation _attachedForLocation = FlashlightLocation::OnHead;
+        FlashlightGripStyle _attachedForGripStyle = FlashlightGripStyle::Forward;
         mutable bool _handPoseSet = false;
         mutable FlashlightLocation _handPoseSetForLocation = FlashlightLocation::OnHead;
+        mutable FlashlightGripStyle _handPoseSetForGripStyle = FlashlightGripStyle::Forward;
 
         static constexpr const char* MESH_NODE_NAME = "ImmersiveFlashlight";
         // f4vr::getClonedNiNodeForNifFileSetName prepends "Data/Meshes/" to this path

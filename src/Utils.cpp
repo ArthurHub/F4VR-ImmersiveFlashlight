@@ -1,7 +1,11 @@
 #include "Utils.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "Config.h"
 #include "api/FRIKApi.h"
+#include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -49,6 +53,62 @@ namespace ImFl
 
         // toggle the flashlight to reload the light values
         toggleLightRefreshValues();
+    }
+
+    /**
+     * Recompute the active grip style for the current frame.
+     * Forces Forward when no hand is holding the flashlight (head/PA/weapon), respects the locked modes,
+     * and otherwise measures the wrist roll as the angle between the controller's top axis and world up:
+     * 0° = top pointing up (Forward grip), 180 = top pointing down (Overhand fist grip). A hysteresis
+     * band around the configured threshold prevents the style from flapping at the boundary.
+     */
+    void Utils::refreshGripStyle()
+    {
+        if (g_config.flashlightGripMode == FlashlightGripMode::ForwardOnly) {
+            flashlightGripStyle = FlashlightGripStyle::Forward;
+            return;
+        }
+        if (g_config.flashlightGripMode == FlashlightGripMode::OverhandOnly) {
+            flashlightGripStyle = FlashlightGripStyle::Overhand;
+            return;
+        }
+
+        if (flashlightLocation != FlashlightLocation::InOffhand && flashlightLocation != FlashlightLocation::InPrimaryHand) {
+            flashlightGripStyle = FlashlightGripStyle::Forward;
+            return;
+        }
+
+        const auto wandNode = flashlightLocation == FlashlightLocation::InOffhand
+            ? f4vr::getOffhandWandNode()
+            : f4vr::getPrimaryHandWandNode();
+        if (!wandNode) {
+            return;
+        }
+
+        // Wand local +Z is the top of the controller. In a fist/overhand grip the wrist flips the
+        // controller around its barrel axis so its top swings from world-up to world-down. tiltDeg
+        // is the angle between the wand's local +Z and world +Z: 0 = top up, 180° = top down.
+        // clamp guards acos against floating-point overshoot of [-1, 1] from the matrix transform.
+        const RE::NiPoint3 upWorld = wandNode->world.rotate.Transpose() * RE::NiPoint3(0, 0, 1);
+        const float tiltDeg = common::MatrixUtils::radsToDegrees(std::acos(std::clamp(upWorld.z, -1.0f, 1.0f)));
+
+        const float enterOverhandDeg = g_config.flashlightGripOverhandTiltDegrees;
+        const float exitOverhandDeg = g_config.flashlightGripOverhandTiltDegrees - g_config.flashlightGripHysteresisDegrees;
+
+        const auto prevStyle = flashlightGripStyle;
+        if (flashlightGripStyle == FlashlightGripStyle::Forward) {
+            if (tiltDeg > enterOverhandDeg) {
+                flashlightGripStyle = FlashlightGripStyle::Overhand;
+            }
+        } else {
+            if (tiltDeg < exitOverhandDeg) {
+                flashlightGripStyle = FlashlightGripStyle::Forward;
+            }
+        }
+
+        if (prevStyle != flashlightGripStyle) {
+            logger::info("Grip style switched to {} (tiltDeg={:.1f})", getGripStyleLabel(flashlightGripStyle), tiltDeg);
+        }
     }
 
     /**
@@ -124,6 +184,21 @@ namespace ImFl
             return "InOffhand";
         case FlashlightConfigLocation::InPrimaryHand:
             return "InPrimaryHand";
+        default:
+            return "Unknown";
+        }
+    }
+
+    /**
+     * Get a readable label for a flashlight grip style.
+     */
+    const char* Utils::getGripStyleLabel(const FlashlightGripStyle style)
+    {
+        switch (style) {
+        case FlashlightGripStyle::Forward:
+            return "Forward";
+        case FlashlightGripStyle::Overhand:
+            return "Overhand";
         default:
             return "Unknown";
         }
