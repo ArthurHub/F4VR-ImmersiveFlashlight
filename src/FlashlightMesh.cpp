@@ -12,43 +12,28 @@ namespace
     constexpr const char* HAND_POSE_TAG = "ImFl_Hold";
 
     /** Returns true when the initialized FRIK API supports v4 hand-pose features. */
-    bool isFrikApiV4()
-    {
-        return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->getVersion() >= 4;
-    }
+    bool isFrikApiV4() { return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->getVersion() >= 4; }
 
     /** Maps an Immersive Flashlight location to the matching FRIK hand. */
     frik::api::FRIKApi::Hand getFrikHand(const ImFl::FlashlightLocation location)
     {
-        return location == ImFl::FlashlightLocation::InOffhand
-            ? frik::api::FRIKApi::Hand::Offhand
-            : frik::api::FRIKApi::Hand::Primary;
+        return location == ImFl::FlashlightLocation::InOffhand ? frik::api::FRIKApi::Hand::Offhand : frik::api::FRIKApi::Hand::Primary;
     }
 
     /**
      * Returns true when the flashlight location should have a hand mesh.
      */
-    bool isMeshLocation(const ImFl::FlashlightLocation location)
-    {
-        return location == ImFl::FlashlightLocation::InOffhand
-            || location == ImFl::FlashlightLocation::InPrimaryHand;
-    }
+    bool isMeshLocation(const ImFl::FlashlightLocation location) { return location == ImFl::FlashlightLocation::InOffhand || location == ImFl::FlashlightLocation::InPrimaryHand; }
 
     /**
      * Picks the hand pose matching the active grip style and power-armor state.
      */
-    const frik::api::FRIKApi::HandPoseData& activeHandPose()
-    {
-        return ImFl::g_config.getFlashlightHandPose(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
-    }
+    const frik::api::FRIKApi::HandPoseData& activeHandPose() { return ImFl::g_config.getFlashlightHandPose(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor()); }
 
     /**
      * Picks the mesh transform matching the active grip style and power-armor state.
      */
-    const RE::NiTransform& activeMeshTransform()
-    {
-        return ImFl::g_config.getFlashlightMeshTransform(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
-    }
+    const RE::NiTransform& activeMeshTransform() { return ImFl::g_config.getFlashlightMeshTransform(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor()); }
 
     /**
      * Applies the flashlight hand pose for the active grip style through the FRIK API.
@@ -131,10 +116,7 @@ namespace ImFl
     }
 
     /** Forces the cached mesh to detach so it can reattach to fresh skeleton nodes later. */
-    void FlashlightMesh::invalidate()
-    {
-        detach();
-    }
+    void FlashlightMesh::invalidate() { detach(); }
 
     /** Attaches the cached flashlight mesh to the requested parent node, cloning it if needed. */
     void FlashlightMesh::attach(RE::NiNode* parentNode)
@@ -233,14 +215,10 @@ namespace ImFl
     RE::NiNode* FlashlightMesh::resolveParentNode()
     {
         if (Utils::flashlightLocation == FlashlightLocation::InOffhand) {
-            return f4vr::isLeftHandedMode()
-                ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand")
-                : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
+            return f4vr::isLeftHandedMode() ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand") : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         if (Utils::flashlightLocation == FlashlightLocation::InPrimaryHand) {
-            return !f4vr::isLeftHandedMode()
-                ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand")
-                : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
+            return !f4vr::isLeftHandedMode() ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand") : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         return nullptr;
     }

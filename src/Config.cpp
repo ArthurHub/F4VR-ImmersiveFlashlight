@@ -190,8 +190,7 @@ namespace ImFl
         flashlightOnHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorGreen", 224));
         flashlightOnHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorBlue", 190));
         flashlightOnHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
-        flashlightOnHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnHeadTransform",
-            common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
+        flashlightOnHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnHeadTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
 
         // Power armor head-mounted flashlight defaults
         flashlightOnPAHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnHeadFade));
@@ -211,20 +210,21 @@ namespace ImFl
         flashlightInHandColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorGreen", 230));
         flashlightInHandColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorBlue", 225));
         flashlightInHandGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
-        flashlightInOffhandTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransform",
-            common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
-        flashlightInPrimaryHandTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransform",
-            common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
-        flashlightInOffhandTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhand",
-            common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
-        flashlightInPrimaryHandTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhand",
-            common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
+        flashlightInOffhandTransform =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransform", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
+        flashlightInPrimaryHandTransform =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransform", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
+        flashlightInOffhandTransformOverhand =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhand", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
+        flashlightInPrimaryHandTransformOverhand =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhand", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
 
         // Power-armor variants of the in-hand light transforms; default to the matching non-PA transform.
         flashlightInOffhandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformPA", flashlightInOffhandTransform);
         flashlightInPrimaryHandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformPA", flashlightInPrimaryHandTransform);
         flashlightInOffhandTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhandPA", flashlightInOffhandTransformOverhand);
-        flashlightInPrimaryHandTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhandPA", flashlightInPrimaryHandTransformOverhand);
+        flashlightInPrimaryHandTransformOverhandPA =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhandPA", flashlightInPrimaryHandTransformOverhand);
 
         // Attached to weapon flashlight defaults
         flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));
@@ -245,10 +245,9 @@ namespace ImFl
 
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
-        flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform",
-            common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
-        flashlightMeshTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhand",
-            common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
+        flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
+        flashlightMeshTransformOverhand =
+            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhand", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
         // Power-armor variants of the mesh transforms; default to the matching non-PA transform.
         flashlightMeshTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformPA", flashlightMeshTransform);
         flashlightMeshTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhandPA", flashlightMeshTransformOverhand);
@@ -261,7 +260,7 @@ namespace ImFl
             0.20f, 0.20f, 0.20f, 0.0f, // middle
             0.15f, 0.15f, 0.15f, 0.0f, // ring
             0.10f, 0.10f, 0.10f, 0.0f, // pinky
-            0.0f, 0.0f                 // palmPitch, palmYaw
+            0.0f, 0.0f // palmPitch, palmYaw
         };
         flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPose", DEFAULT_HAND_POSE));
 
@@ -272,16 +271,15 @@ namespace ImFl
             0.0f, 0.0f, 0.0f, 0.0f, // middle
             0.0f, 0.0f, 0.0f, 0.0f, // ring
             0.0f, 0.0f, 0.0f, 0.0f, // pinky
-            0.0f, 0.0f              // palmPitch, palmYaw
+            0.0f, 0.0f // palmPitch, palmYaw
         };
-        flashlightHandPoseOverhand = frik::api::FRIKApi::HandPoseData::fromFloats(
-            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
+        flashlightHandPoseOverhand =
+            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
 
         // Power-armor variants of the hand poses; default to the matching non-PA pose.
-        flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(
-            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
-        flashlightHandPoseOverhandPA = frik::api::FRIKApi::HandPoseData::fromFloats(
-            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
+        flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
+        flashlightHandPoseOverhandPA =
+            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
 
         // Grip-style controls
         flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));

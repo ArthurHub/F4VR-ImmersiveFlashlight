@@ -3,8 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-.vscode
-build*
+.vscode/*
+!.vscode/
+!.vscode/settings.json
+/build*/
 
 CMakeUserPresets*.json
 
@@ -329,4 +331,3 @@ havok/
 lib/
 lib_debug/
 xbyak/
-

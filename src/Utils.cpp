@@ -21,8 +21,8 @@ namespace ImFl
         if (currentLocation == location) {
             return;
         }
-        logger::info("Switch flashlight location {} from {} to {}", inPowerArmor ? "(in PA)" : "(out of PA)",
-            getFlashlightConfigLocationLabel(currentLocation), getFlashlightConfigLocationLabel(location));
+        logger::info("Switch flashlight location {} from {} to {}", inPowerArmor ? "(in PA)" : "(out of PA)", getFlashlightConfigLocationLabel(currentLocation),
+            getFlashlightConfigLocationLabel(location));
         g_config.setFlashlightLocation(location, inPowerArmor);
         refreshFlashlightLocation();
     }
@@ -90,9 +90,7 @@ namespace ImFl
             return;
         }
 
-        const auto wandNode = flashlightLocation == FlashlightLocation::InOffhand
-            ? f4vr::getOffhandWandNode()
-            : f4vr::getPrimaryHandWandNode();
+        const auto wandNode = flashlightLocation == FlashlightLocation::InOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
         if (!wandNode) {
             return;
         }
@@ -179,10 +177,7 @@ namespace ImFl
     /**
      * Check if the active runtime location is any head-mounted flashlight variant.
      */
-    bool Utils::isHeadMountedFlashlight()
-    {
-        return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead;
-    }
+    bool Utils::isHeadMountedFlashlight() { return flashlightLocation == FlashlightLocation::OnHead || flashlightLocation == FlashlightLocation::OnPAHead; }
 
     /**
      * Get a readable label for a flashlight config location.
@@ -238,10 +233,7 @@ namespace ImFl
     /**
      * Check if flashlight shadows are currently enabled in config.
      */
-    bool Utils::areFlashlightShadowsEnabled()
-    {
-        return g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;
-    }
+    bool Utils::areFlashlightShadowsEnabled() { return g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS; }
 
     /**
      * Load the gobo texture into the game so it will be available to the flashlight light.

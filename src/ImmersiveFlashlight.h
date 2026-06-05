@@ -10,13 +10,7 @@ namespace ImFl
     class ImmersiveFlashlight : public ModBase
     {
     public:
-        ImmersiveFlashlight() :
-            ModBase(Settings(
-                Version::PROJECT,
-                Version::NAME,
-                &g_config,
-                32,
-                true)) {}
+        ImmersiveFlashlight() : ModBase(Settings(Version::PROJECT, Version::NAME, &g_config, 32, true)) {}
 
         bool isConfigOpen() const;
 

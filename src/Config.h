@@ -54,8 +54,7 @@ namespace ImFl
     class Config : public ConfigBase
     {
     public:
-        explicit Config() :
-            ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
+        explicit Config() : ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
 
         void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
         void setFlashlightFlagsBitmask(const std::string& bitmask);

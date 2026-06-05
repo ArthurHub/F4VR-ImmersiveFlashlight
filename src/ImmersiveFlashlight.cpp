@@ -4,16 +4,10 @@
 #include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
-extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info)
-{
-    return g_mod->onF4SEPluginQuery(a_skse, a_info);
-}
+extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info) { return g_mod->onF4SEPluginQuery(a_skse, a_info); }
 
 // This is the entry point to the mod.
-extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_f4se)
-{
-    return g_mod->onF4SEPluginLoad(a_f4se);
-}
+extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_f4se) { return g_mod->onF4SEPluginLoad(a_f4se); }
 
 using namespace frik::api;
 
@@ -25,10 +19,7 @@ namespace ImFl
     class FrameUpdateContext : public vrui::UIModAdapter
     {
     public:
-        virtual RE::NiPoint3 getInteractionBoneWorldPosition() override
-        {
-            return FRIKApi::inst->getIndexFingerTipPosition(FRIKApi::Hand::Offhand);
-        }
+        virtual RE::NiPoint3 getInteractionBoneWorldPosition() override { return FRIKApi::inst->getIndexFingerTipPosition(FRIKApi::Hand::Offhand); }
 
         virtual void setInteractionHandPointing(const bool primaryHand, const bool toPoint) override
         {
@@ -41,10 +32,7 @@ namespace ImFl
         }
     };
 
-    bool ImmersiveFlashlight::isConfigOpen() const
-    {
-        return _flashlightConfigMode->isOpen();
-    }
+    bool ImmersiveFlashlight::isConfigOpen() const { return _flashlightConfigMode->isOpen(); }
 
     /**
      * Run F4SE plugin load and initialize the plugin given the init handle.

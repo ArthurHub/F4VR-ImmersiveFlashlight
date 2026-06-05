@@ -9,7 +9,7 @@ namespace ImFl
 {
     class FlashlightConfigMode
     {
-    public :
+    public:
         int isOpen() const;
         void openConfigMode();
         void closeConfigMode();
