@@ -9,11 +9,13 @@ F4VR-ImmersiveFlashlight is a **C++23 DLL plugin** for F4SE (Fallout 4 Script Ex
 ## Build System
 
 **Prerequisites:**
+
 - `VCPKG_ROOT` environment variable pointing to a vcpkg installation
 - Visual Studio 2022 or 2026 (MSVC toolchain, x64)
 - Git submodules initialized: `git submodule update --init --recursive`
 
 **Configure and build:**
+
 ```bash
 cmake --preset default                                    # uses VS 2026; substitute vs2022 preset if needed
 cmake --build --preset default --config Release
@@ -28,28 +30,47 @@ The default preset inherits `cmake-dev + vcpkg + windows + vs2026`. The build ou
 
 **No automated test suite** — testing is manual via in-game gameplay and the configuration UI.
 
+## Code Style
+
+clang-format enforces style (`.clang-format`): LLVM-based, 180-column limit, 4-space indent, CRLF line endings, pointer-left (`T* p`), namespace indentation enabled, braces on new lines for classes/functions/namespaces.
+
+Run formatter: `clang-format -i <file>` or format-on-save in your editor.
+
+After cloning, run `pre-commit install` once to enforce clang-format on every commit (`.pre-commit-config.yaml`); the hook lives in `.git/hooks/` and is not version-controlled.
+
+Conventions:
+
+- **Naming:** camelCase for variables/functions, PascalCase for types/classes
+- **Namespace:** all project code lives in `namespace ImFl` (the FRIK client header is `frik::api`)
+- **Logging:** spdlog throughout; use `logger::trace/debug/info/warn/error` macros from the framework
+- **C++ standard:** C++23; use modern features (ranges, constexpr, smart pointers, structured bindings)
+- **PCH:** [src/PCH.h](src/PCH.h) is the precompiled header — add widely-used includes there
+
 ## Architecture
 
 ### Plugin Lifecycle
 
 The entry point is [src/ImmersiveFlashlight.h](src/ImmersiveFlashlight.h) / [src/ImmersiveFlashlight.cpp](src/ImmersiveFlashlight.cpp), a `ModBase` subclass that implements the F4SE plugin hooks:
+
 - `F4SEPlugin_Query` / `F4SEPlugin_Load` — standard F4SE registration
 - `onGameLoaded()` — creates `Flashlight` and `FlashlightConfigMode` instances, loads config, registers the config button with FRIK, and patches the mining helmet keyword
 - `onFrameUpdate()` — drives both the flashlight logic and config UI each frame
 
 ### Main Components
 
-| Component | Files | Responsibility |
-|-----------|-------|----------------|
-| **Flashlight** | [src/Flashlight.h](src/Flashlight.h) / [.cpp](src/Flashlight.cpp) | Per-frame position tracking, on/off detection, PA transition fix, haptic feedback, location switching |
-| **FlashlightConfigMode** | [src/FlashlightConfigMode.h](src/FlashlightConfigMode.h) / [.cpp](src/FlashlightConfigMode.cpp) | In-game VR config UI: beam tuning, color picker, gobo selector, shadow toggle |
-| **Config** | [src/Config.h](src/Config.h) / [.cpp](src/Config.cpp) | INI load/save via `ConfigBase`, per-location settings, live hot-reload via file watcher |
-| **Utils** | [src/Utils.h](src/Utils.h) / [.cpp](src/Utils.cpp) | `setLightValues()`, location switching helpers, gobo texture cache, FRIK hand position getters |
-| **FRIK API** | [src/api/FRIKApi.h](src/api/FRIKApi.h) | Header-only client for FRIK mod: finger positions, hand poses, config button registration |
+| Component                | Files                                                                                           | Responsibility                                                                                                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Flashlight**           | [src/Flashlight.h](src/Flashlight.h) / [.cpp](src/Flashlight.cpp)                               | Per-frame position tracking, on/off detection, PA transition fix, haptic feedback, location switching                                                                           |
+| **FlashlightMesh**       | [src/FlashlightMesh.h](src/FlashlightMesh.h) / [.cpp](src/FlashlightMesh.cpp)                   | Cloned 3D mesh lifecycle for hand modes: attach as child of the wand node, re-apply mesh transform + hand pose on grip-style change, show/hide, `invalidate()` on PA transition |
+| **FlashlightConfigMode** | [src/FlashlightConfigMode.h](src/FlashlightConfigMode.h) / [.cpp](src/FlashlightConfigMode.cpp) | In-game VR config UI: beam tuning, color picker, gobo selector, shadow toggle                                                                                                   |
+| **Config**               | [src/Config.h](src/Config.h) / [.cpp](src/Config.cpp)                                           | INI load/save via `ConfigBase`, per-location settings, live hot-reload via file watcher                                                                                         |
+| **Utils**                | [src/Utils.h](src/Utils.h) / [.cpp](src/Utils.cpp)                                              | `setLightValues()`, location switching helpers, gobo texture cache, FRIK hand position getters                                                                                  |
+| **FRIK API**             | [src/api/FRIKApi.h](src/api/FRIKApi.h)                                                          | Header-only client for FRIK mod: finger positions, hand poses, config button registration                                                                                       |
 
 ### Location Model
 
 There are two related enums:
+
 - `FlashlightLocation` — 5 runtime positions (Head, PAHead, OffHand, PrimaryHand, OnWeapon)
 - `FlashlightConfigLocation` — 4 UI-facing positions (OnWeapon excluded from the config UI)
 
@@ -76,6 +97,7 @@ Each of these in-hand spatial configs also has a power-armor variant (`...PA` su
 ### Dependencies
 
 Pulled via vcpkg (`vcpkg.json`) with a **pinned baseline** required for CommonLibF4 compatibility:
+
 - `F4VR-CommonFramework` (git submodule at `external/`) — re-exports CommonLibF4 and the framework base classes
 - `spdlog`, `nlohmann-json`, `simpleini`, `thomasmonkman-filewatch`, `args`, `rapidcsv`, `rsm-mmio`, `xbyak`, `cpptrace`
 
@@ -87,28 +109,21 @@ A curated reference library lives at **`C:\Stuff\GitHub\Mine\Modding-Reference\F
 
 **Quick lookup guide:**
 
-| Task | File to read |
-|------|-------------|
-| Any CommonLibF4VR type/function | `Analysis/gold/CommonLibF4VR_API_REFERENCE.md` |
-| Known bugs & missing APIs in CommonLibF4VR | `knowledge-base/commonlibf4vr_f4sevr_gap_analysis.md` |
-| Attaching meshes/nodes to the player's hand | `knowledge-base/item_in_hand_techniques.md` |
-| PlayerNodes offsets (hand, head, weapon bones) | `Analysis/gold/FRIK_RE_REFERENCE.md` |
-| VR button input blocking / remapping | `knowledge-base/openvr_controller_state_interception.md` |
-| Physics, animation, scene graph RVAs | `Analysis/gold/F4VR-CommonFramework_RE_REFERENCE.md` |
-| VR globals, MCM pattern, dialogue hooks | `Analysis/gold/Neanka-mods-repo_RE_REFERENCE.md` |
-| AddressLib ID → VR address mapping | `Analysis/gold/fallout_vr_address_library_RE_REFERENCE.md` |
-| Authoritative VR struct layouts | `Analysis/gold/f4sevr_0_6_21_RE_REFERENCE.md` |
-| Full modern plugin source example | `manual-repos/mith077-Daytripper4/` |
+| Task                                           | File to read                                               |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| Any CommonLibF4VR type/function                | `Analysis/gold/CommonLibF4VR_API_REFERENCE.md`             |
+| Known bugs & missing APIs in CommonLibF4VR     | `knowledge-base/commonlibf4vr_f4sevr_gap_analysis.md`      |
+| Attaching meshes/nodes to the player's hand    | `knowledge-base/item_in_hand_techniques.md`                |
+| PlayerNodes offsets (hand, head, weapon bones) | `Analysis/gold/FRIK_RE_REFERENCE.md`                       |
+| VR button input blocking / remapping           | `knowledge-base/openvr_controller_state_interception.md`   |
+| Physics, animation, scene graph RVAs           | `Analysis/gold/F4VR-CommonFramework_RE_REFERENCE.md`       |
+| VR globals, MCM pattern, dialogue hooks        | `Analysis/gold/Neanka-mods-repo_RE_REFERENCE.md`           |
+| AddressLib ID → VR address mapping             | `Analysis/gold/fallout_vr_address_library_RE_REFERENCE.md` |
+| Authoritative VR struct layouts                | `Analysis/gold/f4sevr_0_6_21_RE_REFERENCE.md`              |
+| Full modern plugin source example              | `manual-repos/mith077-Daytripper4/`                        |
 
 **Key patterns documented there:**
+
 - `REL::VariantID(f4ID, ngID, vrRawOffset)` — for VR addresses missing from AddressLib
 - `REL::Module::IsVR()` — runtime detection (VR=1.2.72)
 - PlayerNodes table at `PlayerCharacter+0x6E0` — 43 bone pointers including `primaryWandNode` (+0x6F0), `HeadLightParentNode` (+0x808), `HmdNode` (+0x7E0)
-
-## Code Style
-
-- **Formatting:** `.clang-format` (LLVM-based) — run clang-format before committing
-- **Naming:** camelCase for variables/functions, PascalCase for types/classes
-- **Logging:** spdlog throughout; use `logger::trace/debug/info/warn/error` macros from the framework
-- **C++ standard:** C++23; use modern features (ranges, constexpr, smart pointers, structured bindings)
-- **PCH:** [src/PCH.h](src/PCH.h) is the precompiled header — add widely-used includes there
