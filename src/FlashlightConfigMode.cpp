@@ -5,6 +5,7 @@
 #include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersManager.h"
+#include "vrcf/VRControllersSuppressor.h"
 #include "vrui/UIButton.h"
 #include "vrui/UIManager.h"
 #include "vrui/UIToggleGroupContainer.h"
@@ -14,6 +15,8 @@ using namespace common;
 
 namespace
 {
+    const char* CONTROLLERS_SUPRESS_KEY = "FlashlightConfigMode";
+
     struct ColorOption
     {
         std::array<int, 3> rgb;
@@ -167,7 +170,7 @@ namespace ImFl
         }
 
         // unblock player input if needed
-        disablePlayerInput(false);
+        vrcf::VRControllersSuppress.release(CONTROLLERS_SUPRESS_KEY);
 
         // release the UI
         g_uiManager->detachElement(_configUI, true);
@@ -201,7 +204,7 @@ namespace ImFl
         _configMsg->setVisibility(!_beamTuningTglBtn->isToggleOn());
         _beamTuningMsg->setVisibility(_beamTuningTglBtn->isToggleOn());
 
-        disablePlayerInput(_beamTuningTglBtn->isToggleOn());
+        vrcf::VRControllersSuppress.setAllSuppressed(CONTROLLERS_SUPRESS_KEY, _beamTuningTglBtn->isToggleOn());
 
         setFlashlightButtonsToggleStateByLocation();
 
@@ -363,25 +366,6 @@ namespace ImFl
             return;
         }
         setConfigModeFlashlightLocation(FlashlightLocation::OnWeapon);
-    }
-
-    /**
-     * If to disable player input to prevent movement while in config mode.
-     */
-    void FlashlightConfigMode::disablePlayerInput(const bool disable)
-    {
-        if (disable) {
-            if (!_inputDisabled) {
-                _inputDisabled = true;
-                logger::info("Player controls - Disabled");
-            }
-            // always disable in case other code enabled user input (pipboy use, holsters, etc.)
-            f4vr::SetActorRestrained(RE::PlayerCharacter::GetSingleton(), true);
-        } else if (_inputDisabled) {
-            logger::info("Player controls - Enabled");
-            _inputDisabled = false;
-            f4vr::SetActorRestrained(RE::PlayerCharacter::GetSingleton(), false);
-        }
     }
 
     void FlashlightConfigMode::setFlashlightButtonsToggleStateByLocation() const

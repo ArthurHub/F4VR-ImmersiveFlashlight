@@ -27,7 +27,6 @@ namespace ImFl
         static void switchingToOnPAHeadConfig();
         static void switchingToInHandConfig();
         void trySwitchingToOnWeaponConfig() const;
-        void disablePlayerInput(bool disable);
         void setFlashlightButtonsToggleStateByLocation() const;
         void createMainConfigUI();
 
@@ -41,8 +40,6 @@ namespace ImFl
         std::shared_ptr<vrui::UIToggleGroupContainer> _row1ToggleContainer;
         std::shared_ptr<vrui::UIWidget> _configMsg;
         std::shared_ptr<vrui::UIWidget> _beamTuningMsg;
-
-        bool _inputDisabled = false;
 
         // used to limit how often we notify about last changed values
         uint64_t _lastValuesUpdateNotificationTime = 0;
