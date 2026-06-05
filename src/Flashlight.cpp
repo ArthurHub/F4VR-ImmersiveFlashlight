@@ -153,7 +153,7 @@ namespace ImFl
         if (isHandsCloseToEachOther && !Utils::isHeadMountedFlashlight()) {
             triggerHapticOnce(vrcf::Hand::Left);
             if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
-                Utils::switchFlashlightConfigLocation(g_config.flashlightConfigLocation == FlashlightConfigLocation::InPrimaryHand
+                Utils::switchFlashlightConfigLocation(Utils::getActiveFlashlightConfigLocation() == FlashlightConfigLocation::InPrimaryHand
                     ? FlashlightConfigLocation::InOffhand
                     : FlashlightConfigLocation::InPrimaryHand);
             }

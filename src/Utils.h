@@ -14,6 +14,7 @@ namespace ImFl
         static constexpr const char* FLASHLIGHT_FLAGS_NO_SHADOWS = "0100000000100001";
 
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);
+        static FlashlightConfigLocation getActiveFlashlightConfigLocation();
         static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
         static void refreshFlashlightLocation();
         static void refreshGripStyle();

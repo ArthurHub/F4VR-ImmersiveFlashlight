@@ -57,13 +57,14 @@ namespace ImFl
         explicit Config() :
             ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI) {}
 
-        void setFlashlightLocation(FlashlightConfigLocation location);
+        void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
         void setFlashlightFlagsBitmask(const std::string& bitmask);
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 
-        // Flashlight
+        // Flashlight location, configured independently for out of / in power armor (iFlashlightLocation / iFlashlightLocationInPA).
         FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
+        FlashlightConfigLocation flashlightConfigLocationInPA = FlashlightConfigLocation::OnHead;
 
         // flashlight values on head
         float flashlightOnHeadFade = 0.0f;

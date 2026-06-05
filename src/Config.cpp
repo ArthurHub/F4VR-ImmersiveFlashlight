@@ -12,10 +12,18 @@ namespace
 
 namespace ImFl
 {
-    void Config::setFlashlightLocation(const FlashlightConfigLocation location)
+    /**
+     * Persist the flashlight location for the requested power-armor state, leaving the other state's location untouched.
+     */
+    void Config::setFlashlightLocation(const FlashlightConfigLocation location, const bool inPowerArmor)
     {
-        flashlightConfigLocation = location;
-        saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(flashlightConfigLocation));
+        if (inPowerArmor) {
+            flashlightConfigLocationInPA = location;
+            saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocationInPA", static_cast<int>(location));
+        } else {
+            flashlightConfigLocation = location;
+            saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(location));
+        }
     }
 
     void Config::setFlashlightFlagsBitmask(const std::string& bitmask)
@@ -128,8 +136,9 @@ namespace ImFl
 
     void Config::loadIniConfigInternal(const CSimpleIniA& ini)
     {
-        // Flashlight location
+        // Flashlight location, separate for out of / in power armor. In-PA defaults to head (PA helmet lamp).
         flashlightConfigLocation = static_cast<FlashlightConfigLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocation", 0));
+        flashlightConfigLocationInPA = static_cast<FlashlightConfigLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocationInPA", 0));
 
         // Head-mounted flashlight defaults
         flashlightOnHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", 1.1));

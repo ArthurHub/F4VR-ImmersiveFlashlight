@@ -55,6 +55,8 @@ There are two related enums:
 
 Config stores independent beam settings (fade, radius, FOV, RGB, gobo path, angle offset) for each location. `Utils::setFlashlightRuntimeLocationOverride()` enables temporary override used during config UI preview.
 
+The chosen `FlashlightConfigLocation` is tracked separately for out of / in power armor (`iFlashlightLocation` / `iFlashlightLocationInPA`). `Utils::getActiveFlashlightConfigLocation()` picks the variant by `f4vr::isInPowerArmor()`, so `getFlashlightLocation()` resolves the runtime location against the right one and `switchFlashlightConfigLocation()` saves only the current state's value. Entering/exiting PA switches the location smoothly via the per-frame `refreshFlashlightLocation()`.
+
 ### Grip Style
 
 Hand-held locations (`InOffhand` / `InPrimaryHand`) have an additional `FlashlightGripStyle` dimension: `Forward` (thumb-up grip, controller top up) and `Overhand` (fist/ice-pick grip, controller flipped around its barrel so the top faces down while the light still points forward). `Utils::refreshGripStyle()` runs each frame and picks the style from `Config::flashlightGripMode` — `Auto` measures the angle between the wand's local +Z and world up and applies hysteresis (`fFlashlightGripOverhandTiltDegrees` + `fFlashlightGripHysteresisDegrees`); `ForwardOnly` / `OverhandOnly` lock the style.

@@ -16,12 +16,24 @@ namespace ImFl
      */
     void Utils::switchFlashlightConfigLocation(const FlashlightConfigLocation location)
     {
-        if (g_config.flashlightConfigLocation == location) {
+        const bool inPowerArmor = f4vr::isInPowerArmor();
+        const auto currentLocation = getActiveFlashlightConfigLocation();
+        if (currentLocation == location) {
             return;
         }
-        logger::info("Switch flashlight location from {} to {}", getFlashlightConfigLocationLabel(g_config.flashlightConfigLocation), getFlashlightConfigLocationLabel(location));
-        g_config.setFlashlightLocation(location);
+        logger::info("Switch flashlight location {} from {} to {}", inPowerArmor ? "(in PA)" : "(out of PA)",
+            getFlashlightConfigLocationLabel(currentLocation), getFlashlightConfigLocationLabel(location));
+        g_config.setFlashlightLocation(location, inPowerArmor);
         refreshFlashlightLocation();
+    }
+
+    /**
+     * Get the configured flashlight location currently in effect, picking the in-PA or out-of-PA
+     * variant based on whether the player is in power armor.
+     */
+    FlashlightConfigLocation Utils::getActiveFlashlightConfigLocation()
+    {
+        return f4vr::isInPowerArmor() ? g_config.flashlightConfigLocationInPA : g_config.flashlightConfigLocation;
     }
 
     /**
@@ -258,11 +270,13 @@ namespace ImFl
             return _runtimeLocationOverride.value();
         }
 
-        if (g_config.flashlightConfigLocation == FlashlightConfigLocation::OnHead) {
+        const auto configLocation = getActiveFlashlightConfigLocation();
+
+        if (configLocation == FlashlightConfigLocation::OnHead) {
             return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
         }
 
-        if (g_config.flashlightConfigLocation == FlashlightConfigLocation::InOffhand) {
+        if (configLocation == FlashlightConfigLocation::InOffhand) {
             return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon() ? FlashlightLocation::OnWeapon : FlashlightLocation::InOffhand;
         }
 
