@@ -35,23 +35,19 @@ namespace
     }
 
     /**
-     * Picks the hand pose matching the active grip style.
+     * Picks the hand pose matching the active grip style and power-armor state.
      */
     const frik::api::FRIKApi::HandPoseData& activeHandPose()
     {
-        return ImFl::Utils::flashlightGripStyle == ImFl::FlashlightGripStyle::Overhand
-            ? ImFl::g_config.flashlightHandPoseOverhand
-            : ImFl::g_config.flashlightHandPose;
+        return ImFl::g_config.getFlashlightHandPose(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
     }
 
     /**
-     * Picks the mesh transform matching the active grip style.
+     * Picks the mesh transform matching the active grip style and power-armor state.
      */
     const RE::NiTransform& activeMeshTransform()
     {
-        return ImFl::Utils::flashlightGripStyle == ImFl::FlashlightGripStyle::Overhand
-            ? ImFl::g_config.flashlightMeshTransformOverhand
-            : ImFl::g_config.flashlightMeshTransform;
+        return ImFl::g_config.getFlashlightMeshTransform(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
     }
 
     /**
@@ -78,11 +74,6 @@ namespace ImFl
     void FlashlightMesh::onFrameUpdate(const bool isFlashlightOn)
     {
         if (!g_config.showFlashlightMesh) {
-            hide(true);
-            return;
-        }
-
-        if (f4vr::isInPowerArmor()) {
             hide(true);
             return;
         }

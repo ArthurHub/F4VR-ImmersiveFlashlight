@@ -62,6 +62,11 @@ namespace ImFl
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 
+        // Resolve the active in-hand spatial config by hand / grip style / power-armor state.
+        const RE::NiTransform& getFlashlightInHandLightTransform(bool isOffhand, FlashlightGripStyle grip, bool inPowerArmor) const;
+        const RE::NiTransform& getFlashlightMeshTransform(FlashlightGripStyle grip, bool inPowerArmor) const;
+        const frik::api::FRIKApi::HandPoseData& getFlashlightHandPose(FlashlightGripStyle grip, bool inPowerArmor) const;
+
         // Flashlight location, configured independently for out of / in power armor (iFlashlightLocation / iFlashlightLocationInPA).
         FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
         FlashlightConfigLocation flashlightConfigLocationInPA = FlashlightConfigLocation::OnHead;
@@ -100,6 +105,12 @@ namespace ImFl
         // Same, for the Overhand (fist) grip.
         RE::NiTransform flashlightInOffhandTransformOverhand{};
         RE::NiTransform flashlightInPrimaryHandTransformOverhand{};
+        // Power-armor variants of the above. PA gauntlets are larger and posed differently than bare hands,
+        // so the light needs its own offsets. Each defaults to the matching non-PA transform.
+        RE::NiTransform flashlightInOffhandTransformPA{};
+        RE::NiTransform flashlightInPrimaryHandTransformPA{};
+        RE::NiTransform flashlightInOffhandTransformOverhandPA{};
+        RE::NiTransform flashlightInPrimaryHandTransformOverhandPA{};
 
         // flashlight values attached to weapon
         float flashlightOnWeaponFade = 0.0f;
@@ -124,12 +135,18 @@ namespace ImFl
         RE::NiTransform flashlightMeshTransform{};
         // Same, for the Overhand (fist) grip.
         RE::NiTransform flashlightMeshTransformOverhand{};
+        // Power-armor variants of the mesh transforms; each defaults to the matching non-PA transform.
+        RE::NiTransform flashlightMeshTransformPA{};
+        RE::NiTransform flashlightMeshTransformOverhandPA{};
 
         // Hand pose to apply (via FRIK API) while holding the flashlight mesh.
         // Loaded as a 22-float packed list, see ConfigBase::getHandPoseValue.
         frik::api::FRIKApi::HandPoseData flashlightHandPose{};
         // Same, for the Overhand (fist) grip.
         frik::api::FRIKApi::HandPoseData flashlightHandPoseOverhand{};
+        // Power-armor variants of the hand poses; each defaults to the matching non-PA pose.
+        frik::api::FRIKApi::HandPoseData flashlightHandPosePA{};
+        frik::api::FRIKApi::HandPoseData flashlightHandPoseOverhandPA{};
 
         // Grip-style selection: Auto/ForwardOnly/OverhandOnly. See FlashlightGripMode.
         FlashlightGripMode flashlightGripMode = FlashlightGripMode::Auto;

@@ -194,11 +194,8 @@ namespace ImFl
                 positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
             } else {
                 const bool isOffhand = Utils::flashlightLocation == FlashlightLocation::InOffhand;
-                const bool isOverhand = Utils::flashlightGripStyle == FlashlightGripStyle::Overhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                const auto& handTransform = isOffhand
-                    ? (isOverhand ? g_config.flashlightInOffhandTransformOverhand : g_config.flashlightInOffhandTransform)
-                    : (isOverhand ? g_config.flashlightInPrimaryHandTransformOverhand : g_config.flashlightInPrimaryHandTransform);
+                const auto& handTransform = g_config.getFlashlightInHandLightTransform(isOffhand, Utils::flashlightGripStyle, f4vr::isInPowerArmor());
                 rotationOffset = handTransform.rotate;
                 // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
                 positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * handTransform.translate;

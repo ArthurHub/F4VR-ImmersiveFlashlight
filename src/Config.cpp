@@ -32,6 +32,48 @@ namespace ImFl
         saveIniConfigValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", flashlightFlagsBitmask.c_str());
     }
 
+    /**
+     * Resolve the in-hand light-node transform for the given hand, grip style, and power-armor state.
+     */
+    const RE::NiTransform& Config::getFlashlightInHandLightTransform(const bool isOffhand, const FlashlightGripStyle grip, const bool inPowerArmor) const
+    {
+        const bool overhand = grip == FlashlightGripStyle::Overhand;
+        if (isOffhand) {
+            if (inPowerArmor) {
+                return overhand ? flashlightInOffhandTransformOverhandPA : flashlightInOffhandTransformPA;
+            }
+            return overhand ? flashlightInOffhandTransformOverhand : flashlightInOffhandTransform;
+        }
+        if (inPowerArmor) {
+            return overhand ? flashlightInPrimaryHandTransformOverhandPA : flashlightInPrimaryHandTransformPA;
+        }
+        return overhand ? flashlightInPrimaryHandTransformOverhand : flashlightInPrimaryHandTransform;
+    }
+
+    /**
+     * Resolve the flashlight mesh transform for the given grip style and power-armor state.
+     */
+    const RE::NiTransform& Config::getFlashlightMeshTransform(const FlashlightGripStyle grip, const bool inPowerArmor) const
+    {
+        const bool overhand = grip == FlashlightGripStyle::Overhand;
+        if (inPowerArmor) {
+            return overhand ? flashlightMeshTransformOverhandPA : flashlightMeshTransformPA;
+        }
+        return overhand ? flashlightMeshTransformOverhand : flashlightMeshTransform;
+    }
+
+    /**
+     * Resolve the FRIK hand pose for holding the flashlight for the given grip style and power-armor state.
+     */
+    const frik::api::FRIKApi::HandPoseData& Config::getFlashlightHandPose(const FlashlightGripStyle grip, const bool inPowerArmor) const
+    {
+        const bool overhand = grip == FlashlightGripStyle::Overhand;
+        if (inPowerArmor) {
+            return overhand ? flashlightHandPoseOverhandPA : flashlightHandPosePA;
+        }
+        return overhand ? flashlightHandPoseOverhand : flashlightHandPose;
+    }
+
     void Config::saveFlashlightValues(const FlashlightLocation location)
     {
         CSimpleIniA ini;
@@ -178,6 +220,12 @@ namespace ImFl
         flashlightInPrimaryHandTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhand",
             common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
 
+        // Power-armor variants of the in-hand light transforms; default to the matching non-PA transform.
+        flashlightInOffhandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformPA", flashlightInOffhandTransform);
+        flashlightInPrimaryHandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformPA", flashlightInPrimaryHandTransform);
+        flashlightInOffhandTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhandPA", flashlightInOffhandTransformOverhand);
+        flashlightInPrimaryHandTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhandPA", flashlightInPrimaryHandTransformOverhand);
+
         // Attached to weapon flashlight defaults
         flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));
         flashlightOnWeaponRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponRadius", 5000));
@@ -201,6 +249,9 @@ namespace ImFl
             common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
         flashlightMeshTransformOverhand = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhand",
             common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
+        // Power-armor variants of the mesh transforms; default to the matching non-PA transform.
+        flashlightMeshTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformPA", flashlightMeshTransform);
+        flashlightMeshTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhandPA", flashlightMeshTransformOverhand);
 
         // Hand pose applied via FRIK API while holding the flashlight.
         // Default below matches the previous per-finger curl defaults (prox=mid=dist, splay/palm zero).
@@ -225,6 +276,12 @@ namespace ImFl
         };
         flashlightHandPoseOverhand = frik::api::FRIKApi::HandPoseData::fromFloats(
             getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
+
+        // Power-armor variants of the hand poses; default to the matching non-PA pose.
+        flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(
+            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
+        flashlightHandPoseOverhandPA = frik::api::FRIKApi::HandPoseData::fromFloats(
+            getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
 
         // Grip-style controls
         flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));
