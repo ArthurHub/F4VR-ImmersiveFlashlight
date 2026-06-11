@@ -22,7 +22,10 @@ namespace
         return !f4vr::isNodeVisible(f4vr::getWeaponNode()) || !f4vr::isMeleeWeaponEquipped();
     }
 
-    void triggerStrongHaptic(const vrcf::Hand hand) { vrcf::VRControllers.triggerHaptic(hand, 0.05f, 0.5f); }
+    void triggerStrongHaptic(const vrcf::Hand hand)
+    {
+        vrcf::VRControllers.triggerHaptic(hand, 0.05f, 0.5f);
+    }
 }
 
 namespace ImFl
@@ -114,9 +117,26 @@ namespace ImFl
                 " Primary=({:.2f}, {:.2f}, {:.2f})"
                 " Primary-HMD=({:.2f}, {:.2f}, {:.2f}), isPrimaryHandCloseToHMD={}\n"
                 " Primary-Offhand=({:.2f}, {:.2f}, {:.2f}), isHandsCloseToEachOther={}",
-                hmdPos.x, hmdPos.y, hmdPos.z, offhandPos.x, offhandPos.y, offhandPos.z, offhandToHmdDiff.x, offhandToHmdDiff.y, offhandToHmdDiff.z,
-                MatrixUtils::vec3Len(offhandPos - hmdPos) < 12, primaryHandPos.x, primaryHandPos.y, primaryHandPos.z, primaryHandToHmdDiff.x, primaryHandToHmdDiff.y,
-                primaryHandToHmdDiff.z, MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12, primaryHandToOffhandDiff.x, primaryHandToOffhandDiff.y, primaryHandToOffhandDiff.z,
+                hmdPos.x,
+                hmdPos.y,
+                hmdPos.z,
+                offhandPos.x,
+                offhandPos.y,
+                offhandPos.z,
+                offhandToHmdDiff.x,
+                offhandToHmdDiff.y,
+                offhandToHmdDiff.z,
+                MatrixUtils::vec3Len(offhandPos - hmdPos) < 12,
+                primaryHandPos.x,
+                primaryHandPos.y,
+                primaryHandPos.z,
+                primaryHandToHmdDiff.x,
+                primaryHandToHmdDiff.y,
+                primaryHandToHmdDiff.z,
+                MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12,
+                primaryHandToOffhandDiff.x,
+                primaryHandToOffhandDiff.y,
+                primaryHandToOffhandDiff.z,
                 MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12);
         }
 

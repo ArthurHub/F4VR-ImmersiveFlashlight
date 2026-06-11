@@ -255,23 +255,55 @@ namespace ImFl
         // Hand pose applied via FRIK API while holding the flashlight.
         // Default below matches the previous per-finger curl defaults (prox=mid=dist, splay/palm zero).
         static constexpr std::array<float, 22> DEFAULT_HAND_POSE = {
-            0.35f, 0.35f, 0.35f, 0.0f, // thumb
-            0.20f, 0.20f, 0.20f, 0.0f, // index
-            0.20f, 0.20f, 0.20f, 0.0f, // middle
-            0.15f, 0.15f, 0.15f, 0.0f, // ring
-            0.10f, 0.10f, 0.10f, 0.0f, // pinky
-            0.0f, 0.0f // palmPitch, palmYaw
+            0.35f,
+            0.35f,
+            0.35f,
+            0.0f, // thumb
+            0.20f,
+            0.20f,
+            0.20f,
+            0.0f, // index
+            0.20f,
+            0.20f,
+            0.20f,
+            0.0f, // middle
+            0.15f,
+            0.15f,
+            0.15f,
+            0.0f, // ring
+            0.10f,
+            0.10f,
+            0.10f,
+            0.0f, // pinky
+            0.0f,
+            0.0f // palmPitch, palmYaw
         };
         flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPose", DEFAULT_HAND_POSE));
 
         // Overhand grip is a fist around the flashlight body — fingers fully curled by default.
         static constexpr std::array<float, 22> DEFAULT_HAND_POSE_OVERHAND = {
-            0.0f, 0.0f, 0.0f, 0.0f, // thumb
-            0.0f, 0.0f, 0.0f, 0.0f, // index
-            0.0f, 0.0f, 0.0f, 0.0f, // middle
-            0.0f, 0.0f, 0.0f, 0.0f, // ring
-            0.0f, 0.0f, 0.0f, 0.0f, // pinky
-            0.0f, 0.0f // palmPitch, palmYaw
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f, // thumb
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f, // index
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f, // middle
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f, // ring
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f, // pinky
+            0.0f,
+            0.0f // palmPitch, palmYaw
         };
         flashlightHandPoseOverhand =
             frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));

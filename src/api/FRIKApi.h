@@ -141,8 +141,28 @@ namespace frik::api
              */
             std::array<float, FLOAT_COUNT> toFloats() const
             {
-                return { thumb.prox, thumb.mid, thumb.dist, thumb.splay, index.prox, index.mid, index.dist, index.splay, middle.prox, middle.mid, middle.dist, middle.splay,
-                    ring.prox, ring.mid, ring.dist, ring.splay, pinky.prox, pinky.mid, pinky.dist, pinky.splay, palmPitch, palmYaw };
+                return { thumb.prox,
+                    thumb.mid,
+                    thumb.dist,
+                    thumb.splay,
+                    index.prox,
+                    index.mid,
+                    index.dist,
+                    index.splay,
+                    middle.prox,
+                    middle.mid,
+                    middle.dist,
+                    middle.splay,
+                    ring.prox,
+                    ring.mid,
+                    ring.dist,
+                    ring.splay,
+                    pinky.prox,
+                    pinky.mid,
+                    pinky.dist,
+                    pinky.splay,
+                    palmPitch,
+                    palmYaw };
             }
 
             /**
@@ -150,9 +170,15 @@ namespace frik::api
              * The struct's standard-layout / no-padding contract is enforced by static_assert below,
              * so this aliases directly onto the member fields with no copy.
              */
-            std::span<const float, FLOAT_COUNT> asFloatView() const { return std::span<const float, FLOAT_COUNT>(reinterpret_cast<const float*>(this), FLOAT_COUNT); }
+            std::span<const float, FLOAT_COUNT> asFloatView() const
+            {
+                return std::span<const float, FLOAT_COUNT>(reinterpret_cast<const float*>(this), FLOAT_COUNT);
+            }
 
-            std::span<float, FLOAT_COUNT> asFloatView() { return std::span<float, FLOAT_COUNT>(reinterpret_cast<float*>(this), FLOAT_COUNT); }
+            std::span<float, FLOAT_COUNT> asFloatView()
+            {
+                return std::span<float, FLOAT_COUNT>(reinterpret_cast<float*>(this), FLOAT_COUNT);
+            }
         };
 
         static_assert(std::is_standard_layout_v<HandPoseData>, "HandPoseData must be standard-layout for asFloatView() to alias safely");

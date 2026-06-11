@@ -50,7 +50,10 @@ namespace
 
     std::vector<std::string> goboTextureFilePaths;
 
-    bool areFlashlightShadowsEnabled() { return ImFl::Utils::areFlashlightShadowsEnabled(); }
+    bool areFlashlightShadowsEnabled()
+    {
+        return ImFl::Utils::areFlashlightShadowsEnabled();
+    }
 
     std::string_view getFlashlightLocationLabel(const ImFl::FlashlightLocation location)
     {
@@ -128,7 +131,10 @@ namespace
 
 namespace ImFl
 {
-    int FlashlightConfigMode::isOpen() const { return _configUI != nullptr; }
+    int FlashlightConfigMode::isOpen() const
+    {
+        return _configUI != nullptr;
+    }
 
     /**
      * Open.
@@ -262,7 +268,9 @@ namespace ImFl
         if (_lastValuesChangeNotificationPensing && now - _lastValuesUpdateNotificationTime > 3000) {
             _lastValuesChangeNotificationPensing = false;
             _lastValuesUpdateNotificationTime = now;
-            f4vr::showNotification(std::format("Beam values updated:\nIntensity = {:.1f}\nDistance = {}\nSpread = {:.0f}\xC2\xB0", *Utils::flashlightFade, *Utils::flashlightRadius,
+            f4vr::showNotification(std::format("Beam values updated:\nIntensity = {:.1f}\nDistance = {}\nSpread = {:.0f}\xC2\xB0",
+                *Utils::flashlightFade,
+                *Utils::flashlightRadius,
                 *Utils::flashlightFov));
         }
     }
@@ -330,11 +338,20 @@ namespace ImFl
         Utils::toggleLightRefreshValues();
     }
 
-    void FlashlightConfigMode::switchingToOnHeadConfig() { setConfigModeFlashlightLocation(FlashlightLocation::OnHead); }
+    void FlashlightConfigMode::switchingToOnHeadConfig()
+    {
+        setConfigModeFlashlightLocation(FlashlightLocation::OnHead);
+    }
 
-    void FlashlightConfigMode::switchingToOnPAHeadConfig() { setConfigModeFlashlightLocation(FlashlightLocation::OnPAHead); }
+    void FlashlightConfigMode::switchingToOnPAHeadConfig()
+    {
+        setConfigModeFlashlightLocation(FlashlightLocation::OnPAHead);
+    }
 
-    void FlashlightConfigMode::switchingToInHandConfig() { setConfigModeFlashlightLocation(FlashlightLocation::InOffhand); }
+    void FlashlightConfigMode::switchingToInHandConfig()
+    {
+        setConfigModeFlashlightLocation(FlashlightLocation::InOffhand);
+    }
 
     /**
      * Switch to on-weapon config if NON melee weapon is equipped, otherwise show notification.
