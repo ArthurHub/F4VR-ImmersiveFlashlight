@@ -3,6 +3,7 @@
 #include "ConfigBase.h"
 #include "Resources.h"
 #include "api/FRIKApi.h"
+#include "vrcf/VRControllersManager.h"
 
 namespace ImFl
 {
@@ -127,8 +128,10 @@ namespace ImFl
         std::string flashlightFlagsBitmask;
         bool warnAboutFPSStabilizerMod = false;
 
-        // button to use to switch flashlight between head and hand
-        int switchTorchButton = 2;
+        // Input bindings to switch the flashlight between head and hand. Separate per hand so each can be
+        // configured independently; checked on the hand near the head (or for the hands-together swap).
+        vrcf::InputBinding switchFlashlightBindingPrimary;
+        vrcf::InputBinding switchFlashlightBindingOffhand;
 
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;

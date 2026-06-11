@@ -240,8 +240,15 @@ namespace ImFl
         flashlightFlagsBitmask = ini.GetValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", "0000010000100001");
         warnAboutFPSStabilizerMod = ini.GetBoolValue(DEFAULT_SECTION, "bWarnAboutFPSStabilizerMod", true);
 
-        // change hand / head button
-        switchTorchButton = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "SwitchTorchButton", 2));
+        // change hand / head input bindings, one per hand (default: grip tap)
+        switchFlashlightBindingPrimary = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sSwitchFlashlightBindingPrimary",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_Grip });
+        switchFlashlightBindingOffhand = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sSwitchFlashlightBindingOffhand",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_Grip });
 
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);

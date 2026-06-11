@@ -144,7 +144,7 @@ namespace ImFl
         const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(offhandPos - hmdPos) < 12;
         if (isOffhandCloseToHMD && (Utils::isHeadMountedFlashlight() || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
             triggerHapticOnce(vrcf::Hand::Offhand);
-            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingOffhand)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InOffhand : FlashlightConfigLocation::OnHead);
             }
             return;
@@ -154,7 +154,7 @@ namespace ImFl
         const auto isPrimaryHandCloseToHMD = MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12;
         if (isPrimaryHandCloseToHMD && isAllowedToSwitchHeadAndPrimaryHand()) {
             triggerHapticOnce(vrcf::Hand::Primary);
-            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Primary, g_config.switchTorchButton)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingPrimary)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::OnHead);
             }
             return;
@@ -164,7 +164,7 @@ namespace ImFl
         const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12;
         if (isHandsCloseToEachOther && !Utils::isHeadMountedFlashlight()) {
             triggerHapticOnce(vrcf::Hand::Left);
-            if (vrcf::VRControllers.isReleasedShort(vrcf::Hand::Offhand, g_config.switchTorchButton)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingOffhand)) {
                 Utils::switchFlashlightConfigLocation(Utils::getActiveFlashlightConfigLocation() == FlashlightConfigLocation::InPrimaryHand
                         ? FlashlightConfigLocation::InOffhand
                         : FlashlightConfigLocation::InPrimaryHand);
