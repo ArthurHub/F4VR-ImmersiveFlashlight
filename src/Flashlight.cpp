@@ -6,6 +6,7 @@
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
 #include "f4vr/PlayerNodes.h"
+#include "vrcf/VRControllersHaptic.h"
 #include "vrcf/VRControllersManager.h"
 
 using namespace common;
@@ -20,11 +21,6 @@ namespace
         }
         // switch to hand is only allowed if either no weapon or NOT melee weapon equipped
         return !f4vr::isNodeVisible(f4vr::getWeaponNode()) || !f4vr::isMeleeWeaponEquipped();
-    }
-
-    void triggerStrongHaptic(const vrcf::Hand hand)
-    {
-        vrcf::VRControllers.triggerHaptic(hand, 0.05f, 0.5f);
     }
 }
 
@@ -146,6 +142,7 @@ namespace ImFl
             triggerHapticOnce(vrcf::Hand::Offhand);
             if (vrcf::VRControllers.check(g_config.switchFlashlightBindingOffhand)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InOffhand : FlashlightConfigLocation::OnHead);
+                vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::DoubleClick);
             }
             return;
         }
@@ -156,6 +153,7 @@ namespace ImFl
             triggerHapticOnce(vrcf::Hand::Primary);
             if (vrcf::VRControllers.check(g_config.switchFlashlightBindingPrimary)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::OnHead);
+                vrcf::VRHaptics.trigger(vrcf::Hand::Primary, vrcf::HapticPattern::DoubleClick);
             }
             return;
         }
@@ -168,6 +166,7 @@ namespace ImFl
                 Utils::switchFlashlightConfigLocation(Utils::getActiveFlashlightConfigLocation() == FlashlightConfigLocation::InPrimaryHand
                         ? FlashlightConfigLocation::InOffhand
                         : FlashlightConfigLocation::InPrimaryHand);
+                vrcf::VRHaptics.trigger(vrcf::Hand::Left, vrcf::HapticPattern::DoubleClick);
             }
             return;
         }
@@ -227,12 +226,17 @@ namespace ImFl
         _flashlightMesh.invalidate(); // skeleton pointers may have changed on save load
     }
 
+    /**
+     * Fire a one-shot proximity hint when a hand enters a zone where the flashlight location can be
+     * switched. Gated by `_flashlightHapticActivated` so it pulses once per zone entry, not every
+     * frame.
+     */
     void Flashlight::triggerHapticOnce(const vrcf::Hand hand)
     {
         if (!_flashlightHapticActivated) {
             _flashlightHapticActivated = true;
             logger::debug("Haptic triggered on hand: {}", Utils::getHandLabel(hand));
-            triggerStrongHaptic(hand);
+            vrcf::VRHaptics.trigger(hand, vrcf::HapticPattern::Tick);
         }
     }
 

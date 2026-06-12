@@ -51,7 +51,11 @@ namespace ImFl
      */
     void ImmersiveFlashlight::onModLoaded(const F4SE::LoadInterface*)
     {
-        //noop
+        const int err = FRIKApi::initialize(4);
+        if (err == 0) {
+            logger::info("Disable FRIK flashlight feature");
+            FRIKApi::inst->blockFeature("ImmersiveFlashlight", FRIKApi::Feature::Flashlight, true);
+        }
     }
 
     /**
