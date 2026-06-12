@@ -98,7 +98,10 @@ namespace ImFl
         }
 
         const auto handPoseLocation = Utils::flashlightLocation;
-        if (_handPoseSet && (_handPoseSetForLocation != handPoseLocation || _handPoseSetForGripStyle != Utils::flashlightGripStyle)) {
+
+        // A location change moves to a different FRIK hand, so the pose set on the old hand must be cleared.
+        // A grip-style change keeps the same hand and is handled by refreshing the pose in place below.
+        if (_handPoseSet && _handPoseSetForLocation != handPoseLocation) {
             clearHandPose();
         }
 
@@ -108,11 +111,16 @@ namespace ImFl
             _handPoseSet = false;
         }
 
-        if (!_handPoseSet && setFlashlightHandPose(hand)) {
-            _handPoseSet = true;
-            _handPoseSetForLocation = handPoseLocation;
-            _handPoseSetForGripStyle = Utils::flashlightGripStyle;
-            handPoseState = getFlashlightHandPoseState(hand);
+        // Apply the pose when first setting it, or refresh its values in place when the grip style changes.
+        // Refreshing an existing tag with forceTop=false keeps its position in FRIK's override stack, so a
+        // system currently overriding our tag stays on top and our updated pose only takes effect once it releases.
+        if (!_handPoseSet || _handPoseSetForGripStyle != Utils::flashlightGripStyle) {
+            if (setFlashlightHandPose(hand)) {
+                _handPoseSet = true;
+                _handPoseSetForLocation = handPoseLocation;
+                _handPoseSetForGripStyle = Utils::flashlightGripStyle;
+                handPoseState = getFlashlightHandPoseState(hand);
+            }
         }
 
         if (handPoseState != frik::api::FRIKApi::HandPoseTagState::Active) {
