@@ -138,7 +138,7 @@ namespace ImFl
         logger::info("FRIK (v{}) API (v{}) init successful!", FRIKApi::inst->getModVersion(), FRIKApi::inst->getVersion());
 
         static std::string modName(Version::PROJECT);
-        static std::string buttonIconNifPath = modName + "\\ui_config_btn_flashlight_1x1.nif";
+        static std::string buttonIconNifPath = modName + "\\ui-config-main\\btn-flashlight.nif";
         FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
             .buttonIconNifPath = buttonIconNifPath.c_str(),
             .callbackReceiverName = modName.c_str(),

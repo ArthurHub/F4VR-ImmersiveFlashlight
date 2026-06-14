@@ -394,17 +394,16 @@ namespace ImFl
      */
     void FlashlightConfigMode::createMainConfigUI()
     {
-        _onHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_head_1x2.nif");
+        _onHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-flashlight-on-head.nif");
         _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnHeadConfig(); });
 
-        // Reuse the head button art until a dedicated PA-head asset is added.
-        _onPAHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_pa_head_ui_btn_2x3.nif");
+        _onPAHeadFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-flashlight-on-pa-head.nif");
         _onPAHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnPAHeadConfig(); });
 
-        _inHandFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_in_hand_1x3.nif");
+        _inHandFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-flashlight-in-hand.nif");
         _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToInHandConfig(); });
 
-        _onWeaponFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_on_weapon_1x4.nif");
+        _onWeaponFLBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-flashlight-on-weapon.nif");
         _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { trySwitchingToOnWeaponConfig(); });
 
         _row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
@@ -414,16 +413,16 @@ namespace ImFl
         _row1ToggleContainer->addElement(_onWeaponFLBtn);
         setFlashlightButtonsToggleStateByLocation();
 
-        _beamTuningTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_beam_tuning_2x2.nif");
+        _beamTuningTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-beam-tuning.nif");
         _beamTuningTglBtn->setOnToggleHandler([this](UIWidget*, bool) {});
 
-        const auto switchGoboBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui_config_btn_switch_gobo_2x1.nif");
+        const auto switchGoboBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-switch-gobo.nif");
         switchGoboBtn->setOnPressHandler([this](UIWidget*) { switchBeamGobo(); });
 
-        const auto switchColorBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui_config_btn_switch_color_1x5.nif");
+        const auto switchColorBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-switch-color.nif");
         switchColorBtn->setOnPressHandler([this](UIWidget*) { switchBeamColor(); });
 
-        const auto beamShadowsTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui_config_btn_fl_shadows_2x4.nif");
+        const auto beamShadowsTglBtn = std::make_shared<UIToggleButton>("ImmersiveFlashlightVR\\ui-config-main\\btn-flashlight-shadows.nif");
         beamShadowsTglBtn->setToggleState(areFlashlightShadowsEnabled());
         beamShadowsTglBtn->setOnToggleHandler([](UIWidget*, const bool shadowsEnabled) { toggleBeamShadows(shadowsEnabled); });
 
@@ -433,13 +432,13 @@ namespace ImFl
         row2Container->addElement(switchColorBtn);
         row2Container->addElement(beamShadowsTglBtn);
 
-        const auto saveBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\UI_Common\\btn_save.nif");
+        const auto saveBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui-common\\btn-save.nif");
         saveBtn->setOnPressHandler([this](UIWidget*) { saveConfig(); });
 
-        const auto resetBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\UI_Common\\btn_reset.nif");
+        const auto resetBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui-common\\btn-reset.nif");
         resetBtn->setOnPressHandler([this](UIWidget*) { resetConfig(); });
 
-        const auto exitBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\UI_Common\\btn_exit.nif");
+        const auto exitBtn = std::make_shared<UIButton>("ImmersiveFlashlightVR\\ui-common\\btn-exit.nif");
         exitBtn->setOnPressHandler([this](UIWidget*) { closeConfigMode(); });
 
         const auto row3Container = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
@@ -447,16 +446,16 @@ namespace ImFl
         row3Container->addElement(resetBtn);
         row3Container->addElement(exitBtn);
 
-        _configMsg = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\ui_config_msg_2x1.nif");
-        _beamTuningMsg = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\ui_config_smg_beam_tuning_5x1.nif");
+        _configMsg = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\ui-config-main\\msg-main.nif");
+        _beamTuningMsg = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\ui-config-main\\msg-beam-tuning.nif");
 
-        const auto row4Container = std::make_shared<UIContainer>("Row4", UIContainerLayout::HorizontalCenter, 0.3f, 0.7f);
+        const auto row4Container = std::make_shared<UIContainer>("Row4", UIContainerLayout::HorizontalCenter, 0.3f);
         row4Container->addElement(_configMsg);
         row4Container->addElement(_beamTuningMsg);
 
-        const auto header = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\title_config.nif", 0.4f);
+        const auto header = std::make_shared<UIWidget>("ImmersiveFlashlightVR\\ui-config-main\\title.nif", 1.5f);
 
-        _configUI = std::make_shared<UIContainer>("Config", UIContainerLayout::VerticalUp, 0.4f, 1.8f);
+        _configUI = std::make_shared<UIContainer>("Config", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _configUI->addElement(row4Container);
         _configUI->addElement(row3Container);
         _configUI->addElement(row2Container);
