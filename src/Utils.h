@@ -21,6 +21,7 @@ namespace ImFl
         static void toggleLightRefreshValues();
         static void setLightValues();
         static void turnFlashlightOn();
+        static void turnFlashlightOff();
         static bool isHeadMountedFlashlight();
         static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
         static const char* getGripStyleLabel(FlashlightGripStyle style);

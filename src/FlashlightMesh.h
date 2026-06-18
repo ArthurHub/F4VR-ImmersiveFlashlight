@@ -44,7 +44,6 @@ namespace ImFl
         mutable FlashlightGripStyle _handPoseSetForGripStyle = FlashlightGripStyle::Forward;
 
         static constexpr const char* MESH_NODE_NAME = "ImmersiveFlashlight";
-        // f4vr::getClonedNiNodeForNifFileSetName prepends "Data/Meshes/" to this path
-        static constexpr const char* NIF_PATH = "flashlight_model.nif";
+        static constexpr const char* NIF_PATH = "flashlight-model.nif";
     };
 }

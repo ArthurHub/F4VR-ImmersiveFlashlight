@@ -74,6 +74,22 @@ namespace ImFl
         return overhand ? flashlightHandPoseOverhand : flashlightHandPose;
     }
 
+    /**
+     * Resolve the stowed-on-body mesh transform for the given power-armor state.
+     */
+    const RE::NiTransform& Config::getFlashlightBodyTransform(const bool inPowerArmor) const
+    {
+        return inPowerArmor ? flashlightBodyTransformPA : flashlightBodyTransform;
+    }
+
+    /**
+     * Resolve the grab-sphere transform for the given power-armor state.
+     */
+    const RE::NiTransform& Config::getFlashlightGrabSphereTransform(const bool inPowerArmor) const
+    {
+        return inPowerArmor ? flashlightGrabSphereTransformPA : flashlightGrabSphereTransform;
+    }
+
     void Config::saveFlashlightValues(const FlashlightLocation location)
     {
         CSimpleIniA ini;
@@ -324,5 +340,30 @@ namespace ImFl
         flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));
         flashlightGripOverhandTiltDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripOverhandTiltDegrees", 120.0));
         flashlightGripHysteresisDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripHysteresisDegrees", 30.0));
+
+        // Stowed flashlight on the body (grab to turn on into a hand, put back to turn off).
+        showFlashlightOnBody = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightOnBody", true);
+        // Placeholder offset; tune in-game via live-reload. Scale matches the in-hand model.
+        RE::NiTransform bodyTransformDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        bodyTransformDefault.scale = 1.3f;
+        flashlightBodyTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransform", bodyTransformDefault);
+        flashlightBodyTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransformPA", flashlightBodyTransform);
+        // Grab sphere: translate is measured from the stowed model (not the bone), in the body-bone axes;
+        // the transform scale sizes the 1-unit sphere mesh (which is unit-diameter, so the grab radius is
+        // ~half the scale). Tune with the debug sphere. Defaults to a small offset off the model with a
+        // larger scale for a usable grab zone.
+        RE::NiTransform sphereTransformDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        sphereTransformDefault.scale = 20.0f;
+        flashlightGrabSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransform", sphereTransformDefault);
+        flashlightGrabSphereTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransformPA", flashlightGrabSphereTransform);
+        debugShowGrabSphere = ini.GetBoolValue(DEFAULT_SECTION, "bDebugShowGrabSphere", false);
+        grabFlashlightBindingOffhand = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sGrabFlashlightBindingOffhand",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
+        grabFlashlightBindingPrimary = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sGrabFlashlightBindingPrimary",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
     }
 }

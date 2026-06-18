@@ -46,11 +46,12 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        const bool isFlashlightOn = f4vr::isPipboyLightOn(f4vr::getPlayer());
+        handlePowerArmorTransition(f4vr::isPipboyLightOn(f4vr::getPlayer()));
 
-        handlePowerArmorTransition(isFlashlightOn);
+        // Stowed-on-body model + grab/return interaction.
+        _bodyFlashlight.onFrameUpdate();
 
-        if (!isFlashlightOn) {
+        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
             _flashlightMesh.onFrameUpdate(false);
             return;
         }
@@ -77,6 +78,7 @@ namespace ImFl
         const bool isInPowerArmor = f4vr::isInPowerArmor();
         if (isInPowerArmor != _wasInPowerArmor) {
             _wasInPowerArmor = isInPowerArmor;
+            _bodyFlashlight.invalidate(); // skeleton changed — re-attach the stowed model to the new bones
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
                 logger::info("Restoring flashlight after power armor transition");
@@ -224,6 +226,7 @@ namespace ImFl
     void Flashlight::onGameSessionLoaded()
     {
         _flashlightMesh.invalidate(); // skeleton pointers may have changed on save load
+        _bodyFlashlight.invalidate();
     }
 
     /**

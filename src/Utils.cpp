@@ -177,6 +177,17 @@ namespace ImFl
     }
 
     /**
+     * Turns flashlight off if it's on.
+     */
+    void Utils::turnFlashlightOff()
+    {
+        const auto player = f4vr::getPlayer();
+        if (f4vr::isPipboyLightOn(player)) {
+            f4vr::togglePipboyLight(player);
+        }
+    }
+
+    /**
      * Check if the active runtime location is any head-mounted flashlight variant.
      */
     bool Utils::isHeadMountedFlashlight()

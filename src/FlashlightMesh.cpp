@@ -214,6 +214,7 @@ namespace ImFl
     void FlashlightMesh::show() const
     {
         if (_meshNode && !f4vr::isNodeVisible(_meshNode.get())) {
+            f4vr::updateTransformsDown(_meshNode.get(), true);
             f4vr::setNodeVisibility(_meshNode.get(), true);
             logger::info("FlashlightMesh: shown");
         }

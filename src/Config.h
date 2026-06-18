@@ -68,6 +68,8 @@ namespace ImFl
         const RE::NiTransform& getFlashlightInHandLightTransform(bool isOffhand, FlashlightGripStyle grip, bool inPowerArmor) const;
         const RE::NiTransform& getFlashlightMeshTransform(FlashlightGripStyle grip, bool inPowerArmor) const;
         const frik::api::FRIKApi::HandPoseData& getFlashlightHandPose(FlashlightGripStyle grip, bool inPowerArmor) const;
+        const RE::NiTransform& getFlashlightBodyTransform(bool inPowerArmor) const;
+        const RE::NiTransform& getFlashlightGrabSphereTransform(bool inPowerArmor) const;
 
         // Flashlight location, configured independently for out of / in power armor (iFlashlightLocation / iFlashlightLocationInPA).
         FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
@@ -160,6 +162,24 @@ namespace ImFl
         // Forward when the tilt drops below threshold - hysteresis (a stable deadband).
         float flashlightGripOverhandTiltDegrees = 0.0f;
         float flashlightGripHysteresisDegrees = 0.0f;
+
+        // Stowed flashlight model on the body: shown (beam-less) while the flashlight is off so the
+        // player can grab it to turn it on into a hand, or put it back to turn it off.
+        bool showFlashlightOnBody = true;
+        // Mesh transform of the stowed model relative to the chest bone. Authored for a right-handed
+        // player; auto-mirrored when the player is left-handed.
+        RE::NiTransform flashlightBodyTransform{};
+        RE::NiTransform flashlightBodyTransformPA{};
+        // Transform of the spherical grab zone, in the same body-bone space as the stowed model (mirrored
+        // the same way, PA variant defaults to non-PA). The base sphere mesh is 1 unit, so the transform's
+        // scale is the grab radius. Defaults to the stowed-model transform when omitted.
+        RE::NiTransform flashlightGrabSphereTransform{};
+        RE::NiTransform flashlightGrabSphereTransformPA{};
+        // Render the grab sphere (framework debug sphere mesh) at its exact size/location for tuning.
+        bool debugShowGrabSphere = false;
+        // Grab/return input bindings, one per hand. Set a hand to "none" to disable grabbing with it.
+        vrcf::InputBinding grabFlashlightBindingOffhand;
+        vrcf::InputBinding grabFlashlightBindingPrimary;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

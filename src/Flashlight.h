@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BodyFlashlight.h"
 #include "FlashlightMesh.h"
 #include "vrcf/VRControllersManager.h"
 
@@ -27,5 +28,6 @@ namespace ImFl
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
 
         FlashlightMesh _flashlightMesh;
+        BodyFlashlight _bodyFlashlight;
     };
 }
