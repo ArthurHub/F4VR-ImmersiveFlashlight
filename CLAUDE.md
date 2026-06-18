@@ -50,7 +50,7 @@ Conventions:
 
 ### Plugin Lifecycle
 
-The entry point is [src/ImmersiveFlashlight.h](src/ImmersiveFlashlight.h) / [src/ImmersiveFlashlight.cpp](src/ImmersiveFlashlight.cpp), a `ModBase` subclass that implements the F4SE plugin hooks:
+The entry point is [src/FlashlightMod.h](src/FlashlightMod.h) / [src/FlashlightMod.cpp](src/FlashlightMod.cpp), a `ModBase` subclass that implements the F4SE plugin hooks:
 
 - `F4SEPlugin_Query` / `F4SEPlugin_Load` — standard F4SE registration
 - `onGameLoaded()` — creates `Flashlight` and `FlashlightConfigMode` instances, loads config, registers the config button with FRIK, and patches the mining helmet keyword

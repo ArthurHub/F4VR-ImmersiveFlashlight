@@ -1,7 +1,7 @@
 #include "Flashlight.h"
 
 #include "Config.h"
-#include "ImmersiveFlashlight.h"
+#include "FlashlightMod.h"
 #include "Utils.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"

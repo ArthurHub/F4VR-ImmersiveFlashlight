@@ -1,4 +1,4 @@
-#include "ImmersiveFlashlight.h"
+#include "FlashlightMod.h"
 
 #include "api/FRIKApi.h"
 #include "vrui/UIManager.h"
@@ -41,7 +41,7 @@ namespace ImFl
         }
     };
 
-    bool ImmersiveFlashlight::isConfigOpen() const
+    bool FlashlightMod::isConfigOpen() const
     {
         return _flashlightConfigMode->isOpen();
     }
@@ -49,7 +49,7 @@ namespace ImFl
     /**
      * Run F4SE plugin load and initialize the plugin given the init handle.
      */
-    void ImmersiveFlashlight::onModLoaded(const F4SE::LoadInterface*)
+    void FlashlightMod::onModLoaded(const F4SE::LoadInterface*)
     {
         const int err = FRIKApi::initialize(4);
         if (err == 0) {
@@ -61,7 +61,7 @@ namespace ImFl
     /**
      * On game fully loaded initialize things that should be initialized only once.
      */
-    void ImmersiveFlashlight::onGameLoaded()
+    void FlashlightMod::onGameLoaded()
     {
         addEmbeddedFlashlightKeyword();
 
@@ -77,7 +77,7 @@ namespace ImFl
     /**
      * Game session can be initialized multiple times as it is fired on new game and save loaded events.
      */
-    void ImmersiveFlashlight::onGameSessionLoaded()
+    void FlashlightMod::onGameSessionLoaded()
     {
         _flashlightConfigMode->closeConfigMode();
         if (_flashlight) {
@@ -88,7 +88,7 @@ namespace ImFl
     /**
      * On every frame if player is initialized.
      */
-    void ImmersiveFlashlight::onFrameUpdate()
+    void FlashlightMod::onFrameUpdate()
     {
         const auto player = RE::PlayerCharacter::GetSingleton();
         if (!player || !player->loadedData || !_flashlight) {
@@ -107,7 +107,7 @@ namespace ImFl
     /**
      * Add the keyword to have mining helmet style flashlight to the player.
      */
-    void ImmersiveFlashlight::addEmbeddedFlashlightKeyword()
+    void FlashlightMod::addEmbeddedFlashlightKeyword()
     {
         if (auto* armorObj = RE::TESForm::GetFormByID<RE::TESObjectARMO>(0x21B3B)) {
             if (const auto keywordObj = RE::TESForm::GetFormByID<RE::BGSKeyword>(0xB34A6)) {
@@ -128,7 +128,7 @@ namespace ImFl
     /**
      * Register for FRIK main config to have a button to open this mod config.
      */
-    bool ImmersiveFlashlight::registerOpenConfigViaFRIK()
+    bool FlashlightMod::registerOpenConfigViaFRIK()
     {
         const int err = FRIKApi::initialize(3);
         if (err != 0) {
@@ -150,7 +150,7 @@ namespace ImFl
     /**
      * Receiving the registered open config message from FRIK.
      */
-    void ImmersiveFlashlight::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
+    void FlashlightMod::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
     {
         if (aMsg->type == 15) {
             g_imFl._flashlightConfigMode->openConfigMode();

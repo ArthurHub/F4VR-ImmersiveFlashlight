@@ -7,10 +7,10 @@
 
 namespace ImFl
 {
-    class ImmersiveFlashlight : public ModBase
+    class FlashlightMod : public ModBase
     {
     public:
-        ImmersiveFlashlight()
+        FlashlightMod()
             : ModBase(Settings(Version::PROJECT, Version::NAME, &g_config, 32, true))
         {}
 
@@ -36,5 +36,5 @@ namespace ImFl
     };
 
     // The ONE global to rule them ALL
-    inline ImmersiveFlashlight g_imFl;
+    inline FlashlightMod g_imFl;
 }

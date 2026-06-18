@@ -13,7 +13,7 @@ Source PNGs for the in-game VR configuration UI. Each image is one sprite in the
 
 These feed `FlashlightConfigMode::createMainConfigUI()` in
 [src/FlashlightConfigMode.cpp](../../../src/FlashlightConfigMode.cpp); the FRIK menu icon is
-registered in [src/ImmersiveFlashlight.cpp](../../../src/ImmersiveFlashlight.cpp). Edit the art
+registered in [src/FlashlightMod.cpp](../../../src/FlashlightMod.cpp). Edit the art
 here, then re-run the pack command below. (Shared buttons like Save/Reset/Exit live in the
 separate `ui-common` atlas.)
 
