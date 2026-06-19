@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
+#include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersHaptic.h"
 #include "vrcf/VRControllersManager.h"
@@ -22,11 +23,25 @@ namespace
         // switch to hand is only allowed if either no weapon or NOT melee weapon equipped
         return !f4vr::isNodeVisible(f4vr::getWeaponNode()) || !f4vr::isMeleeWeaponEquipped();
     }
+
+    /**
+     * Mirrors the grab zone's Z translate for left-handed players (a sphere is rotation-invariant and
+     * uniformly scaled, so its rotation/scale are unaffected), letting one authored value read for both
+     * handedness modes.
+     */
+    RE::NiTransform mirrorZoneIfNeeded(const RE::NiTransform& zone)
+    {
+        RE::NiTransform mirroredZone = zone;
+        const float sign = f4vr::isLeftHandedMode() ? -1.0f : 1.0f;
+        mirroredZone.translate = RE::NiPoint3(zone.translate.x, zone.translate.y, sign * zone.translate.z);
+        return mirroredZone;
+    }
 }
 
 namespace ImFl
 {
     Flashlight::Flashlight()
+        : _bodyGrabSphere("ImFl_BodyGrab")
     {
         _wasInPowerArmor = f4vr::isInPowerArmor();
 
@@ -46,13 +61,14 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        handlePowerArmorTransition(f4vr::isPipboyLightOn(f4vr::getPlayer()));
+        handlePowerArmorTransition(Utils::isFlashlightOn());
 
-        // Stowed-on-body model + grab/return interaction.
-        _bodyFlashlight.onFrameUpdate();
+        // Stowed-on-body model + grab/return interaction. May toggle the light, so the on/off state is
+        // re-read below.
+        updateBodyStow();
 
-        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
-            _flashlightMesh.onFrameUpdate(false);
+        if (!Utils::isFlashlightOn()) {
+            _inHandFlashlightMesh.onFrameUpdate(false);
             return;
         }
 
@@ -60,7 +76,7 @@ namespace ImFl
 
         Utils::refreshGripStyle();
 
-        _flashlightMesh.onFrameUpdate(true);
+        _inHandFlashlightMesh.onFrameUpdate(true);
 
         checkSwitchingFlashlightOnHeadHand();
 
@@ -78,7 +94,8 @@ namespace ImFl
         const bool isInPowerArmor = f4vr::isInPowerArmor();
         if (isInPowerArmor != _wasInPowerArmor) {
             _wasInPowerArmor = isInPowerArmor;
-            _bodyFlashlight.invalidate(); // skeleton changed — re-attach the stowed model to the new bones
+            _bodyFlashlightMesh.invalidate(); // skeleton changed — re-attach the stowed model to the new bones
+            _bodyGrabSphere.detachDebug();
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
                 logger::info("Restoring flashlight after power armor transition");
@@ -86,10 +103,65 @@ namespace ImFl
                 Utils::setLightValues();
                 Utils::turnFlashlightOn();
                 isFlashlightOn = true;
-                _flashlightMesh.invalidate(); // skeleton changed — force re-attach next frame
+                _inHandFlashlightMesh.invalidate(); // skeleton changed — force re-attach next frame
             }
         }
         _flashlightOnRecentlyFrames = isFlashlightOn ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
+    }
+
+    /**
+     * Keeps the beam-less stowed model attached to the chest bone while the feature is enabled, runs the
+     * proximity-gated grab/return interaction, then shows the model only while the flashlight is off
+     * (holstered). A grab/return may toggle the light mid-frame, so the visibility is set from the
+     * resulting state and the caller re-reads the on/off state afterwards.
+     */
+    void Flashlight::updateBodyStow()
+    {
+        const bool enabled = g_config.showFlashlightOnBody && f4vr::getRootNode() != nullptr;
+        _bodyFlashlightMesh.onFrameUpdate(enabled);
+
+        // A grab/return may toggle the light, so set the model visibility from the resulting state.
+        checkBodyGrab(enabled);
+
+        if (enabled) {
+            _bodyFlashlightMesh.setVisible(!Utils::isFlashlightOn());
+        }
+    }
+
+    /**
+     * Evaluate the grab (bring the light to this hand) and return (held in this hand -> off) interactions
+     * for both hands against the stowed model position. Grabbing pulls the light to the grabbing hand from
+     * any other state — off (turns on), head, or the other hand (stays on, switches) — while the same
+     * gesture returns it (off) when it is already held in that hand. While a usable hand is within reach
+     * its configured grab button is suppressed from the game/FRIK and a one-shot haptic hints the zone.
+     * A hand occupied by a drawn weapon (the primary hand) can neither grab nor return the flashlight.
+     * @return true if a grab or return toggled the flashlight this frame.
+     */
+    bool Flashlight::checkBodyGrab(const bool enabled)
+    {
+        // The grab zone is anchored to the stowed model on the chest bone; mirror it for left-handed players.
+        const auto zoneNode = _bodyFlashlightMesh.attachedNode();
+        return _bodyGrabSphere.onFrameUpdate(
+            {
+                .enabled = enabled && zoneNode != nullptr,
+                .node = zoneNode,
+                .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
+                .bindings = {
+                    g_config.grabFlashlightBindingOffhand,
+                    !f4vr::IsWeaponDrawn() ? g_config.grabFlashlightBindingPrimary : vrcf::VRControllersManager::DisabledBinding,
+                },
+                .showDebug = g_config.debugShowGrabSphere,
+            },
+            [&](const vrcf::InputBinding& binding) {
+                const auto location = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
+                if (Utils::isFlashlightOn() && Utils::flashlightLocation == location) {
+                    Utils::turnFlashlightOff();
+                } else {
+                    Utils::turnFlashlightOn();
+                    Utils::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
+                }
+                return true;
+            });
     }
 
     /**
@@ -225,8 +297,12 @@ namespace ImFl
 
     void Flashlight::onGameSessionLoaded()
     {
-        _flashlightMesh.invalidate(); // skeleton pointers may have changed on save load
-        _bodyFlashlight.invalidate();
+        _inHandFlashlightMesh.invalidate(); // skeleton pointers may have changed on save load
+        _bodyFlashlightMesh.invalidate();
+        _bodyGrabSphere.detachDebug();
+
+        logger::info("Disable game Pipboy light control");
+        f4vr::getIniSetting("fPipboyLightDelay:Controls", true)->SetFloat(99);
     }
 
     /**

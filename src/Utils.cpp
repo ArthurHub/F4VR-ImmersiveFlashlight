@@ -166,6 +166,14 @@ namespace ImFl
     }
 
     /**
+     * Is Flashlight on.
+     */
+    bool Utils::isFlashlightOn()
+    {
+        return f4vr::isPipboyLightOn(f4vr::getPlayer());
+    }
+
+    /**
      * Turns flashlight on if it's off.
      */
     void Utils::turnFlashlightOn()

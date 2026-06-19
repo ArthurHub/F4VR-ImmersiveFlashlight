@@ -163,7 +163,7 @@ namespace ImFl
         // reload config to discard unsaved changes
         Utils::setFlashlightRuntimeLocationOverride(std::nullopt);
         g_config.load();
-        if (f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+        if (Utils::isFlashlightOn()) {
             Utils::toggleLightRefreshValues();
         }
 
@@ -368,7 +368,7 @@ namespace ImFl
 
     void FlashlightConfigMode::setFlashlightButtonsToggleStateByLocation() const
     {
-        if (!f4vr::isPipboyLightOn(f4vr::getPlayer())) {
+        if (!Utils::isFlashlightOn()) {
             _row1ToggleContainer->clearToggleState();
             return;
         }

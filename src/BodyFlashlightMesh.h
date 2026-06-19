@@ -5,11 +5,11 @@
 namespace ImFl
 {
     /**
-     * Manages the stowed flashlight model attached to the chest skeleton bone, and — only while
-     * debugging — a visual sphere mesh marking the grab zone. The model's "Flashlight_lamp_FX" node is
-     * hidden so it casts no glow. The grab zone itself is purely a center + radius computed from the
-     * configured transform (no mesh needed); the debug sphere is loaded/attached only when the debug
-     * flag is on, to show that exact zone for tuning.
+     * Manages the stowed flashlight model attached to the chest skeleton bone. The model's
+     * "Flashlight_lamp_FX" node is hidden so it casts no glow. The model is authored for a right-handed
+     * player and auto-mirrored when left-handed / PA-posed. The grab interaction itself (zone test,
+     * suppression, debug visual) lives in the owning Flashlight via a WandActivationSphere; this class only
+     * exposes the bone it's attached to and the zone transform anchored to the stowed model.
      */
     class BodyFlashlightMesh
     {
@@ -18,8 +18,7 @@ namespace ImFl
 
         /**
          * Attaches to (or detaches from) the chest bone to match `enabled`, re-attaching when the bone or
-         * power-armor state changes, then applies the (mirrored, PA-aware) model transform and maintains
-         * the debug grab sphere.
+         * power-armor state changes, then applies the (mirrored, PA-aware) model transform.
          */
         void onFrameUpdate(bool enabled);
 
@@ -29,22 +28,22 @@ namespace ImFl
         void setVisible(bool visible) const;
 
         /**
-         * True once the model is attached to a body bone.
+         * The bone the model is currently attached to, or null when detached. This is the parent node the
+         * grab zone is measured against.
          */
-        bool isAttached() const
+        RE::NiNode* attachedNode() const
         {
-            return _attachedTo != nullptr;
+            return _attachedTo;
         }
 
         /**
-         * True when the point lies inside the configured grab zone. The center and radius are derived from
-         * the grab-sphere transform, offset so its origin sits at the stowed model rather than the bone — no
-         * mesh is involved, so this works whether or not the debug sphere is shown.
+         * The grab-zone transform in stow-bone space, with its origin offset to the stowed model (so the
+         * zone is measured from the model, not the bone). Pass to the owner's WandActivationSphere.
          */
-        bool isWithinGrabSphere(const RE::NiPoint3& point) const;
+        RE::NiTransform grabZoneTransform() const;
 
         /**
-         * Forces a detach so the nodes re-attach to fresh skeleton nodes next frame. Call on power armor
+         * Forces a detach so the model re-attaches to fresh skeleton nodes next frame. Call on power armor
          * transition and game session load since the skeleton pointers may have changed.
          */
         void invalidate();
@@ -52,21 +51,15 @@ namespace ImFl
     private:
         void attach(RE::NiNode* parentNode, bool inPowerArmor);
         void detach();
-        void updateDebugSphere();
         static void applyMirroredTransform(RE::NiNode* node, const RE::NiTransform& transform);
-        RE::NiTransform grabSphereBoneTransform() const;
         void hideBeamNode() const;
 
         RE::NiPointer<RE::NiNode> _meshNode;
-        RE::NiPointer<RE::NiNode> _sphereNode; // debug visual only; null until the debug flag is first enabled
         RE::NiNode* _attachedTo = nullptr;
         bool _attachedInPA = false;
 
         static constexpr const char* MESH_NODE_NAME = "ImmersiveFlashlightBody";
         static constexpr const char* NIF_PATH = "flashlight-model.nif";
         static constexpr const char* BEAM_NODE_NAME = "Flashlight_lamp_FX";
-        static constexpr const char* SPHERE_NODE_NAME = "ImmersiveFlashlightGrabSphere";
-        static constexpr const char* SPHERE_NIF_PATH = "debug-sphere.nif";
-        static constexpr float SPHERE_NIF_BASE_RADIUS = 0.5f;
     };
 }

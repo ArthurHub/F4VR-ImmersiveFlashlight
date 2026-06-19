@@ -1,7 +1,8 @@
 #pragma once
 
-#include "BodyFlashlight.h"
+#include "BodyFlashlightMesh.h"
 #include "FlashlightMesh.h"
+#include "f4vr/WandActivationSphere.h"
 #include "vrcf/VRControllersManager.h"
 
 namespace ImFl
@@ -16,6 +17,8 @@ namespace ImFl
 
     private:
         void handlePowerArmorTransition(bool isFlashlightOn);
+        void updateBodyStow();
+        bool checkBodyGrab(bool enabled);
         void checkSwitchingFlashlightOnHeadHand();
         static void adjustFlashlightTransformToHandOrHead();
         void triggerHapticOnce(vrcf::Hand hand);
@@ -27,7 +30,8 @@ namespace ImFl
         int _flashlightOnRecentlyFrames = 0;
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
 
-        FlashlightMesh _flashlightMesh;
-        BodyFlashlight _bodyFlashlight;
+        FlashlightMesh _inHandFlashlightMesh;
+        BodyFlashlightMesh _bodyFlashlightMesh;
+        f4vr::WandActivationSphere _bodyGrabSphere;
     };
 }

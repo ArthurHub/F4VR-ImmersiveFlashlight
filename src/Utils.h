@@ -20,6 +20,7 @@ namespace ImFl
         static void refreshGripStyle();
         static void toggleLightRefreshValues();
         static void setLightValues();
+        static bool isFlashlightOn();
         static void turnFlashlightOn();
         static void turnFlashlightOff();
         static bool isHeadMountedFlashlight();
