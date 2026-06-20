@@ -193,20 +193,17 @@ namespace ImFl
         // Grab/return input bindings, one per hand. Set a hand to "none" to disable grabbing with it.
         vrcf::InputBinding grabFlashlightByOffhandBinding;
         vrcf::InputBinding grabFlashlightByPrimaryHandBinding;
-        // Binding fired while the offhand is in the head zone. Set to "none" to disable head activation.
+        // Offhand-near-HMD head activation sphere (checkHeadActivation): the tap binding puts the light on the
+        // head / toggles it off; the long-press binding pulls the head-mounted light to the offhand. Each
+        // "none" disables its gesture.
         vrcf::InputBinding activateFlashlightOnHeadBinding;
+        vrcf::InputBinding switchFlashlightFromHeadToOffhandBinding;
 
         // Offhand-near-primary-hand activation sphere (checkPrimaryHandActivation): with the light on, moves
         // it between the offhand and the primary hand / weapon and toggles the on-weapon light on/off; the
         // long-press binding pulls the on-weapon light back to the offhand. Each "none" disables its gesture.
         vrcf::InputBinding activateFlashlightOnPrimaryHandBinding;
         vrcf::InputBinding switchFlashlightFromWeaponToOffhandBinding;
-
-        // Grip-based hand <-> head location switching of the on flashlight (checkSwitchingFlashlightOnHeadHand):
-        // bring a hand near the head to swap that hand <-> head. Each gesture is gated only by its own binding
-        // ("none" = off) and both default to off, since head activation already covers -> head.
-        vrcf::InputBinding switchFlashlightHeadPrimaryHandBinding;
-        vrcf::InputBinding switchFlashlightHeadOffhandBinding;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

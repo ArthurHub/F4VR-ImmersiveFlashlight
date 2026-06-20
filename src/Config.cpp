@@ -256,11 +256,6 @@ namespace ImFl
         flashlightFlagsBitmask = ini.GetValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", "0000010000100001");
         warnAboutFPSStabilizerMod = ini.GetBoolValue(DEFAULT_SECTION, "bWarnAboutFPSStabilizerMod", true);
 
-        // Grip-based hand <-> head location switching bindings. Both default to "none" (off) since head
-        // activation already covers -> head. Each gesture is disabled by setting its binding to "none".
-        switchFlashlightHeadPrimaryHandBinding = getInputBindingValue(ini, DEFAULT_SECTION, "sSwitchFlashlightHeadPrimaryHandBinding", vrcf::VRControllersManager::DisabledBinding);
-        switchFlashlightHeadOffhandBinding = getInputBindingValue(ini, DEFAULT_SECTION, "sSwitchFlashlightHeadOffhandBinding", vrcf::VRControllersManager::DisabledBinding);
-
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
         flashlightMeshTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransform", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
@@ -373,6 +368,10 @@ namespace ImFl
             DEFAULT_SECTION,
             "sActivateFlashlightOnHeadBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
+        switchFlashlightFromHeadToOffhandBinding = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sSwitchFlashlightFromHeadToOffhandBinding",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
 
         // Primary-hand activation: bring the offhand near the primary hand and fire the binding to move the on
         // light between the offhand and the primary hand / weapon, or toggle the on-weapon light. Sphere around
