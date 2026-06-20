@@ -182,21 +182,29 @@ namespace ImFl
         // variant: the zone is measured off the HMD, which sits in the same place in and out of power armor.
         RE::NiTransform flashlightHeadSphereTransform{};
 
-        // Render the grab sphere (framework debug sphere mesh) at its exact size/location for tuning.
+        // Activation sphere around the primary-hand wand node, authored in primary-hand-local space (not
+        // mirrored — anchored to the hand, so one value reads for both handedness; no PA variant). The base
+        // sphere mesh is unit-diameter, so the transform scale is the activation diameter.
+        RE::NiTransform flashlightPrimaryHandSphereTransform{};
+
+        // Render the grab/activation spheres (framework debug sphere mesh) at their exact size/location for tuning.
         bool debugShowGrabSphere = false;
 
         // Grab/return input bindings, one per hand. Set a hand to "none" to disable grabbing with it.
         vrcf::InputBinding grabFlashlightByOffhandBinding;
         vrcf::InputBinding grabFlashlightByPrimaryHandBinding;
-        vrcf::InputBinding switchFlashlightBetweenHandsBinding;
         // Binding fired while the offhand is in the head zone. Set to "none" to disable head activation.
         vrcf::InputBinding activateFlashlightOnHeadBinding;
 
-        // Grip-based location switching of the on flashlight (checkSwitchingFlashlightOnHeadHand): bring a
-        // hand near the head to swap that hand <-> head, or bring the two hands together to swap the light
-        // between offhand and primary hand. Each gesture is gated only by its own binding ("none" = off).
-        // The hand <-> head swaps default to off (head activation already covers -> head); the hand <-> hand
-        // swap defaults on.
+        // Offhand-near-primary-hand activation sphere (checkPrimaryHandActivation): with the light on, moves
+        // it between the offhand and the primary hand / weapon and toggles the on-weapon light on/off; the
+        // long-press binding pulls the on-weapon light back to the offhand. Each "none" disables its gesture.
+        vrcf::InputBinding activateFlashlightOnPrimaryHandBinding;
+        vrcf::InputBinding switchFlashlightFromWeaponToOffhandBinding;
+
+        // Grip-based hand <-> head location switching of the on flashlight (checkSwitchingFlashlightOnHeadHand):
+        // bring a hand near the head to swap that hand <-> head. Each gesture is gated only by its own binding
+        // ("none" = off) and both default to off, since head activation already covers -> head.
         vrcf::InputBinding switchFlashlightHeadPrimaryHandBinding;
         vrcf::InputBinding switchFlashlightHeadOffhandBinding;
 

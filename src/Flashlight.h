@@ -20,6 +20,7 @@ namespace ImFl
         void updateBodyStow();
         bool checkBodyGrab(bool enabled);
         void checkHeadActivation();
+        void checkPrimaryHandActivation();
         void checkSwitchingFlashlightOnHeadHand();
         static void adjustFlashlightTransformToHandOrHead();
         void triggerHapticOnce(vrcf::Hand hand);
@@ -35,5 +36,6 @@ namespace ImFl
         BodyFlashlightMesh _bodyFlashlightMesh;
         f4vr::WandActivationSphere _bodyGrabSphere;
         f4vr::WandActivationSphere _headSphere;
+        f4vr::WandActivationSphere _primaryHandSphere;
     };
 }

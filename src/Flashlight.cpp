@@ -41,7 +41,8 @@ namespace ImFl
 {
     Flashlight::Flashlight()
         : _bodyGrabSphere("ImFl_BodyGrab"),
-          _headSphere("ImFl_HeadActivate")
+          _headSphere("ImFl_HeadActivate"),
+          _primaryHandSphere("ImFl_PrimaryHandActivate")
     {
         _wasInPowerArmor = f4vr::isInPowerArmor();
 
@@ -63,9 +64,13 @@ namespace ImFl
     {
         handlePowerArmorTransition(Utils::isFlashlightOn());
 
-        // Stowed-on-body model + grab/return interaction, and offhand-near-HMD head activation.
+        // Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, and the
+        // offhand-near-primary-hand activation. All three may toggle the light, so the on/off state is
+        // re-read below. The primary-hand check runs before the early-return because its re-toggle turns
+        // the on-weapon light back on from off.
         updateBodyStow();
         checkHeadActivation();
+        checkPrimaryHandActivation();
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
@@ -97,6 +102,7 @@ namespace ImFl
             _bodyFlashlightMesh.invalidate();
             _bodyGrabSphere.detachDebug();
             _headSphere.detachDebug();
+            _primaryHandSphere.detachDebug();
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
                 logger::info("Restoring flashlight after power armor transition");
@@ -198,10 +204,71 @@ namespace ImFl
     }
 
     /**
-     * Grip-based switching of the on flashlight's location. Bring a hand near the head and fire its binding
-     * to swap that hand <-> head, or bring the two hands together and fire the hands binding to swap the
-     * light between offhand and primary hand. Each gesture is independent and gated only by its own binding
-     * (`switchFlashlightHead{Offhand,PrimaryHand}Binding`, `switchFlashlightBetweenHandsBinding`) — a disabled ("none") binding fires nothing and
+     * Drives the offhand-near-primary-hand activation sphere for the current frame. The zone is anchored to
+     * the primary-hand wand node; bringing the offhand wand into it and firing the binding moves the on
+     * flashlight between the offhand and the primary hand / weapon and toggles the on-weapon light on/off,
+     * while a separate long-press binding pulls the on-weapon light back to the offhand.
+     *
+     * Each binding is fed to the sphere only in the states where it actually does something, so the offhand
+     * button is suppressed (and the entry haptic fires) only when the gesture is available — e.g. nothing
+     * happens, and the button passes through, when the primary hand holds a melee/unarmed weapon. Runs every
+     * frame, before the on/off early-return, because the on-weapon re-toggle turns the light back on from off.
+     */
+    void Flashlight::checkPrimaryHandActivation()
+    {
+        const bool on = Utils::isFlashlightOn();
+        const auto location = Utils::flashlightLocation;
+        const bool weaponDrawn = f4vr::IsWeaponDrawn();
+        const bool regularWeapon = weaponDrawn && !f4vr::isMeleeWeaponEquipped() && !f4vr::isUnarmedWeaponEquipped();
+
+        // Tap binding: with the light on, acts whenever it can move or toggle it — on the weapon (toggle off),
+        // on the primary hand (move to offhand), or on the offhand with the primary hand empty or holding a
+        // regular weapon (a melee/unarmed weapon is inert). With the light off, a drawn regular weapon re-
+        // toggles the on-weapon light back on.
+        const bool tapActive = on ? (location == FlashlightLocation::OnWeapon || location == FlashlightLocation::InPrimaryHand ||
+                                        (location == FlashlightLocation::InOffhand && (!weaponDrawn || regularWeapon)))
+                                  : regularWeapon;
+
+        // Long-press binding: only pulls the on-weapon light back to the offhand.
+        const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
+
+        _primaryHandSphere.onFrameUpdate(
+            {
+                .node = f4vr::getPrimaryHandWandNode(),
+                .zone = g_config.flashlightPrimaryHandSphereTransform,
+                .bindings = {
+                    tapActive ? g_config.activateFlashlightOnPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    weaponToOffhandActive ? g_config.switchFlashlightFromWeaponToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
+                },
+                .showDebug = g_config.debugShowGrabSphere,
+            },
+            [&](const vrcf::InputBinding& binding) {
+                // Long-press weapon -> offhand (only fed while the light is on the weapon).
+                if (binding == g_config.switchFlashlightFromWeaponToOffhandBinding) {
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
+                    return true;
+                }
+                // Tap binding.
+                if (!Utils::isFlashlightOn()) {
+                    // Re-toggle the on-weapon light back on (only fed with a regular weapon drawn).
+                    Utils::turnFlashlightOn();
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+                } else if (Utils::flashlightLocation == FlashlightLocation::OnWeapon) {
+                    Utils::turnFlashlightOff();
+                } else if (Utils::flashlightLocation == FlashlightLocation::InPrimaryHand) {
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
+                } else {
+                    // On the offhand: move to the primary hand (empty) or the weapon (regular weapon drawn).
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+                }
+                return true;
+            });
+    }
+
+    /**
+     * Grip-based hand <-> head switching of the on flashlight's location. Bring a hand near the head and fire
+     * its binding to swap that hand <-> head. Each gesture is independent and gated only by its own binding
+     * (`switchFlashlightHead{Offhand,PrimaryHand}Binding`) — a disabled ("none") binding fires nothing and
      * stays silent (no proximity haptic). Runs every frame the light is on.
      */
     void Flashlight::checkSwitchingFlashlightOnHeadHand()
@@ -230,19 +297,6 @@ namespace ImFl
             if (vrcf::VRControllers.check(g_config.switchFlashlightHeadPrimaryHandBinding)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::OnHead);
                 vrcf::VRHaptics.trigger(vrcf::Hand::Primary, vrcf::HapticPattern::DoubleClick);
-            }
-            return;
-        }
-
-        // switch between offhand and primary hand
-        const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12;
-        if (isHandsCloseToEachOther && g_config.switchFlashlightBetweenHandsBinding.isEnabled() && !Utils::isHeadMountedFlashlight()) {
-            triggerHapticOnce(vrcf::Hand::Left);
-            if (vrcf::VRControllers.check(g_config.switchFlashlightBetweenHandsBinding)) {
-                Utils::switchFlashlightConfigLocation(Utils::getActiveFlashlightConfigLocation() == FlashlightConfigLocation::InPrimaryHand
-                        ? FlashlightConfigLocation::InOffhand
-                        : FlashlightConfigLocation::InPrimaryHand);
-                vrcf::VRHaptics.trigger(vrcf::Hand::Left, vrcf::HapticPattern::DoubleClick);
             }
             return;
         }
@@ -303,6 +357,7 @@ namespace ImFl
         _bodyFlashlightMesh.invalidate();
         _bodyGrabSphere.detachDebug();
         _headSphere.detachDebug();
+        _primaryHandSphere.detachDebug();
 
         logger::info("Disable game Pipboy light control");
         f4vr::getIniSetting("fPipboyLightDelay:Controls", true)->SetFloat(99);
