@@ -130,11 +130,6 @@ namespace ImFl
         std::string flashlightFlagsBitmask;
         bool warnAboutFPSStabilizerMod = false;
 
-        // Input bindings to switch the flashlight between head and hand. Separate per hand so each can be
-        // configured independently; checked on the hand near the head (or for the hands-together swap).
-        vrcf::InputBinding switchFlashlightBindingPrimary;
-        vrcf::InputBinding switchFlashlightBindingOffhand;
-
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;
         // Primary-hand pose of the mesh for the Forward grip. Offhand mirrors Z translate and heading at attach time.
@@ -156,6 +151,7 @@ namespace ImFl
 
         // Grip-style selection: Auto/ForwardOnly/OverhandOnly. See FlashlightGripMode.
         FlashlightGripMode flashlightGripMode = FlashlightGripMode::Auto;
+
         // Auto-detect tuning. Angle (degrees) between the controller's top axis and world up: 0 = top
         // pointing straight up (Forward grip), 180 = top pointing straight down (Overhand fist grip).
         // The grip switches to Overhand when the tilt exceeds this threshold; it switches back to
@@ -166,20 +162,43 @@ namespace ImFl
         // Stowed flashlight model on the body: shown (beam-less) while the flashlight is off so the
         // player can grab it to turn it on into a hand, or put it back to turn it off.
         bool showFlashlightOnBody = true;
+
         // Mesh transform of the stowed model relative to the chest bone. Authored for a right-handed
         // player; auto-mirrored when the player is left-handed.
         RE::NiTransform flashlightBodyTransform{};
         RE::NiTransform flashlightBodyTransformPA{};
+
         // Transform of the spherical grab zone, in the same body-bone space as the stowed model (mirrored
         // the same way, PA variant defaults to non-PA). The base sphere mesh is 1 unit, so the transform's
         // scale is the grab radius. Defaults to the stowed-model transform when omitted.
         RE::NiTransform flashlightGrabSphereTransform{};
         RE::NiTransform flashlightGrabSphereTransformPA{};
+
+        // Head activation: bring the offhand near the HMD and fire the binding to put the flashlight on the
+        // head (on from off, switch to head from a hand, or off when already head-mounted). Offhand only;
+        // always active (set the binding to "none" to disable it).
+        // Activation sphere around the HMD, authored in HMD-local space (not mirrored — centered on the
+        // head). The base sphere mesh is unit-diameter, so the transform scale is the grab diameter. No PA
+        // variant: the zone is measured off the HMD, which sits in the same place in and out of power armor.
+        RE::NiTransform flashlightHeadSphereTransform{};
+
         // Render the grab sphere (framework debug sphere mesh) at its exact size/location for tuning.
         bool debugShowGrabSphere = false;
+
         // Grab/return input bindings, one per hand. Set a hand to "none" to disable grabbing with it.
-        vrcf::InputBinding grabFlashlightBindingOffhand;
-        vrcf::InputBinding grabFlashlightBindingPrimary;
+        vrcf::InputBinding grabFlashlightByOffhandBinding;
+        vrcf::InputBinding grabFlashlightByPrimaryHandBinding;
+        vrcf::InputBinding switchFlashlightBetweenHandsBinding;
+        // Binding fired while the offhand is in the head zone. Set to "none" to disable head activation.
+        vrcf::InputBinding activateFlashlightOnHeadBinding;
+
+        // Grip-based location switching of the on flashlight (checkSwitchingFlashlightOnHeadHand): bring a
+        // hand near the head to swap that hand <-> head, or bring the two hands together to swap the light
+        // between offhand and primary hand. Each gesture is gated only by its own binding ("none" = off).
+        // The hand <-> head swaps default to off (head activation already covers -> head); the hand <-> hand
+        // swap defaults on.
+        vrcf::InputBinding switchFlashlightHeadPrimaryHandBinding;
+        vrcf::InputBinding switchFlashlightHeadOffhandBinding;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

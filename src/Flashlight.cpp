@@ -4,7 +4,6 @@
 #include "FlashlightMod.h"
 #include "Utils.h"
 #include "common/MatrixUtils.h"
-#include "f4vr/F4VROffsets.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersHaptic.h"
@@ -41,7 +40,8 @@ namespace
 namespace ImFl
 {
     Flashlight::Flashlight()
-        : _bodyGrabSphere("ImFl_BodyGrab")
+        : _bodyGrabSphere("ImFl_BodyGrab"),
+          _headSphere("ImFl_HeadActivate")
     {
         _wasInPowerArmor = f4vr::isInPowerArmor();
 
@@ -63,9 +63,9 @@ namespace ImFl
     {
         handlePowerArmorTransition(Utils::isFlashlightOn());
 
-        // Stowed-on-body model + grab/return interaction. May toggle the light, so the on/off state is
-        // re-read below.
+        // Stowed-on-body model + grab/return interaction, and offhand-near-HMD head activation.
         updateBodyStow();
+        checkHeadActivation();
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
@@ -94,8 +94,9 @@ namespace ImFl
         const bool isInPowerArmor = f4vr::isInPowerArmor();
         if (isInPowerArmor != _wasInPowerArmor) {
             _wasInPowerArmor = isInPowerArmor;
-            _bodyFlashlightMesh.invalidate(); // skeleton changed — re-attach the stowed model to the new bones
+            _bodyFlashlightMesh.invalidate();
             _bodyGrabSphere.detachDebug();
+            _headSphere.detachDebug();
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
                 logger::info("Restoring flashlight after power armor transition");
@@ -147,8 +148,8 @@ namespace ImFl
                 .node = zoneNode,
                 .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
                 .bindings = {
-                    g_config.grabFlashlightBindingOffhand,
-                    !f4vr::IsWeaponDrawn() ? g_config.grabFlashlightBindingPrimary : vrcf::VRControllersManager::DisabledBinding,
+                    g_config.grabFlashlightByOffhandBinding,
+                    !f4vr::IsWeaponDrawn() ? g_config.grabFlashlightByPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
                 },
                 .showDebug = g_config.debugShowGrabSphere,
             },
@@ -165,7 +166,43 @@ namespace ImFl
     }
 
     /**
-     * Switch between Pipboy flashlight on head or right/left hand based if player switches using button press of the hand near head.
+     * Drives the offhand-near-HMD head activation for the current frame: runs the proximity-gated input
+     * suppression + haptic and the on/switch/off toggle, and keeps the shared debug sphere in sync. May
+     * toggle the flashlight, so the caller re-reads the light state afterwards.
+     *
+     * While the configured hand's wand is inside the head zone, suppress its configured button from the
+     * game/FRIK and play a one-shot haptic; firing the binding puts the flashlight on the head — turning
+     * it on from off, moving it to the head from a hand, or (when already head-mounted) turning it off.
+     * The turn-on path mirrors the body grab's on-then-switch order so the head beam values get refreshed.
+     */
+    void Flashlight::checkHeadActivation()
+    {
+        _headSphere.onFrameUpdate(
+            {
+                .node = f4vr::getPlayerNodes()->HmdNode,
+                .zone = g_config.flashlightHeadSphereTransform,
+                .bindings = { g_config.activateFlashlightOnHeadBinding },
+                .showDebug = g_config.debugShowGrabSphere,
+            },
+            [&](const vrcf::InputBinding&) {
+                if (!Utils::isFlashlightOn()) {
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
+                    Utils::turnFlashlightOn();
+                } else if (Utils::isHeadMountedFlashlight()) {
+                    Utils::turnFlashlightOff();
+                } else {
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
+                }
+                return true;
+            });
+    }
+
+    /**
+     * Grip-based switching of the on flashlight's location. Bring a hand near the head and fire its binding
+     * to swap that hand <-> head, or bring the two hands together and fire the hands binding to swap the
+     * light between offhand and primary hand. Each gesture is independent and gated only by its own binding
+     * (`switchFlashlightHead{Offhand,PrimaryHand}Binding`, `switchFlashlightBetweenHandsBinding`) — a disabled ("none") binding fires nothing and
+     * stays silent (no proximity haptic). Runs every frame the light is on.
      */
     void Flashlight::checkSwitchingFlashlightOnHeadHand()
     {
@@ -174,47 +211,12 @@ namespace ImFl
         const auto& offhandPos = f4vr::getOffhandWandNode()->world.translate;
         const auto& primaryHandPos = f4vr::getPrimaryHandWandNode()->world.translate;
 
-        // debug hand position to understand why a player doesn't have ability to switch from hand to head
-        if (logger::isTraceEnabled()) {
-            const auto offhandToHmdDiff = offhandPos - hmdPos;
-            const auto primaryHandToHmdDiff = primaryHandPos - hmdPos;
-            const auto primaryHandToOffhandDiff = primaryHandPos - offhandPos;
-            logger::sample(
-                "Head/hand debug:\n"
-                " HMD=({:.2f}, {:.2f}, {:.2f})\n"
-                " Offhand=({:.2f}, {:.2f}, {:.2f})\n"
-                " Offhand-HMD=({:.2f}, {:.2f}, {:.2f}), isOffhandCloseToHMD={}\n"
-                " Primary=({:.2f}, {:.2f}, {:.2f})"
-                " Primary-HMD=({:.2f}, {:.2f}, {:.2f}), isPrimaryHandCloseToHMD={}\n"
-                " Primary-Offhand=({:.2f}, {:.2f}, {:.2f}), isHandsCloseToEachOther={}",
-                hmdPos.x,
-                hmdPos.y,
-                hmdPos.z,
-                offhandPos.x,
-                offhandPos.y,
-                offhandPos.z,
-                offhandToHmdDiff.x,
-                offhandToHmdDiff.y,
-                offhandToHmdDiff.z,
-                MatrixUtils::vec3Len(offhandPos - hmdPos) < 12,
-                primaryHandPos.x,
-                primaryHandPos.y,
-                primaryHandPos.z,
-                primaryHandToHmdDiff.x,
-                primaryHandToHmdDiff.y,
-                primaryHandToHmdDiff.z,
-                MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12,
-                primaryHandToOffhandDiff.x,
-                primaryHandToOffhandDiff.y,
-                primaryHandToOffhandDiff.z,
-                MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12);
-        }
-
         // switch between head and offhand
         const auto isOffhandCloseToHMD = MatrixUtils::vec3Len(offhandPos - hmdPos) < 12;
-        if (isOffhandCloseToHMD && (Utils::isHeadMountedFlashlight() || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
+        if (isOffhandCloseToHMD && g_config.switchFlashlightHeadOffhandBinding.isEnabled() &&
+            (Utils::isHeadMountedFlashlight() || Utils::flashlightLocation == FlashlightLocation::InOffhand)) {
             triggerHapticOnce(vrcf::Hand::Offhand);
-            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingOffhand)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightHeadOffhandBinding)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InOffhand : FlashlightConfigLocation::OnHead);
                 vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::DoubleClick);
             }
@@ -223,9 +225,9 @@ namespace ImFl
 
         // switch between head and primary hand
         const auto isPrimaryHandCloseToHMD = MatrixUtils::vec3Len(primaryHandPos - hmdPos) < 12;
-        if (isPrimaryHandCloseToHMD && isAllowedToSwitchHeadAndPrimaryHand()) {
+        if (isPrimaryHandCloseToHMD && g_config.switchFlashlightHeadPrimaryHandBinding.isEnabled() && isAllowedToSwitchHeadAndPrimaryHand()) {
             triggerHapticOnce(vrcf::Hand::Primary);
-            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingPrimary)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightHeadPrimaryHandBinding)) {
                 Utils::switchFlashlightConfigLocation(Utils::isHeadMountedFlashlight() ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::OnHead);
                 vrcf::VRHaptics.trigger(vrcf::Hand::Primary, vrcf::HapticPattern::DoubleClick);
             }
@@ -234,9 +236,9 @@ namespace ImFl
 
         // switch between offhand and primary hand
         const auto isHandsCloseToEachOther = MatrixUtils::vec3Len(primaryHandPos - offhandPos) < 12;
-        if (isHandsCloseToEachOther && !Utils::isHeadMountedFlashlight()) {
+        if (isHandsCloseToEachOther && g_config.switchFlashlightBetweenHandsBinding.isEnabled() && !Utils::isHeadMountedFlashlight()) {
             triggerHapticOnce(vrcf::Hand::Left);
-            if (vrcf::VRControllers.check(g_config.switchFlashlightBindingOffhand)) {
+            if (vrcf::VRControllers.check(g_config.switchFlashlightBetweenHandsBinding)) {
                 Utils::switchFlashlightConfigLocation(Utils::getActiveFlashlightConfigLocation() == FlashlightConfigLocation::InPrimaryHand
                         ? FlashlightConfigLocation::InOffhand
                         : FlashlightConfigLocation::InPrimaryHand);
@@ -300,6 +302,7 @@ namespace ImFl
         _inHandFlashlightMesh.invalidate(); // skeleton pointers may have changed on save load
         _bodyFlashlightMesh.invalidate();
         _bodyGrabSphere.detachDebug();
+        _headSphere.detachDebug();
 
         logger::info("Disable game Pipboy light control");
         f4vr::getIniSetting("fPipboyLightDelay:Controls", true)->SetFloat(99);

@@ -256,15 +256,15 @@ namespace ImFl
         flashlightFlagsBitmask = ini.GetValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", "0000010000100001");
         warnAboutFPSStabilizerMod = ini.GetBoolValue(DEFAULT_SECTION, "bWarnAboutFPSStabilizerMod", true);
 
-        // change hand / head input bindings, one per hand (default: grip tap)
-        switchFlashlightBindingPrimary = getInputBindingValue(ini,
+        // Grip-based location switching bindings. The hand <-> head swaps default to "none" (off) since head
+        // activation already covers -> head; the hand <-> hand swap (hands together) defaults to an offhand
+        // trigger tap. Each gesture is disabled by setting its binding to "none".
+        switchFlashlightHeadPrimaryHandBinding = getInputBindingValue(ini, DEFAULT_SECTION, "sSwitchFlashlightHeadPrimaryHandBinding", vrcf::VRControllersManager::DisabledBinding);
+        switchFlashlightHeadOffhandBinding = getInputBindingValue(ini, DEFAULT_SECTION, "sSwitchFlashlightHeadOffhandBinding", vrcf::VRControllersManager::DisabledBinding);
+        switchFlashlightBetweenHandsBinding = getInputBindingValue(ini,
             DEFAULT_SECTION,
-            "sSwitchFlashlightBindingPrimary",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_Grip });
-        switchFlashlightBindingOffhand = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sSwitchFlashlightBindingOffhand",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_Grip });
+            "sSwitchFlashlightBetweenHandsBinding",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightMesh", true);
@@ -357,13 +357,26 @@ namespace ImFl
         flashlightGrabSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransform", sphereTransformDefault);
         flashlightGrabSphereTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransformPA", flashlightGrabSphereTransform);
         debugShowGrabSphere = ini.GetBoolValue(DEFAULT_SECTION, "bDebugShowGrabSphere", false);
-        grabFlashlightBindingOffhand = getInputBindingValue(ini,
+        grabFlashlightByOffhandBinding = getInputBindingValue(ini,
             DEFAULT_SECTION,
-            "sGrabFlashlightBindingOffhand",
+            "sGrabFlashlightByOffhandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
-        grabFlashlightBindingPrimary = getInputBindingValue(ini,
+        grabFlashlightByPrimaryHandBinding = getInputBindingValue(ini,
             DEFAULT_SECTION,
-            "sGrabFlashlightBindingPrimary",
+            "sGrabFlashlightByPrimaryHandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
+
+        // Head activation: bring the offhand near the HMD and fire the binding to put the light on the head.
+        // Always active; the binding's "none" value disables it (so no master on/off flag).
+        // Sphere around the HMD (HMD-local, not mirrored). Default is centered on the head; the scale sizes
+        // the unit-diameter sphere mesh, so the grab radius is ~half the scale. Tune with the debug sphere.
+        // No PA variant: the HMD sits in the same place in and out of power armor.
+        RE::NiTransform headSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        headSphereDefault.scale = 24.0f;
+        flashlightHeadSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightHeadSphereTransform", headSphereDefault);
+        activateFlashlightOnHeadBinding = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sActivateFlashlightOnHeadBinding",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
     }
 }
