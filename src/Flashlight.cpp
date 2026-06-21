@@ -49,25 +49,27 @@ namespace ImFl
 
     /**
      * Executed every frame to update to handle flashlight location and moving between hand and head.
+     *
+     * Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, the
+     * offhand-near-primary-hand activation, and the zone-less global on/off toggle. All four may toggle
+     * the light, so the on/off state is re-read below. They run before the early-return because their
+     * re-toggle turns the light back on from off. The global toggle runs first to be first to act.
      */
     void Flashlight::onFrameUpdate()
     {
         handlePowerArmorTransition(Utils::isFlashlightOn());
 
-        // Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, and the
-        // offhand-near-primary-hand activation. All three may toggle the light, so the on/off state is
-        // re-read below. The primary-hand check runs before the early-return because its re-toggle turns
-        // the on-weapon light back on from off.
+        checkGlobalToggle();
         updateBodyStow();
         checkHeadActivation();
         checkPrimaryHandActivation();
+
+        Utils::refreshFlashlightLocation();
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
             return;
         }
-
-        Utils::refreshFlashlightLocation();
 
         Utils::refreshGripStyle();
 
@@ -106,9 +108,10 @@ namespace ImFl
 
     /**
      * Keeps the beam-less stowed model attached to the chest bone while the feature is enabled, runs the
-     * proximity-gated grab/return interaction, then shows the model only while the flashlight is off
-     * (holstered). A grab/return may toggle the light mid-frame, so the visibility is set from the
-     * resulting state and the caller re-reads the on/off state afterwards.
+     * proximity-gated grab/return interaction, then shows the model except while the light is held in a hand
+     * (offhand / primary hand) — the physical unit has left the body. An off, head-mounted, or weapon-mounted
+     * light leaves the model stowed and visible (weapons carry their own flashlight mesh). A grab/return may
+     * toggle the light mid-frame, so the visibility is set from the resulting state and the caller re-reads it.
      */
     void Flashlight::updateBodyStow()
     {
@@ -119,21 +122,27 @@ namespace ImFl
         checkBodyGrab(enabled);
 
         if (enabled) {
-            _bodyFlashlightMesh.setVisible(!Utils::isFlashlightOn());
+            const bool heldInHand = Utils::isFlashlightOn() && Utils::isHandHeldFlashlight();
+            _bodyFlashlightMesh.setVisible(!heldInHand);
         }
     }
 
     /**
-     * Evaluate the grab (bring the light to this hand) and return (held in this hand -> off) interactions
-     * for both hands against the stowed model position. Grabbing pulls the light to the grabbing hand from
-     * any other state — off (turns on), head, or the other hand (stays on, switches) — while the same
-     * gesture returns it (off) when it is already held in that hand. While a usable hand is within reach
-     * its configured grab button is suppressed from the game/FRIK and a one-shot haptic hints the zone.
-     * A hand occupied by a drawn weapon (the primary hand) can neither grab nor return the flashlight.
+     * Body-stow grab/return for both hands against the chest-stowed model: firing a hand's grab binding
+     * returns the light (off) when it is already held in that hand, otherwise grabs it into that hand
+     * (turning it on). Each binding is fed only in states where it acts — and the primary hand never while
+     * it holds a drawn weapon — so its button is suppressed (with a one-shot entry haptic) only then.
      * @return true if a grab or return toggled the flashlight this frame.
      */
     bool Flashlight::checkBodyGrab(const bool enabled)
     {
+        const bool on = Utils::isFlashlightOn();
+        const auto location = Utils::flashlightLocation;
+        const bool offhandTapActive = location == FlashlightLocation::InOffhand || location == FlashlightLocation::OnWeapon || Utils::isHeadMountedFlashlight() ||
+            (location == FlashlightLocation::InPrimaryHand && !on);
+        const bool primaryTapActive =
+            !f4vr::IsWeaponDrawn() && (location == FlashlightLocation::InPrimaryHand || Utils::isHeadMountedFlashlight() || (location == FlashlightLocation::InOffhand && !on));
+
         // The grab zone is anchored to the stowed model on the chest bone; mirror it for left-handed players.
         const auto zoneNode = _bodyFlashlightMesh.attachedNode();
         return _bodyGrabSphere.onFrameUpdate(
@@ -142,14 +151,14 @@ namespace ImFl
                 .node = zoneNode,
                 .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
                 .bindings = {
-                    g_config.grabFlashlightByOffhandBinding,
-                    !f4vr::IsWeaponDrawn() ? g_config.grabFlashlightByPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    offhandTapActive ? g_config.grabFlashlightByOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    primaryTapActive ? g_config.grabFlashlightByPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
                 },
                 .showDebug = g_config.debugShowGrabSphere,
             },
             [&](const vrcf::InputBinding& binding) {
-                const auto location = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
-                if (Utils::isFlashlightOn() && Utils::flashlightLocation == location) {
+                const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
+                if (Utils::isFlashlightOn() && Utils::flashlightLocation == newLocation) {
                     Utils::turnFlashlightOff();
                 } else {
                     Utils::turnFlashlightOn();
@@ -160,16 +169,10 @@ namespace ImFl
     }
 
     /**
-     * Drives the offhand-near-HMD head activation for the current frame: runs the proximity-gated input
-     * suppression + haptic and the toggle/switch, and keeps the shared debug sphere in sync. May toggle
-     * the flashlight, so the caller re-reads the light state afterwards.
-     *
-     * While the offhand wand is inside the head zone, suppress its configured button from the game/FRIK and
-     * play a one-shot haptic. The tap binding puts the flashlight on the head — turning it on from off, moving
-     * it to the head from a hand, or (when already head-mounted) turning it off; the turn-on path mirrors the
-     * body grab's on-then-switch order so the head beam values get refreshed. The long-press binding pulls the
-     * head-mounted light to the offhand and is fed only while the light is on and head-mounted, so the offhand
-     * button is suppressed (and the entry haptic fires) for it only when that gesture is available.
+     * Offhand-near-HMD head activation. Inside the head zone the offhand's bound button is suppressed (with a
+     * one-shot entry haptic): the tap binding puts the light on the head — on from off, switched there from a
+     * hand, or off when already head-mounted — and the long-press binding, fed only while the light is on and
+     * head-mounted, pulls it to the offhand. May toggle the light, so the caller re-reads its state.
      */
     void Flashlight::checkHeadActivation()
     {
@@ -185,6 +188,8 @@ namespace ImFl
                     headToOffhandActive ? g_config.switchFlashlightFromHeadToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
                 },
                 .showDebug = g_config.debugShowGrabSphere,
+                // The HMD node doesn't render its children; draw the debug sphere under the rendered skeleton root.
+                .debugNode = f4vr::getRootNode(),
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press head -> offhand (only fed while the light is head-mounted).
@@ -206,15 +211,12 @@ namespace ImFl
     }
 
     /**
-     * Drives the offhand-near-primary-hand activation sphere for the current frame. The zone is anchored to
-     * the primary-hand wand node; bringing the offhand wand into it and firing the binding moves the on
-     * flashlight between the offhand and the primary hand / weapon and toggles the on-weapon light on/off,
-     * while a separate long-press binding pulls the on-weapon light back to the offhand.
-     *
-     * Each binding is fed to the sphere only in the states where it actually does something, so the offhand
-     * button is suppressed (and the entry haptic fires) only when the gesture is available — e.g. nothing
-     * happens, and the button passes through, when the primary hand holds a melee/unarmed weapon. Runs every
-     * frame, before the on/off early-return, because the on-weapon re-toggle turns the light back on from off.
+     * Offhand-near-primary-hand activation: a zone on the primary-hand wand, tested against the offhand wand.
+     * The tap binding moves/toggles the light among the offhand, primary hand, and weapon, and turns it on at
+     * the weapon (regular weapon drawn) even from off or the head; the long-press binding, fed only while the
+     * light is on the weapon, pulls it back to the offhand. Each binding is fed only in states where it acts (a
+     * melee/unarmed weapon is inert), so the offhand button is suppressed (with a one-shot entry haptic) only
+     * then. Runs before the on/off early-return so the on-weapon turn-on works from off. May toggle the light.
      */
     void Flashlight::checkPrimaryHandActivation()
     {
@@ -223,13 +225,10 @@ namespace ImFl
         const bool weaponDrawn = f4vr::IsWeaponDrawn();
         const bool regularWeapon = weaponDrawn && !f4vr::isMeleeWeaponEquipped() && !f4vr::isUnarmedWeaponEquipped();
 
-        // Tap binding: with the light on, acts whenever it can move or toggle it — on the weapon (toggle off),
-        // on the primary hand (move to offhand), or on the offhand with the primary hand empty or holding a
-        // regular weapon (a melee/unarmed weapon is inert). With the light off, a drawn regular weapon re-
-        // toggles the on-weapon light back on.
-        const bool tapActive = on ? (location == FlashlightLocation::OnWeapon || location == FlashlightLocation::InPrimaryHand ||
-                                        (location == FlashlightLocation::InOffhand && (!weaponDrawn || regularWeapon)))
-                                  : regularWeapon;
+        const bool primaryHandUsable = !weaponDrawn || regularWeapon;
+        const bool tapActive = location == FlashlightLocation::OnWeapon || (location == FlashlightLocation::InPrimaryHand && on) ||
+            (Utils::isHeadMountedFlashlight() && regularWeapon) || (location == FlashlightLocation::InOffhand && on && primaryHandUsable) ||
+            (location == FlashlightLocation::InOffhand && !on && regularWeapon);
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
@@ -243,6 +242,8 @@ namespace ImFl
                     weaponToOffhandActive ? g_config.switchFlashlightFromWeaponToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
                 },
                 .showDebug = g_config.debugShowGrabSphere,
+                // The wand node doesn't render its children; draw the debug sphere under the rendered skeleton root.
+                .debugNode = f4vr::getRootNode(),
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press weapon -> offhand (only fed while the light is on the weapon).
@@ -252,7 +253,8 @@ namespace ImFl
                 }
                 // Tap binding.
                 if (!Utils::isFlashlightOn()) {
-                    // Re-toggle the on-weapon light back on (only fed with a regular weapon drawn).
+                    // Turn the light on at the primary hand (empty) or weapon (regular weapon drawn). Fed
+                    // only when the primary hand is usable, so a melee/unarmed weapon never reaches here.
                     Utils::turnFlashlightOn();
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
                 } else if (Utils::flashlightLocation == FlashlightLocation::OnWeapon) {
@@ -265,6 +267,37 @@ namespace ImFl
                 }
                 return true;
             });
+    }
+
+    /**
+     * Zone-less global on/off toggle: fires the configured binding from anywhere to turn the light on at its
+     * current resolved location or off.
+     */
+    void Flashlight::checkGlobalToggle() const
+    {
+        const auto& binding = g_config.toggleFlashlightBinding;
+        if (!binding.isEnabled()) {
+            return;
+        }
+
+        // Defer to any sphere already suppressing this exact input this frame to avoid a double-toggle.
+        if (Utils::isFlashlightOn() &&
+            ((Utils::isHeadMountedFlashlight() && _headSphere.isSuppressing(binding)) ||
+                (Utils::flashlightLocation == FlashlightLocation::OnWeapon && _primaryHandSphere.isSuppressing(binding)))) {
+            return;
+        }
+
+        if (!vrcf::VRControllers.check(binding)) {
+            return;
+        }
+
+        if (Utils::isFlashlightOn()) {
+            Utils::turnFlashlightOff();
+        } else {
+            Utils::refreshFlashlightLocation();
+            Utils::setLightValues();
+            Utils::turnFlashlightOn();
+        }
     }
 
     /**

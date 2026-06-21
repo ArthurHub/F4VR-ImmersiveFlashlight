@@ -204,6 +204,14 @@ namespace ImFl
     }
 
     /**
+     * Check if the active runtime location is any hand held flashlight variant.
+     */
+    bool Utils::isHandHeldFlashlight()
+    {
+        return flashlightLocation == FlashlightLocation::InOffhand || flashlightLocation == FlashlightLocation::InPrimaryHand;
+    }
+
+    /**
      * Get a readable label for a flashlight config location.
      */
     const char* Utils::getFlashlightConfigLocationLabel(const FlashlightConfigLocation location)
@@ -299,8 +307,7 @@ namespace ImFl
             return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon() ? FlashlightLocation::OnWeapon : FlashlightLocation::InOffhand;
         }
 
-        const auto weaponNode = f4vr::getWeaponNode();
-        if (!f4vr::isNodeVisible(weaponNode)) {
+        if (!f4vr::IsWeaponDrawn()) {
             return FlashlightLocation::InPrimaryHand;
         }
 

@@ -388,5 +388,13 @@ namespace ImFl
             DEFAULT_SECTION,
             "sSwitchFlashlightFromWeaponToOffhandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
+
+        // Global on/off toggle: available anywhere (no proximity zone), turns the light on at its current
+        // location or off. Default offhand long-press trigger; it defers to the proximity gestures above when
+        // the offhand is inside one of their zones. "none" disables it.
+        toggleFlashlightBinding = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sToggleFlashlightBinding",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
     }
 }
