@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "Utils.h"
+#include "f4vr/DebugInventory.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -77,12 +78,11 @@ namespace ImFl
     }
 
     /**
-     * Immersive rule: the worn headgear is "light-capable". Deny list wins, then allow list, then the keyword
-     * set (matched against the item's keywords). Nothing worn -> not capable.
+     * Immersive rule for a specific headgear: "light-capable". Deny list wins, then allow list, then the keyword
+     * set (matched against the item's keywords). nullptr (nothing worn) -> not capable.
      */
-    bool RestrictionHandler::isLightCapableHeadgearWorn()
+    bool RestrictionHandler::isLightCapableHeadgear(const RE::TESObjectARMO* armor)
     {
-        const auto* armor = getWornHeadgear();
         if (!armor) {
             return false;
         }
@@ -99,6 +99,14 @@ namespace ImFl
             }
         }
         return false;
+    }
+
+    /**
+     * Immersive rule applied to the currently worn headgear.
+     */
+    bool RestrictionHandler::isLightCapableHeadgearWorn()
+    {
+        return isLightCapableHeadgear(getWornHeadgear());
     }
 
     /**
@@ -137,5 +145,27 @@ namespace ImFl
             logger::info("Headgear requirement not met — turning the head flashlight off");
             Utils::turnFlashlightOff();
         }
+    }
+
+    /**
+     * Dump every head-slot (CK slot 30) armor, split into the Immersive rule's allowed (light-capable) and
+     * blocked sets. Reuses DebugInventory's print-all walk with isLightCapableHeadgear() as the filter
+     * predicate, so the listing reflects the resolved keyword/allow/deny lists exactly. A tuning aid for the
+     * Immersive lists — it always uses the Immersive rule regardless of the active requirement mode or PA.
+     */
+    void RestrictionHandler::dumpHeadgear()
+    {
+        using f4cf::f4vr::DebugInventory;
+
+        DebugInventory::ItemFilter filter;
+        filter.slotMask = 1u << 0; // CK biped slot 30 — where hats / helmets sit (see getWornHeadgear)
+
+        logger::info("==== Immersive rule: allowed (light-capable) headgear ====");
+        filter.predicate = [](const RE::TESForm* form) { return isLightCapableHeadgear(static_cast<const RE::TESObjectARMO*>(form)); };
+        DebugInventory::iterateObjects(DebugInventory::Operation::PrintAll, DebugInventory::ItemCategory::Armor, filter);
+
+        logger::info("==== Immersive rule: blocked headgear ====");
+        filter.predicate = [](const RE::TESForm* form) { return !isLightCapableHeadgear(static_cast<const RE::TESObjectARMO*>(form)); };
+        DebugInventory::iterateObjects(DebugInventory::Operation::PrintAll, DebugInventory::ItemCategory::Armor, filter);
     }
 }

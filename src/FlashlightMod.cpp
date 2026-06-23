@@ -106,6 +106,11 @@ namespace ImFl
         _flashlight->onFrameUpdate();
 
         _flashlightConfigMode->onFrameUpdate();
+
+        // Debug: dump the Immersive-rule headgear allow/block classification on request (one-shot INI token).
+        if (g_config.checkDebugDumpDataOnceFor("headgear")) {
+            RestrictionHandler::dumpHeadgear();
+        }
     }
 
     /**

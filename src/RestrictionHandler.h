@@ -26,10 +26,17 @@ namespace ImFl
         // headgear requirement is no longer met). Call each frame after the runtime location is resolved.
         static void enforce();
 
+        // Debug tuning aid: dump every head-slot armor to the log, split into the Immersive rule's allowed
+        // (light-capable) and blocked sets per the resolved keyword/allow/deny lists. Independent of the
+        // active requirement mode and power armor. Wired to the "headgear" sDumpDataOnceNames token.
+        static void dumpHeadgear();
+
     private:
         // The armor worn in the head slot (slot 30 / biped index 0 = kHairTop), or nullptr if nothing is worn there.
         static const RE::TESObjectARMO* getWornHeadgear();
-        // Immersive rule: the worn headgear is light-capable (not denied, and either allow-listed or carries a configured keyword).
+        // Immersive rule for a specific headgear: light-capable = not denied, and either allow-listed or carries a configured keyword.
+        static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);
+        // Immersive rule applied to the currently worn headgear.
         static bool isLightCapableHeadgearWorn();
 
         // Immersive head-restriction rule, resolved from Config to runtime FormIDs by resolveForms().
