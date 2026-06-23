@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "FlashlightMod.h"
+#include "RestrictionHandler.h"
 #include "Utils.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
@@ -42,6 +43,7 @@ namespace ImFl
 
         // refresh flashlight values on config change
         g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) {
+            RestrictionHandler::resolveForms();
             Utils::refreshFlashlightLocation();
             Utils::toggleLightRefreshValues();
         });
@@ -65,6 +67,10 @@ namespace ImFl
         checkPrimaryHandActivation();
 
         Utils::refreshFlashlightLocation();
+
+        // After all interactions resolved the location, enforce restrictions — e.g. drop an on-head light if
+        // the headgear requirement (out of PA) is no longer met because the helmet was removed. May turn the light off.
+        RestrictionHandler::enforce();
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
@@ -179,12 +185,17 @@ namespace ImFl
         // Long-press head -> offhand: only available while the light is on and head-mounted.
         const bool headToOffhandActive = Utils::isFlashlightOn() && Utils::isHeadMountedFlashlight();
 
+        // Gate the tap's "put on head" actions behind the headgear requirement so the gesture is inert (button
+        // passes through, no entry haptic) when the head isn't allowed. Turning an already-head-mounted light
+        // off via the tap stays available regardless.
+        const bool headTapActive = RestrictionHandler::isHeadFlashlightAllowed() || (Utils::isFlashlightOn() && Utils::isHeadMountedFlashlight());
+
         _headSphere.onFrameUpdate(
             {
                 .node = f4vr::getPlayerNodes()->HmdNode,
                 .zone = g_config.flashlightHeadSphereTransform,
                 .bindings = {
-                    g_config.activateFlashlightOnHeadBinding,
+                    headTapActive ? g_config.activateFlashlightOnHeadBinding : vrcf::VRControllersManager::DisabledBinding,
                     headToOffhandActive ? g_config.switchFlashlightFromHeadToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
                 },
                 .showDebug = g_config.debugShowGrabSphere,

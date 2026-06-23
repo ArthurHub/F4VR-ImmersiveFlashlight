@@ -212,6 +212,14 @@ namespace ImFl
     }
 
     /**
+     * Whether a config-mode location override is currently active.
+     */
+    bool Utils::isRuntimeLocationOverrideActive()
+    {
+        return _runtimeLocationOverride.has_value();
+    }
+
+    /**
      * Get a readable label for a flashlight config location.
      */
     const char* Utils::getFlashlightConfigLocationLabel(const FlashlightConfigLocation location)

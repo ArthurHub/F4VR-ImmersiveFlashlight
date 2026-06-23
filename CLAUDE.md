@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-F4VR-ImmersiveFlashlight is a **C++23 DLL plugin** for F4SE (Fallout 4 Script Extender) that replaces the VR flashlight system. It supports 5 mounting positions (head, power-armor head, offhand, primary hand, weapon-mounted) with per-mode beam configuration (intensity, radius, FOV, color, gobo textures) and an in-game VR configuration UI. It also stows a beam-less flashlight model on the body that the player can physically grab to turn the light on into a hand (and put back to turn it off), a matching head-activation gesture that brings the offhand near the HMD to put the light on the head, and an offhand-near-primary-hand gesture that moves the light between the offhand and the primary hand / weapon.
+F4VR-ImmersiveFlashlight is a **C++23 DLL plugin** for F4SE (Fallout 4 Script Extender) that replaces the VR flashlight system. It supports 5 mounting positions (head, power-armor head, offhand, primary hand, weapon-mounted) with per-mode beam configuration (intensity, radius, FOV, color, gobo textures) and an in-game VR configuration UI. It also stows a beam-less flashlight model on the body that the player can physically grab to turn the light on into a hand (and put back to turn it off), a matching head-activation gesture that brings the offhand near the HMD to put the light on the head, and an offhand-near-primary-hand gesture that moves the light between the offhand and the primary hand / weapon. An optional headgear requirement can gate the head-mounted light (out of power armor) behind wearing any headgear, or specific "light-capable" headgear via a keyword + allow/deny rule.
 
 ## Build System
 
@@ -53,7 +53,7 @@ Conventions:
 The entry point is [src/FlashlightMod.h](src/FlashlightMod.h) / [src/FlashlightMod.cpp](src/FlashlightMod.cpp), a `ModBase` subclass that implements the F4SE plugin hooks:
 
 - `F4SEPlugin_Query` / `F4SEPlugin_Load` — standard F4SE registration
-- `onGameLoaded()` — creates `Flashlight` and `FlashlightConfigMode` instances, loads config, registers the config button with FRIK, and patches the mining helmet keyword
+- `onGameLoaded()` — creates `Flashlight` and `FlashlightConfigMode` instances, loads config, registers the config button with FRIK, patches the mining helmet keyword, and resolves the restriction form lists (`RestrictionHandler::resolveForms()`)
 - `onFrameUpdate()` — drives both the flashlight logic and config UI each frame
 
 ### Main Components
@@ -67,6 +67,7 @@ The entry point is [src/FlashlightMod.h](src/FlashlightMod.h) / [src/FlashlightM
 | **FlashlightConfigMode** | [src/FlashlightConfigMode.h](src/FlashlightConfigMode.h) / [.cpp](src/FlashlightConfigMode.cpp) | In-game VR config UI: beam tuning, color picker, gobo selector, shadow toggle                                                                                                   |
 | **Config**               | [src/Config.h](src/Config.h) / [.cpp](src/Config.cpp)                                           | INI load/save via `ConfigBase`, per-location settings, live hot-reload via file watcher                                                                                         |
 | **Utils**                | [src/Utils.h](src/Utils.h) / [.cpp](src/Utils.cpp)                                              | `setLightValues()`, location switching helpers, gobo texture cache, FRIK hand position getters                                                                                  |
+| **RestrictionHandler**   | [src/RestrictionHandler.h](src/RestrictionHandler.h) / [.cpp](src/RestrictionHandler.cpp)       | Static handler for optional gameplay restrictions on the flashlight. Currently gates the (non-PA) head-mounted light behind worn headgear (`resolveForms()` / `isHeadFlashlightAllowed()` / `enforce()`); weapon-mount restriction is planned to live here too. Mutates light state only through `Utils::` |
 | **FRIK API**             | [src/api/FRIKApi.h](src/api/FRIKApi.h)                                                          | Header-only client for FRIK mod: finger positions, hand poses, config button registration                                                                                       |
 
 ### Location Model
@@ -119,6 +120,14 @@ Each of these in-hand spatial configs also has a power-armor variant (`...PA` su
 
 - **Binding:** `sToggleFlashlightBinding` (**default `offhand longpress trigger`**, fully reconfigurable; `none` disables it). On press it turns the light **off** when on, or **on at the current resolved location** when off — the turn-on path re-resolves the location and refreshes beam values (`refreshFlashlightLocation()` / `setLightValues()` / `turnFlashlightOn()`, matching the power-armor restore path) since it doesn't switch locations.
 - **No conflict with the gestures:** before firing it asks each sphere `WandActivationSphere::isSuppressing(binding)` — true when that zone is currently suppressing the same hand+button this frame — and **defers** (does nothing) if any is. So a press inside an activation zone runs that proximity gesture instead of double-toggling; everywhere else the global toggle fires. It does **not** suppress the button from the game (no zone to scope suppression to), so the bound input's vanilla action still passes through.
+
+### Headgear Requirement (head restriction)
+
+An optional gate on the head-mounted light, driven by `iFlashlightHeadgearRequirement` (`None` / `AnyHeadGear` / `Immersive`, see `FlashlightHeadgearRequirement`). It lives in **`RestrictionHandler`** (a static handler, the future home for weapon restriction too) and applies **only out of power armor** — `RestrictionHandler::isHeadFlashlightAllowed()` returns `true` in PA (the helmet lamp always applies), and the PA head resolves to `OnPAHead`, not `OnHead`. The worn-headgear read mirrors `f4vr::isInPowerArmor()`: `getWornHeadgear()` reads `player->biped->object[0].parent.object` (slot 30 / biped index 0 = `kHairTop`, where hats/helmets sit), filtered to an `ARMO`.
+
+- **Modes:** `None` always allows; `AnyHeadGear` requires any slot-30 headgear; `Immersive` requires *light-capable* headgear via the rule `worn && !deny(formID) && ( allow(formID) || hasAnyKeyword(item, keywords) )` (`isLightCapableHeadgearWorn()`).
+- **Immersive lists** (`sHeadLightKeywords`, `sHeadLightAllowList`, `sHeadLightDenyList`): `Config` parses them (keyword **editor IDs**; allow/deny as `localFormID|plugin` pairs) and `RestrictionHandler::resolveForms()` resolves them to runtime FormIDs once — called from `FlashlightMod::onGameLoaded()` and re-run on config hot-reload. Keywords resolve by scanning `TESDataHandler::GetFormArray<RE::BGSKeyword>()` and matching `BGSKeyword::formEditorID` (keyword editor IDs are retained at runtime); allow/deny resolve load-order-independently via `TESDataHandler::LookupForm(localID, plugin)`, so entries for absent plugins are simply skipped. Seed defaults ship the article's curated base-game + DLC set; the deny list wins over the allow list, which wins over the keyword set.
+- **Enforcement when blocked → light off** (the chosen behavior): `Flashlight::checkHeadActivation()` gates its tap binding (`headTapActive`) so the put-on-head gesture is inert when the head isn't allowed (button passes through, no entry haptic), while still letting a head-mounted light be toggled off; and `RestrictionHandler::enforce()` — run in `onFrameUpdate()` right after `refreshFlashlightLocation()` — turns an on-head light **off** when the requirement is no longer met (e.g. the helmet was removed). It mutates the light only through `Utils::`, and is skipped while a config-mode location override is active (`Utils::isRuntimeLocationOverrideActive()`) so head beam tuning isn't interrupted.
 
 ### Config Hot-Reload
 

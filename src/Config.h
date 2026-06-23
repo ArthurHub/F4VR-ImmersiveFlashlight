@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "ConfigBase.h"
 #include "Resources.h"
 #include "api/FRIKApi.h"
@@ -50,6 +53,20 @@ namespace ImFl
         Auto = 0,
         ForwardOnly,
         OverhandOnly
+    };
+
+    /**
+     * Optional restriction on when the flashlight may sit on the (non-power-armor) head.
+     * None: no restriction (any state may mount the head).
+     * AnyHeadGear: requires any slot-30 headgear worn.
+     * Immersive: requires light-capable headgear (keyword rule + allow/deny lists).
+     * Power armor is always exempt (the PA helmet lamp applies regardless of this setting).
+     */
+    enum class FlashlightHeadgearRequirement : uint8_t
+    {
+        None = 0,
+        AnyHeadGear,
+        Immersive
     };
 
     class Config : public ConfigBase
@@ -151,6 +168,19 @@ namespace ImFl
 
         // Grip-style selection: Auto/ForwardOnly/OverhandOnly. See FlashlightGripMode.
         FlashlightGripMode flashlightGripMode = FlashlightGripMode::Auto;
+
+        // Optional restriction on when the flashlight may sit on the (non-PA) head. See
+        // FlashlightHeadgearRequirement. The Immersive rule reads the three lists below. PA is always exempt.
+        FlashlightHeadgearRequirement flashlightHeadgearRequirement = FlashlightHeadgearRequirement::None;
+
+        // Immersive-mode rule inputs, parsed from the INI here and resolved to runtime FormIDs once at load
+        // by RestrictionHandler::resolveForms(). Keywords are matched by editor ID (BGSKeyword editor
+        // IDs are retained at runtime); allow/deny entries are (local FormID, plugin filename) pairs resolved
+        // load-order-independently via TESDataHandler::LookupForm. The rule is:
+        //   headLight = slot30Occupied && !deny(formID) && ( allow(formID) || hasAnyKeyword(item, keywords) )
+        std::vector<std::string> headLightKeywordNames;
+        std::vector<std::pair<std::uint32_t, std::string>> headLightAllowList;
+        std::vector<std::pair<std::uint32_t, std::string>> headLightDenyList;
 
         // Auto-detect tuning. Angle (degrees) between the controller's top axis and world up: 0 = top
         // pointing straight up (Forward grip), 180 = top pointing straight down (Overhand fist grip).

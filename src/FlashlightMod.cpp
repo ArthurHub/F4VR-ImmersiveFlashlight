@@ -1,5 +1,6 @@
 #include "FlashlightMod.h"
 
+#include "RestrictionHandler.h"
 #include "api/FRIKApi.h"
 #include "vrui/UIManager.h"
 
@@ -64,6 +65,9 @@ namespace ImFl
     void FlashlightMod::onGameLoaded()
     {
         addEmbeddedFlashlightKeyword();
+
+        // Resolve the restriction keyword/allow/deny lists to runtime FormIDs now that game data is ready.
+        RestrictionHandler::resolveForms();
 
         _flashlight = std::make_unique<Flashlight>();
         _flashlightConfigMode = std::make_unique<FlashlightConfigMode>();

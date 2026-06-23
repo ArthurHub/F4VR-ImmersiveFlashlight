@@ -1,5 +1,7 @@
 #include "Config.h"
 
+#include <sstream>
+
 #include "Utils.h"
 #include "common/MatrixUtils.h"
 
@@ -8,6 +10,66 @@ using namespace common;
 namespace
 {
     const char* DEFAULT_SECTION = Version::PROJECT.data();
+
+    // Seed defaults for the Immersive head-flashlight rule (the article's curated base-game + DLC set).
+    // Keywords are base-game editor IDs; allow/deny entries are "localFormID|plugin" (hex local id, no
+    // load-order prefix). Users extend these in the INI; properly-tagged mods "just work" via the keywords,
+    // the lists mop up the items authors didn't tag. Mod-specific (e.g. SS2) entries are shown as commented
+    // examples in the bundled INI rather than baked in here.
+    constexpr auto DEFAULT_HEAD_LIGHT_KEYWORDS = "ArmorBodyPartHead, ObjectTypeArmor, AnimHelmetCoversMouth, ArmorTypePower, PowerArmorHelmetLightOverride";
+    constexpr auto DEFAULT_HEAD_LIGHT_ALLOW =
+        "0F6D86|Fallout4.esm, 0CEAC4|Fallout4.esm, 115AEB|Fallout4.esm, 04FA89|DLCCoast.esm, 0540FC|DLCCoast.esm, "
+        "0296B8|DLCNukaWorld.esm, 029C0D|DLCNukaWorld.esm, 02770C|DLCNukaWorld.esm, 02770D|DLCNukaWorld.esm, 02770E|DLCNukaWorld.esm, "
+        "027419|DLCNukaWorld.esm, 02740F|DLCNukaWorld.esm, 03B557|DLCNukaWorld.esm, 026BB0|DLCNukaWorld.esm, 026BB5|DLCNukaWorld.esm, "
+        "026BB6|DLCNukaWorld.esm, 026BB7|DLCNukaWorld.esm";
+    constexpr auto DEFAULT_HEAD_LIGHT_DENY = "0316D4|Fallout4.esm";
+
+    /**
+     * Split a comma-separated INI value into trimmed, non-empty tokens.
+     */
+    std::vector<std::string> parseCommaList(const std::string& raw)
+    {
+        std::vector<std::string> out;
+        std::stringstream ss(raw);
+        std::string item;
+        while (std::getline(ss, item, ',')) {
+            const auto token = common::trim(item);
+            if (!token.empty()) {
+                out.push_back(token);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Parse a comma-separated list of "localFormID|plugin" entries into (local FormID, plugin) pairs.
+     * The FormID is the local id as shown in xEdit (hex, with or without "0x", load-order prefix dropped).
+     * Malformed entries (missing '|' or unparsable id) are skipped with a warning.
+     */
+    std::vector<std::pair<std::uint32_t, std::string>> parseFormPluginList(const std::string& raw)
+    {
+        std::vector<std::pair<std::uint32_t, std::string>> out;
+        for (const auto& entry : parseCommaList(raw)) {
+            const auto pipe = entry.find('|');
+            if (pipe == std::string::npos) {
+                logger::warn("Ignoring malformed headgear list entry (expected 'formID|plugin'): '{}'", entry);
+                continue;
+            }
+            const auto idStr = common::trim(entry.substr(0, pipe));
+            const auto plugin = common::trim(entry.substr(pipe + 1));
+            if (idStr.empty() || plugin.empty()) {
+                logger::warn("Ignoring malformed headgear list entry (empty formID or plugin): '{}'", entry);
+                continue;
+            }
+            try {
+                const auto localId = static_cast<std::uint32_t>(std::stoul(idStr, nullptr, 16));
+                out.emplace_back(localId, plugin);
+            } catch (const std::exception&) {
+                logger::warn("Ignoring headgear list entry with unparsable formID: '{}'", entry);
+            }
+        }
+        return out;
+    }
 }
 
 namespace ImFl
@@ -330,6 +392,13 @@ namespace ImFl
         flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));
         flashlightGripOverhandTiltDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripOverhandTiltDegrees", 120.0));
         flashlightGripHysteresisDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripHysteresisDegrees", 30.0));
+
+        // Head-flashlight headgear restriction (out of PA): None / AnyHeadGear / Immersive, plus the Immersive
+        // rule lists. The raw lists are resolved to runtime FormIDs by RestrictionHandler::resolveForms().
+        flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightHeadgearRequirement", 0));
+        headLightKeywordNames = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sHeadLightKeywords", DEFAULT_HEAD_LIGHT_KEYWORDS));
+        headLightAllowList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightAllowList", DEFAULT_HEAD_LIGHT_ALLOW));
+        headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", DEFAULT_HEAD_LIGHT_DENY));
 
         // Stowed flashlight on the body (grab to turn on into a hand, put back to turn off).
         showFlashlightOnBody = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightOnBody", true);

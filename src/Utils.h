@@ -25,6 +25,10 @@ namespace ImFl
         static void turnFlashlightOff();
         static bool isHeadMountedFlashlight();
         static bool isHandHeldFlashlight();
+
+        // Whether a config-mode location override is currently forcing the runtime location (used to suppress
+        // gameplay enforcement, e.g. RestrictionHandler, while previewing a location in the config UI).
+        static bool isRuntimeLocationOverrideActive();
         static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
         static const char* getGripStyleLabel(FlashlightGripStyle style);
         static bool areFlashlightShadowsEnabled();
