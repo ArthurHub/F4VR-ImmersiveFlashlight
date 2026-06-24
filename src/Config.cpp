@@ -314,8 +314,6 @@ namespace ImFl
         flashlightMeshTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformPA", flashlightMeshTransform);
         flashlightMeshTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightMeshTransformOverhandPA", flashlightMeshTransformOverhand);
 
-        // Hand pose applied via FRIK API while holding the flashlight.
-        // Default below matches the previous per-finger curl defaults (prox=mid=dist, splay/palm zero).
         static constexpr std::array<float, 22> DEFAULT_HAND_POSE = {
             0.35f,
             0.35f,
@@ -370,26 +368,19 @@ namespace ImFl
         flashlightHandPoseOverhand =
             frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
 
-        // Power-armor variants of the hand poses; default to the matching non-PA pose.
         flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
         flashlightHandPoseOverhandPA =
             frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, DEFAULT_SECTION, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
 
-        // Grip-style controls
         flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightGripMode", 0));
         flashlightGripOverhandTiltDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripOverhandTiltDegrees", 120.0));
         flashlightGripHysteresisDegrees = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightGripHysteresisDegrees", 30.0));
 
-        // Head-flashlight headgear restriction (out of PA): None / AnyHeadGear / Immersive, plus the Immersive
-        // rule lists. The raw lists are resolved to runtime FormIDs by RestrictionHandler::resolveForms().
         flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightHeadgearRequirement", 0));
         headLightKeywordNames = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sHeadLightKeywords", ""));
         headLightAllowList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightAllowList", ""));
         headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", ""));
 
-        // Weapon-mount restriction: optionally require a modeled flashlight on the equipped weapon before
-        // the light may mount on it. The mesh-node list is matched against the weapon 3D; the mount
-        // transform roots the beam at the found node. Detection / enforcement live in RestrictionHandler.
         weaponFlashlightRequired = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", false);
         weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightMeshNodes", ""));
         weaponFlashlightMountTransform =
@@ -402,10 +393,7 @@ namespace ImFl
         bodyTransformDefault.scale = 1.3f;
         flashlightBodyTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransform", bodyTransformDefault);
         flashlightBodyTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransformPA", flashlightBodyTransform);
-        // Grab sphere: translate is measured from the stowed model (not the bone), in the body-bone axes;
-        // the transform scale sizes the 1-unit sphere mesh (which is unit-diameter, so the grab radius is
-        // ~half the scale). Tune with the debug sphere. Defaults to a small offset off the model with a
-        // larger scale for a usable grab zone.
+
         RE::NiTransform sphereTransformDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         sphereTransformDefault.scale = 20.0f;
         flashlightGrabSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransform", sphereTransformDefault);
@@ -420,11 +408,6 @@ namespace ImFl
             "sGrabFlashlightByPrimaryHandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
-        // Head activation: bring the offhand near the HMD and fire the binding to put the light on the head.
-        // Always active; the binding's "none" value disables it (so no master on/off flag).
-        // Sphere around the HMD (HMD-local, not mirrored). Default is centered on the head; the scale sizes
-        // the unit-diameter sphere mesh, so the grab radius is ~half the scale. Tune with the debug sphere.
-        // No PA variant: the HMD sits in the same place in and out of power armor.
         RE::NiTransform headSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         headSphereDefault.scale = 24.0f;
         flashlightHeadSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightHeadSphereTransform", headSphereDefault);
@@ -437,10 +420,6 @@ namespace ImFl
             "sSwitchFlashlightFromHeadToOffhandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
 
-        // Primary-hand activation: bring the offhand near the primary hand and fire the binding to move the on
-        // light between the offhand and the primary hand / weapon, or toggle the on-weapon light. Sphere around
-        // the primary-hand wand node (hand-local, not mirrored, no PA variant); the scale sizes the unit-diameter
-        // sphere mesh, so the radius is ~half the scale. Tune with the debug sphere.
         RE::NiTransform primaryHandSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         primaryHandSphereDefault.scale = 20.0f;
         flashlightPrimaryHandSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightPrimaryHandSphereTransform", primaryHandSphereDefault);
@@ -453,12 +432,6 @@ namespace ImFl
             "sSwitchFlashlightFromWeaponToOffhandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
 
-        // Global on/off toggle: available anywhere (no proximity zone), turns the light on at its current
-        // location or off. Default offhand long-press trigger; it defers to the proximity gestures above when
-        // the offhand is inside one of their zones. "none" disables it.
-        toggleFlashlightBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sToggleFlashlightBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
+        disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", true);
     }
 }

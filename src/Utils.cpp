@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "common/CommonUtils.h"
 #include "f4vr/F4VROffsets.h"
+#include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
 namespace ImFl
@@ -91,5 +92,32 @@ namespace ImFl
     bool Utils::areFlashlightShadowsEnabled()
     {
         return g_config.flashlightFlagsBitmask != FLASHLIGHT_FLAGS_NO_SHADOWS;
+    }
+
+    /**
+     * Enable or disable the vanilla game's global flashlight (Pipboy light) toggle by pushing the
+     * "fPipboyLightDelay:Controls" game setting.
+     */
+    void Utils::updateVanillaFlashlightToggleDisabled()
+    {
+        const bool disabled = g_config.disableVanillaFlashlightToggle;
+        if (_vanillaFlashlightToggleDisabled == disabled) {
+            return;
+        }
+        const auto setting = f4vr::getIniSetting("fPipboyLightDelay:Controls", true);
+        if (!setting) {
+            return;
+        }
+        if (disabled) {
+            if (_originalPipboyLightDelay <= 0) {
+                _originalPipboyLightDelay = setting->GetFloat();
+            }
+            logger::info("Disable vanilla flashlight toggle");
+            setting->SetFloat(99);
+        } else {
+            logger::info("Restore vanilla flashlight toggle ({})", _originalPipboyLightDelay);
+            setting->SetFloat(_originalPipboyLightDelay);
+        }
+        _vanillaFlashlightToggleDisabled = disabled;
     }
 }

@@ -32,10 +32,6 @@ namespace ImFl
      *   from off, turns it on at the weapon (regular weapon drawn, regardless of stored location). A
      *   melee/unarmed weapon is inert. A long-press pulls an on-weapon light back to the offhand.
      *
-     * - Global toggle (a single binding, no proximity zone): turns the light on at its current location or
-     *   off from anywhere. It defers to the three proximity gestures above whenever one is claiming the same
-     *   input that frame, so a press inside an activation zone runs that gesture instead of double-toggling.
-     *
      * Outside the gestures, entering/exiting power armor re-resolves the location (and restores a recently-on
      * light), and the in-game config UI can set the location directly.
      */
@@ -53,7 +49,6 @@ namespace ImFl
         bool checkBodyGrab(bool enabled);
         void checkHeadActivation();
         void checkPrimaryHandActivation();
-        void checkGlobalToggle() const;
         static void adjustFlashlightTransformToHandOrHead();
         void maybeShowFPSStabilizerModWarning();
 

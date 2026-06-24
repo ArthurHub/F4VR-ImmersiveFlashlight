@@ -45,6 +45,7 @@ namespace ImFl
         // refresh flashlight values on config change
         g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) {
             RestrictionHandler::invalidate();
+            Utils::updateVanillaFlashlightToggleDisabled();
             FlashlightState::refreshFlashlightLocation();
             FlashlightState::toggleLightRefreshValues();
         });
@@ -53,16 +54,14 @@ namespace ImFl
     /**
      * Executed every frame to update to handle flashlight location and moving between hand and head.
      *
-     * Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, the
-     * offhand-near-primary-hand activation, and the zone-less global on/off toggle. All four may toggle
-     * the light, so the on/off state is re-read below. They run before the early-return because their
-     * re-toggle turns the light back on from off. The global toggle runs first to be first to act.
+     * Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, and the
+     * offhand-near-primary-hand activation. All three may toggle the light, so the on/off state is re-read
+     * below. They run before the early-return because their re-toggle turns the light back on from off.
      */
     void Flashlight::onFrameUpdate()
     {
         handlePowerArmorTransition();
 
-        checkGlobalToggle();
         updateBodyStow();
         checkHeadActivation();
         checkPrimaryHandActivation();
@@ -290,39 +289,6 @@ namespace ImFl
     }
 
     /**
-     * Zone-less global on/off toggle: fires the configured binding from anywhere to turn the light on at its
-     * current resolved location or off.
-     */
-    void Flashlight::checkGlobalToggle() const
-    {
-        const auto& binding = g_config.toggleFlashlightBinding;
-        if (!binding.isEnabled()) {
-            return;
-        }
-
-        // Defer to any sphere already suppressing this exact input this frame to avoid a double-toggle.
-        if (Utils::isFlashlightOn() &&
-            ((FlashlightState::isHeadMountedFlashlight() && _headSphere.isSuppressing(binding)) ||
-                (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _primaryHandSphere.isSuppressing(binding)))) {
-            return;
-        }
-
-        if (!vrcf::VRControllers.check(binding)) {
-            return;
-        }
-
-        if (Utils::isFlashlightOn()) {
-            logger::info("Turning flashlight OFF via global toggle on {}", static_cast<int>(FlashlightState::flashlightLocation));
-            Utils::turnFlashlightOff();
-        } else {
-            logger::info("Turning flashlight ON via global toggle on {}", static_cast<int>(FlashlightState::flashlightLocation));
-            FlashlightState::refreshFlashlightLocation();
-            FlashlightState::setLightValues();
-            Utils::turnFlashlightOn();
-        }
-    }
-
-    /**
      * Adjust the position of the light node to the hand that is holding it or revert to head position.
      * It is safer than moving the node as that can result in game crash.
      *
@@ -387,9 +353,7 @@ namespace ImFl
         _headSphere.detachDebug();
         _primaryHandSphere.detachDebug();
         RestrictionHandler::invalidate();
-
-        logger::info("Disable game Pipboy light control");
-        f4vr::getIniSetting("fPipboyLightDelay:Controls", true)->SetFloat(99);
+        Utils::updateVanillaFlashlightToggleDisabled();
     }
 
     /**

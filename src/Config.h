@@ -247,9 +247,8 @@ namespace ImFl
         vrcf::InputBinding activateFlashlightOnPrimaryHandBinding;
         vrcf::InputBinding switchFlashlightFromWeaponToOffhandBinding;
 
-        // Global on/off toggle (checkGlobalToggle): a single binding with no proximity zone that turns the
-        // light on at its current location or off, from anywhere.
-        vrcf::InputBinding toggleFlashlightBinding;
+        // Disable the vanilla game's global flashlight toggle so only this mod's gestures control the light.
+        bool disableVanillaFlashlightToggle = true;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

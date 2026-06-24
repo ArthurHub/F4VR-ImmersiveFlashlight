@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -19,8 +20,14 @@ namespace ImFl
         static void turnFlashlightOn();
         static void turnFlashlightOff();
         static bool areFlashlightShadowsEnabled();
+        static void updateVanillaFlashlightToggleDisabled();
 
     private:
         inline static std::unordered_map<std::string, RE::NiTexture*> _goboTextures;
+
+        // Tracks the applied vanilla Pipboy-light-toggle disable state (nullopt until first applied, so the
+        // first call always runs) and the original "fPipboyLightDelay:Controls" value to restore on re-enable.
+        inline static std::optional<bool> _vanillaFlashlightToggleDisabled;
+        inline static float _originalPipboyLightDelay = -1.0f;
     };
 }
