@@ -8,40 +8,39 @@ namespace ImFl
     /**
      * Optional gameplay restrictions on where the flashlight may be active.
      *
-     * Currently gates the head-mounted light (out of power armor) behind worn headgear per
-     * Config::flashlightHeadgearRequirement; weapon-mount restriction is planned to live here too.
-     * Static like Utils: there is a single player / flashlight, and the resolved form sets are global state.
+     * Gates the head-mounted light (out of power armor) behind worn headgear per
+     * Config::flashlightHeadgearRequirement, and optionally requires a modeled flashlight on the equipped
+     * weapon before the light may mount on it (Config::weaponFlashlightRequired). Static like Utils: there
+     * is a single player / flashlight, and the resolved form sets + detection caches are global state.
      */
     class RestrictionHandler
     {
     public:
-        // Resolve the configured restriction lists (the Immersive head keyword / allow / deny entries) from
-        // Config to runtime FormIDs. Call once after game data is ready, and again on config reload.
-        static void resolveForms();
-
-        // Whether the flashlight is currently allowed on the (non-PA) head per the configured requirement.
         static bool isHeadFlashlightAllowed();
-
-        // Enforce all active restrictions for this frame (currently: turn an on-head light off when the
-        // headgear requirement is no longer met). Call each frame after the runtime location is resolved.
-        static void enforce();
-
-        // Debug tuning aid: dump every head-slot armor to the log, split into the Immersive rule's allowed
-        // (light-capable) and blocked sets per the resolved keyword/allow/deny lists. Independent of the
-        // active requirement mode and power armor. Wired to the "headgear" sDumpDataOnceNames token.
+        static bool isWeaponFlashlightAllowed();
+        static void onFrameUpdate();
+        static void invalidate();
+        static RE::NiAVObject* weaponFlashlightNode();
         static void dumpHeadgear();
 
     private:
-        // The armor worn in the head slot (slot 30 / biped index 0 = kHairTop), or nullptr if nothing is worn there.
+        static void resolveForms();
+        static void checkWeaponChangeForFlashlightOnWeaponDetection();
+        static void enforceRestrictions();
         static const RE::TESObjectARMO* getWornHeadgear();
-        // Immersive rule for a specific headgear: light-capable = not denied, and either allow-listed or carries a configured keyword.
         static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);
-        // Immersive rule applied to the currently worn headgear.
         static bool isLightCapableHeadgearWorn();
+        static RE::NiAVObject* findWeaponFlashlightNode(RE::NiAVObject* weaponNode);
 
         // Immersive head-restriction rule, resolved from Config to runtime FormIDs by resolveForms().
         inline static std::unordered_set<std::uint32_t> _headLightKeywordIds;
         inline static std::unordered_set<std::uint32_t> _headLightAllowIds;
         inline static std::unordered_set<std::uint32_t> _headLightDenyIds;
+
+        // Weapon-flashlight detection state
+        inline static bool _currentWeaponMelee = false;
+        inline static bool _currentWeaponUnarmed = false;
+        inline static RE::TESObjectWEAP* _currentWeapon = nullptr;
+        inline static RE::NiAVObject* _weaponFlashlightNode = nullptr;
     };
 }

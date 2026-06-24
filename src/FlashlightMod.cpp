@@ -66,8 +66,7 @@ namespace ImFl
     {
         addEmbeddedFlashlightKeyword();
 
-        // Resolve the restriction keyword/allow/deny lists to runtime FormIDs now that game data is ready.
-        RestrictionHandler::resolveForms();
+        RestrictionHandler::invalidate();
 
         _flashlight = std::make_unique<Flashlight>();
         _flashlightConfigMode = std::make_unique<FlashlightConfigMode>();

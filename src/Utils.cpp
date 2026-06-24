@@ -59,6 +59,9 @@ namespace ImFl
     {
         const auto newFlashlightLocation = getFlashlightLocation();
         if (flashlightLocation == newFlashlightLocation) {
+            if (_lightValuesRefreshRequired && isFlashlightOn()) {
+                toggleLightRefreshValues();
+            }
             return;
         }
 
@@ -130,9 +133,11 @@ namespace ImFl
     {
         const auto player = f4vr::getPlayer();
         if (!f4vr::isPipboyLightOn(player)) {
+            _lightValuesRefreshRequired = true;
             return;
         }
         logger::debug("Toggle light refresh values...");
+        _lightValuesRefreshRequired = false;
         f4vr::togglePipboyLight(player);
         setLightValues();
         f4vr::togglePipboyLight(player);

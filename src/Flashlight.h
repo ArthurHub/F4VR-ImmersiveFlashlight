@@ -48,7 +48,7 @@ namespace ImFl
         void onGameSessionLoaded();
 
     private:
-        void handlePowerArmorTransition(bool isFlashlightOn);
+        void handlePowerArmorTransition();
         void updateBodyStow();
         bool checkBodyGrab(bool enabled);
         void checkHeadActivation();

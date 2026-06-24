@@ -52,6 +52,9 @@ namespace ImFl
         static FlashlightLocation getFlashlightLocation();
         static void refreshConfigReferences();
 
+        // if we missed refresh because the light was off, we need to refresh the values next time the light is turned on
+        inline static bool _lightValuesRefreshRequired = false;
+
         inline static std::unordered_map<std::string, RE::NiTexture*> _goboTextures;
         inline static std::optional<FlashlightLocation> _runtimeLocationOverride;
     };

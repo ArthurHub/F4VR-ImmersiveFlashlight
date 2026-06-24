@@ -131,18 +131,125 @@ namespace ImFl
     }
 
     /**
-     * Enforce the active restrictions on the passive path. Currently the headgear requirement: if the light is
-     * on and resolved to the (non-PA) head but the requirement is no longer met, turn it off. Skipped while a
-     * config-mode location override is active so head beam tuning isn't interrupted. A head runtime location
-     * already implies out of PA (PA maps to OnPAHead, which isHeadFlashlightAllowed() always permits).
+     * TODO: add documentation
      */
-    void RestrictionHandler::enforce()
+    bool RestrictionHandler::isWeaponFlashlightAllowed()
     {
-        if (Utils::isRuntimeLocationOverrideActive()) {
+        if (!_currentWeapon) {
+            return true;
+        }
+        if (_currentWeaponMelee || _currentWeaponUnarmed) {
+            return false;
+        }
+        return !g_config.weaponFlashlightRequired || weaponFlashlightNode() != nullptr;
+    }
+
+    /**
+     * TODO: add documentation
+     */
+    void RestrictionHandler::onFrameUpdate()
+    {
+        checkWeaponChangeForFlashlightOnWeaponDetection();
+
+        enforceRestrictions();
+    }
+
+    /**
+     * TODO: add documentation
+     */
+    void RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
+    {
+        if (!g_config.weaponFlashlightRequired) {
             return;
         }
-        if (Utils::isFlashlightOn() && Utils::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
+
+        auto* weaponNode = f4vr::getWeaponNode();
+        if (weaponNode && f4vr::isNodeVisible(weaponNode)) {
+            auto* equippedWeapon = f4vr::getEquippedWeapon();
+            if (_currentWeapon != equippedWeapon) {
+                logger::info("Equipped weapon changed to {}, re-scanning for flashlight node.", equippedWeapon ? equippedWeapon->GetFormEditorID() : "<none>");
+                _currentWeapon = equippedWeapon;
+                _currentWeaponMelee = f4vr::isMeleeWeaponEquipped();
+                _currentWeaponUnarmed = f4vr::isUnarmedWeaponEquipped();
+                _weaponFlashlightNode = findWeaponFlashlightNode(weaponNode);
+            }
+        } else if (_currentWeapon) {
+            logger::info("Equipped weapon changed to None");
+            _currentWeapon = nullptr;
+            _currentWeaponMelee = false;
+            _currentWeaponUnarmed = false;
+            _weaponFlashlightNode = nullptr;
+        }
+    }
+
+    /**
+     * Search the equipped weapon 3D for the first configured, visible flashlight mesh node (config order is
+     * priority). Returns nullptr when the weapon node isn't visible or no configured node is present and
+     * visible. The node names are user config (sWeaponFlashlightMeshNodes) — NIF names aren't contractual.
+     */
+    RE::NiAVObject* RestrictionHandler::findWeaponFlashlightNode(RE::NiAVObject* weaponNode)
+    {
+        if (!f4vr::isNodeVisible(weaponNode)) {
+            return nullptr;
+        }
+        for (const auto& nodeName : g_config.weaponFlashlightMeshNodes) {
+            if (auto* node = f4vr::findAVObject(weaponNode, nodeName)) {
+                if (f4vr::isNodeVisible(node)) {
+                    logger::info("Found visible weapon-mounted flashlight node: {}", nodeName);
+                    return node;
+                }
+            }
+        }
+        logger::debug("No visible weapon-mounted flashlight node found");
+        return nullptr;
+    }
+
+    /**
+     * Force the weapon-flashlight detection to re-scan on the next update() and drop the cached node. Called
+     * on save load (the weapon 3D / node pointer is rebuilt, so a held pointer dangles) and on config reload
+     * (the restriction may have been toggled on or the node list changed).
+     */
+    void RestrictionHandler::invalidate()
+    {
+        _currentWeapon = nullptr;
+        _weaponFlashlightNode = nullptr;
+        resolveForms();
+    }
+
+    /**
+     * The cached weapon-mounted flashlight mesh node, or nullptr when none is mounted / the restriction is
+     * off. Valid for the frame after update(); the OnWeapon light placement roots the beam at it.
+     */
+    RE::NiAVObject* RestrictionHandler::weaponFlashlightNode()
+    {
+        return _weaponFlashlightNode;
+    }
+
+    /**
+     * Enforce the active restrictions on the passive path. Skipped while a config-mode location override is
+     * active so beam tuning isn't interrupted, and a no-op while the light is off.
+     *
+     * Headgear: if the light is on the (non-PA) head but the requirement is no longer met, turn it off. A
+     * head runtime location already implies out of PA (PA maps to OnPAHead, always permitted).
+     *
+     * Weapon: if the light is on the weapon and the weapon-flashlight requirement is on but the equipped
+     * weapon carries no flashlight mesh, turn it off. Gated on the rescan window having settled (see
+     * update()) so a weapon 3D that hasn't attached its lamp yet doesn't read as "no flashlight".
+     */
+    void RestrictionHandler::enforceRestrictions()
+    {
+        if (Utils::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn()) {
+            return;
+        }
+
+        if (Utils::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
             logger::info("Headgear requirement not met — turning the head flashlight off");
+            Utils::turnFlashlightOff();
+            return;
+        }
+
+        if (Utils::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
+            logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }
     }
@@ -155,17 +262,17 @@ namespace ImFl
      */
     void RestrictionHandler::dumpHeadgear()
     {
-        using f4cf::f4vr::DebugInventory;
+        using f4vr::DebugInventory;
 
         DebugInventory::ItemFilter filter;
         filter.slotMask = 1u << 0; // CK biped slot 30 — where hats / helmets sit (see getWornHeadgear)
 
         logger::info("==== Immersive rule: allowed (light-capable) headgear ====");
         filter.predicate = [](const RE::TESForm* form) { return isLightCapableHeadgear(static_cast<const RE::TESObjectARMO*>(form)); };
-        DebugInventory::iterateObjects(DebugInventory::Operation::PrintAll, DebugInventory::ItemCategory::Armor, filter);
+        DebugInventory::iterateObjects(DebugInventory::Operation::Print, DebugInventory::ItemCategory::Armor, filter);
 
         logger::info("==== Immersive rule: blocked headgear ====");
         filter.predicate = [](const RE::TESForm* form) { return !isLightCapableHeadgear(static_cast<const RE::TESObjectARMO*>(form)); };
-        DebugInventory::iterateObjects(DebugInventory::Operation::PrintAll, DebugInventory::ItemCategory::Armor, filter);
+        DebugInventory::iterateObjects(DebugInventory::Operation::Print, DebugInventory::ItemCategory::Armor, filter);
     }
 }

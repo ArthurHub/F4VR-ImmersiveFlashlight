@@ -25,7 +25,6 @@ namespace ImFl
         OnWeapon
     };
 
-    // TODO: should unify to 1 enum!
     enum class FlashlightConfigLocation : uint8_t
     {
         OnHead = 0,
@@ -181,6 +180,19 @@ namespace ImFl
         std::vector<std::string> headLightKeywordNames;
         std::vector<std::pair<std::uint32_t, std::string>> headLightAllowList;
         std::vector<std::pair<std::uint32_t, std::string>> headLightDenyList;
+
+        // Optional restriction requiring a modeled flashlight on the equipped weapon before the light may
+        // mount on it (FlashlightLocation::OnWeapon). When on, RestrictionHandler roots the beam at the
+        // detected mesh node and turns an on-weapon light off when the weapon carries no such mesh.
+        bool weaponFlashlightRequired = false;
+        // Flashlight mesh node names to search for under the equipped weapon 3D, in priority order (first
+        // visible match wins). These are NIF node names, not editor IDs — verify in NifSkope. Parsed from a
+        // comma-separated INI list. See the weapon_flashlight_detection reference.
+        std::vector<std::string> weaponFlashlightMeshNodes;
+        // Light-node rotation + position offset relative to the found flashlight mesh node when rooted
+        // there. Tuned per the node's local axes (unknown up front, varies per mod). Not split by PA: the
+        // offset is relative to the lamp node, which doesn't change with the gauntlet.
+        RE::NiTransform weaponFlashlightMountTransform{};
 
         // Auto-detect tuning. Angle (degrees) between the controller's top axis and world up: 0 = top
         // pointing straight up (Forward grip), 180 = top pointing straight down (Overhand fist grip).

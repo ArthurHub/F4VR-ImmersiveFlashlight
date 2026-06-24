@@ -11,19 +11,6 @@ namespace
 {
     const char* DEFAULT_SECTION = Version::PROJECT.data();
 
-    // Seed defaults for the Immersive head-flashlight rule (the article's curated base-game + DLC set).
-    // Keywords are base-game editor IDs; allow/deny entries are "localFormID|plugin" (hex local id, no
-    // load-order prefix). Users extend these in the INI; properly-tagged mods "just work" via the keywords,
-    // the lists mop up the items authors didn't tag. Mod-specific (e.g. SS2) entries are shown as commented
-    // examples in the bundled INI rather than baked in here.
-    constexpr auto DEFAULT_HEAD_LIGHT_KEYWORDS = "ArmorBodyPartHead, ObjectTypeArmor, AnimHelmetCoversMouth, ArmorTypePower, PowerArmorHelmetLightOverride";
-    constexpr auto DEFAULT_HEAD_LIGHT_ALLOW =
-        "0F6D86|Fallout4.esm, 0CEAC4|Fallout4.esm, 115AEB|Fallout4.esm, 04FA89|DLCCoast.esm, 0540FC|DLCCoast.esm, "
-        "0296B8|DLCNukaWorld.esm, 029C0D|DLCNukaWorld.esm, 02770C|DLCNukaWorld.esm, 02770D|DLCNukaWorld.esm, 02770E|DLCNukaWorld.esm, "
-        "027419|DLCNukaWorld.esm, 02740F|DLCNukaWorld.esm, 03B557|DLCNukaWorld.esm, 026BB0|DLCNukaWorld.esm, 026BB5|DLCNukaWorld.esm, "
-        "026BB6|DLCNukaWorld.esm, 026BB7|DLCNukaWorld.esm";
-    constexpr auto DEFAULT_HEAD_LIGHT_DENY = "0316D4|Fallout4.esm";
-
     /**
      * Split a comma-separated INI value into trimmed, non-empty tokens.
      */
@@ -396,9 +383,17 @@ namespace ImFl
         // Head-flashlight headgear restriction (out of PA): None / AnyHeadGear / Immersive, plus the Immersive
         // rule lists. The raw lists are resolved to runtime FormIDs by RestrictionHandler::resolveForms().
         flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightHeadgearRequirement", 0));
-        headLightKeywordNames = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sHeadLightKeywords", DEFAULT_HEAD_LIGHT_KEYWORDS));
-        headLightAllowList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightAllowList", DEFAULT_HEAD_LIGHT_ALLOW));
-        headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", DEFAULT_HEAD_LIGHT_DENY));
+        headLightKeywordNames = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sHeadLightKeywords", ""));
+        headLightAllowList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightAllowList", ""));
+        headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", ""));
+
+        // Weapon-mount restriction: optionally require a modeled flashlight on the equipped weapon before
+        // the light may mount on it. The mesh-node list is matched against the weapon 3D; the mount
+        // transform roots the beam at the found node. Detection / enforcement live in RestrictionHandler.
+        weaponFlashlightRequired = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", false);
+        weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightMeshNodes", ""));
+        weaponFlashlightMountTransform =
+            getTransformValue(ini, DEFAULT_SECTION, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));
 
         // Stowed flashlight on the body (grab to turn on into a hand, put back to turn off).
         showFlashlightOnBody = ini.GetBoolValue(DEFAULT_SECTION, "bShowFlashlightOnBody", true);

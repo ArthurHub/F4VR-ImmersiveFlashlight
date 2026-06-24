@@ -43,7 +43,7 @@ namespace ImFl
 
         // refresh flashlight values on config change
         g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) {
-            RestrictionHandler::resolveForms();
+            RestrictionHandler::invalidate();
             Utils::refreshFlashlightLocation();
             Utils::toggleLightRefreshValues();
         });
@@ -59,7 +59,7 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        handlePowerArmorTransition(Utils::isFlashlightOn());
+        handlePowerArmorTransition();
 
         checkGlobalToggle();
         updateBodyStow();
@@ -68,9 +68,7 @@ namespace ImFl
 
         Utils::refreshFlashlightLocation();
 
-        // After all interactions resolved the location, enforce restrictions — e.g. drop an on-head light if
-        // the headgear requirement (out of PA) is no longer met because the helmet was removed. May turn the light off.
-        RestrictionHandler::enforce();
+        RestrictionHandler::onFrameUpdate();
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
@@ -90,7 +88,7 @@ namespace ImFl
      * Restore the flashlight once on a power armor enter or exit state change if it was on recently.
      * The recent-on window covers the vanilla behavior where the light may turn off shortly before the PA flag flips.
      */
-    void Flashlight::handlePowerArmorTransition(bool isFlashlightOn)
+    void Flashlight::handlePowerArmorTransition()
     {
         const bool isInPowerArmor = f4vr::isInPowerArmor();
         if (isInPowerArmor != _wasInPowerArmor) {
@@ -99,17 +97,17 @@ namespace ImFl
             _bodyGrabSphere.detachDebug();
             _headSphere.detachDebug();
             _primaryHandSphere.detachDebug();
+            const bool isFlashlightOn = Utils::isFlashlightOn();
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
                 logger::info("Restoring flashlight after power armor transition");
                 Utils::refreshFlashlightLocation();
                 Utils::setLightValues();
                 Utils::turnFlashlightOn();
-                isFlashlightOn = true;
                 _inHandFlashlightMesh.invalidate(); // skeleton changed — force re-attach next frame
             }
         }
-        _flashlightOnRecentlyFrames = isFlashlightOn ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
+        _flashlightOnRecentlyFrames = Utils::isFlashlightOn() ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
     }
 
     /**
@@ -165,8 +163,10 @@ namespace ImFl
             [&](const vrcf::InputBinding& binding) {
                 const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
                 if (Utils::isFlashlightOn() && Utils::flashlightLocation == newLocation) {
+                    logger::info("Returning flashlight to body from {} hand", Utils::getHandLabel(binding.hand));
                     Utils::turnFlashlightOff();
                 } else {
+                    logger::info("Grabbing flashlight from body into {} hand", Utils::getHandLabel(binding.hand));
                     Utils::turnFlashlightOn();
                     Utils::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
                 }
@@ -205,16 +205,20 @@ namespace ImFl
             [&](const vrcf::InputBinding& binding) {
                 // Long-press head -> offhand (only fed while the light is head-mounted).
                 if (binding == g_config.switchFlashlightFromHeadToOffhandBinding) {
+                    logger::info("Switching flashlight from head to offhand");
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;
                 }
                 // Tap binding.
                 if (!Utils::isFlashlightOn()) {
-                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
+                    logger::info("Turning flashlight ON on head");
                     Utils::turnFlashlightOn();
+                    Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
                 } else if (Utils::isHeadMountedFlashlight()) {
+                    logger::info("Turning flashlight OFF on head");
                     Utils::turnFlashlightOff();
                 } else {
+                    logger::info("Switching flashlight to head");
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
                 }
                 return true;
@@ -233,13 +237,12 @@ namespace ImFl
     {
         const bool on = Utils::isFlashlightOn();
         const auto location = Utils::flashlightLocation;
-        const bool weaponDrawn = f4vr::IsWeaponDrawn();
-        const bool regularWeapon = weaponDrawn && !f4vr::isMeleeWeaponEquipped() && !f4vr::isUnarmedWeaponEquipped();
 
-        const bool primaryHandUsable = !weaponDrawn || regularWeapon;
-        const bool tapActive = location == FlashlightLocation::OnWeapon || (location == FlashlightLocation::InPrimaryHand && on) ||
-            (Utils::isHeadMountedFlashlight() && regularWeapon) || (location == FlashlightLocation::InOffhand && on && primaryHandUsable) ||
-            (location == FlashlightLocation::InOffhand && !on && regularWeapon);
+        const bool weaponDrawn = f4vr::IsWeaponDrawn();
+        const bool primaryHandUsable = RestrictionHandler::isWeaponFlashlightAllowed();
+        const bool tapActive = primaryHandUsable &&
+            (location == FlashlightLocation::OnWeapon || (location == FlashlightLocation::InPrimaryHand && on) || (Utils::isHeadMountedFlashlight() && weaponDrawn) ||
+                (location == FlashlightLocation::InOffhand && on) || (location == FlashlightLocation::InOffhand && !on && !weaponDrawn));
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
@@ -259,6 +262,7 @@ namespace ImFl
             [&](const vrcf::InputBinding& binding) {
                 // Long-press weapon -> offhand (only fed while the light is on the weapon).
                 if (binding == g_config.switchFlashlightFromWeaponToOffhandBinding) {
+                    logger::info("Switching flashlight from weapon to offhand");
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;
                 }
@@ -266,14 +270,18 @@ namespace ImFl
                 if (!Utils::isFlashlightOn()) {
                     // Turn the light on at the primary hand (empty) or weapon (regular weapon drawn). Fed
                     // only when the primary hand is usable, so a melee/unarmed weapon never reaches here.
+                    logger::info("Turning flashlight ON on weapon");
                     Utils::turnFlashlightOn();
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
                 } else if (Utils::flashlightLocation == FlashlightLocation::OnWeapon) {
+                    logger::info("Turning flashlight OFF on weapon");
                     Utils::turnFlashlightOff();
                 } else if (Utils::flashlightLocation == FlashlightLocation::InPrimaryHand) {
+                    logger::info("Switching flashlight from primary hand to offhand");
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                 } else {
                     // On the offhand: move to the primary hand (empty) or the weapon (regular weapon drawn).
+                    logger::info("Switching flashlight from offhand to primary hand");
                     Utils::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
                 }
                 return true;
@@ -303,8 +311,10 @@ namespace ImFl
         }
 
         if (Utils::isFlashlightOn()) {
+            logger::info("Turning flashlight OFF via global toggle on {}", static_cast<int>(Utils::flashlightLocation));
             Utils::turnFlashlightOff();
         } else {
+            logger::info("Turning flashlight ON via global toggle on {}", static_cast<int>(Utils::flashlightLocation));
             Utils::refreshFlashlightLocation();
             Utils::setLightValues();
             Utils::turnFlashlightOn();
@@ -333,13 +343,22 @@ namespace ImFl
             // update world transforms after reverting to original
             f4vr::updateTransforms(lightNode);
 
-            RE::NiNode* attachNode;
+            RE::NiAVObject* attachNode;
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
             if (Utils::flashlightLocation == FlashlightLocation::OnWeapon) {
+                // TODO: handle moving light to the location of the flashlight mesh on the weapon
+                // if (auto* meshNode = RestrictionHandler::weaponFlashlightNode()) {
+                //     // Weapon-flashlight restriction on and a modeled flashlight found: root the beam at that
+                //     // mesh node with the configured mount offset instead of the generic tuned barrel guess.
+                //     attachNode = meshNode;
+                //     rotationOffset = g_config.weaponFlashlightMountTransform.rotate;
+                //     positionOffset = g_config.weaponFlashlightMountTransform.translate;
+                // } else {
                 attachNode = f4vr::getWeaponNode();
                 rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
                 positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
+                // }
             } else {
                 const bool isOffhand = Utils::flashlightLocation == FlashlightLocation::InOffhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
@@ -360,11 +379,12 @@ namespace ImFl
 
     void Flashlight::onGameSessionLoaded()
     {
-        _inHandFlashlightMesh.invalidate(); // skeleton pointers may have changed on save load
+        _inHandFlashlightMesh.invalidate();
         _bodyFlashlightMesh.invalidate();
         _bodyGrabSphere.detachDebug();
         _headSphere.detachDebug();
         _primaryHandSphere.detachDebug();
+        RestrictionHandler::invalidate();
 
         logger::info("Disable game Pipboy light control");
         f4vr::getIniSetting("fPipboyLightDelay:Controls", true)->SetFloat(99);
