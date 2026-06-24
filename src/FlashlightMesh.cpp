@@ -1,7 +1,7 @@
 #include "FlashlightMesh.h"
 
 #include "Config.h"
-#include "Utils.h"
+#include "FlashlightState.h"
 #include "api/FRIKApi.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
@@ -36,7 +36,7 @@ namespace
      */
     const frik::api::FRIKApi::HandPoseData& activeHandPose()
     {
-        return ImFl::g_config.getFlashlightHandPose(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
+        return ImFl::g_config.getFlashlightHandPose(ImFl::FlashlightState::flashlightGripStyle, f4vr::isInPowerArmor());
     }
 
     /**
@@ -44,7 +44,7 @@ namespace
      */
     const RE::NiTransform& activeMeshTransform()
     {
-        return ImFl::g_config.getFlashlightMeshTransform(ImFl::Utils::flashlightGripStyle, f4vr::isInPowerArmor());
+        return ImFl::g_config.getFlashlightMeshTransform(ImFl::FlashlightState::flashlightGripStyle, f4vr::isInPowerArmor());
     }
 
     /**
@@ -75,7 +75,7 @@ namespace ImFl
             return;
         }
 
-        if (!isFlashlightOn || !isMeshLocation(Utils::flashlightLocation)) {
+        if (!isFlashlightOn || !isMeshLocation(FlashlightState::flashlightLocation)) {
             hide(true);
             return;
         }
@@ -87,17 +87,17 @@ namespace ImFl
         }
 
         // re-attach if the skeleton pointer changed (e.g. after PA transition) or location changed
-        if (_attachedTo && (parent != _attachedTo || Utils::flashlightLocation != _attachedForLocation)) {
+        if (_attachedTo && (parent != _attachedTo || FlashlightState::flashlightLocation != _attachedForLocation)) {
             detach();
         }
 
         // grip style changes don't require re-attach (same parent), just re-apply transform.
-        if (_attachedTo && _attachedForGripStyle != Utils::flashlightGripStyle) {
+        if (_attachedTo && _attachedForGripStyle != FlashlightState::flashlightGripStyle) {
             setMeshTransform(activeMeshTransform());
-            _attachedForGripStyle = Utils::flashlightGripStyle;
+            _attachedForGripStyle = FlashlightState::flashlightGripStyle;
         }
 
-        const auto handPoseLocation = Utils::flashlightLocation;
+        const auto handPoseLocation = FlashlightState::flashlightLocation;
 
         // A location change moves to a different FRIK hand, so the pose set on the old hand must be cleared.
         // A grip-style change keeps the same hand and is handled by refreshing the pose in place below.
@@ -114,11 +114,11 @@ namespace ImFl
         // Apply the pose when first setting it, or refresh its values in place when the grip style changes.
         // Refreshing an existing tag with forceTop=false keeps its position in FRIK's override stack, so a
         // system currently overriding our tag stays on top and our updated pose only takes effect once it releases.
-        if (!_handPoseSet || _handPoseSetForGripStyle != Utils::flashlightGripStyle) {
+        if (!_handPoseSet || _handPoseSetForGripStyle != FlashlightState::flashlightGripStyle) {
             if (setFlashlightHandPose(hand)) {
                 _handPoseSet = true;
                 _handPoseSetForLocation = handPoseLocation;
-                _handPoseSetForGripStyle = Utils::flashlightGripStyle;
+                _handPoseSetForGripStyle = FlashlightState::flashlightGripStyle;
                 handPoseState = getFlashlightHandPoseState(hand);
             }
         }
@@ -146,16 +146,16 @@ namespace ImFl
     {
         if (!_meshNode) {
             _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
-            logger::info("FlashlightMesh: cloned NIF for location {}", static_cast<int>(Utils::flashlightLocation));
+            logger::info("FlashlightMesh: cloned NIF for location {}", static_cast<int>(FlashlightState::flashlightLocation));
         } else {
-            logger::info("FlashlightMesh: re-attaching cached node for location {}", static_cast<int>(Utils::flashlightLocation));
+            logger::info("FlashlightMesh: re-attaching cached node for location {}", static_cast<int>(FlashlightState::flashlightLocation));
         }
 
         parentNode->AttachChild(_meshNode.get(), true);
 
         _attachedTo = parentNode;
-        _attachedForLocation = Utils::flashlightLocation;
-        _attachedForGripStyle = Utils::flashlightGripStyle;
+        _attachedForLocation = FlashlightState::flashlightLocation;
+        _attachedForGripStyle = FlashlightState::flashlightGripStyle;
 
         setMeshTransform(activeMeshTransform());
     }
@@ -165,7 +165,7 @@ namespace ImFl
      */
     void FlashlightMesh::setMeshTransform(const RE::NiTransform& transform) const
     {
-        const float sign = Utils::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
+        const float sign = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
         _meshNode->local.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
 
         float heading, roll, attitude;
@@ -238,10 +238,10 @@ namespace ImFl
      */
     RE::NiNode* FlashlightMesh::resolveParentNode()
     {
-        if (Utils::flashlightLocation == FlashlightLocation::InOffhand) {
+        if (FlashlightState::flashlightLocation == FlashlightLocation::InOffhand) {
             return f4vr::isLeftHandedMode() ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand") : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
-        if (Utils::flashlightLocation == FlashlightLocation::InPrimaryHand) {
+        if (FlashlightState::flashlightLocation == FlashlightLocation::InPrimaryHand) {
             return !f4vr::isLeftHandedMode() ? f4vr::findNode(f4vr::getCommonNode(), "RArm_Hand") : f4vr::findNode(f4vr::getCommonNode(), "LArm_Hand");
         }
         return nullptr;

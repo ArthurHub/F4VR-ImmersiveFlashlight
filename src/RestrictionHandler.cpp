@@ -1,6 +1,7 @@
 #include "RestrictionHandler.h"
 
 #include "Config.h"
+#include "FlashlightState.h"
 #include "Utils.h"
 #include "f4vr/DebugInventory.h"
 #include "f4vr/F4VRUtils.h"
@@ -131,7 +132,10 @@ namespace ImFl
     }
 
     /**
-     * TODO: add documentation
+     * Whether the flashlight may mount on the equipped weapon. True unless the weapon-flashlight requirement
+     * is on (only then is a weapon tracked): a drawn melee/unarmed weapon is disallowed (it occupies the
+     * hand), and a regular weapon needs a detected flashlight mesh. Gates both enforceRestrictions() and the
+     * primary-hand move-to-weapon gesture (Flashlight::checkPrimaryHandActivation).
      */
     bool RestrictionHandler::isWeaponFlashlightAllowed()
     {
@@ -145,7 +149,8 @@ namespace ImFl
     }
 
     /**
-     * TODO: add documentation
+     * Per-frame driver (called from Flashlight::onFrameUpdate): refresh the weapon-flashlight detection cache,
+     * then enforce the active restrictions.
      */
     void RestrictionHandler::onFrameUpdate()
     {
@@ -155,7 +160,10 @@ namespace ImFl
     }
 
     /**
-     * TODO: add documentation
+     * Refresh the weapon-flashlight detection cache; a no-op while the requirement is off. The recursive walk
+     * of the weapon 3D for a flashlight mesh runs only when the equipped weapon changes, caching the weapon,
+     * its melee/unarmed flags, and the found node (or nullptr). Clears the cache when the weapon is holstered
+     * or unequipped.
      */
     void RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
     {
@@ -227,28 +235,26 @@ namespace ImFl
 
     /**
      * Enforce the active restrictions on the passive path. Skipped while a config-mode location override is
-     * active so beam tuning isn't interrupted, and a no-op while the light is off.
-     *
-     * Headgear: if the light is on the (non-PA) head but the requirement is no longer met, turn it off. A
-     * head runtime location already implies out of PA (PA maps to OnPAHead, always permitted).
-     *
-     * Weapon: if the light is on the weapon and the weapon-flashlight requirement is on but the equipped
-     * weapon carries no flashlight mesh, turn it off. Gated on the rescan window having settled (see
-     * update()) so a weapon 3D that hasn't attached its lamp yet doesn't read as "no flashlight".
+     * active so beam tuning isn't interrupted, and a no-op while the light is off. Turns the light off when
+     * its current location is no longer permitted:
+     *  - Head: on the (non-PA) head with the headgear requirement unmet (a head runtime location already
+     *    implies out of PA — PA maps to OnPAHead, always allowed).
+     *  - Weapon: on the weapon with isWeaponFlashlightAllowed() false (no detected mesh, or a drawn
+     *    melee/unarmed weapon, which resolves to OnWeapon — see FlashlightState::getFlashlightLocation).
      */
     void RestrictionHandler::enforceRestrictions()
     {
-        if (Utils::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn()) {
+        if (FlashlightState::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn()) {
             return;
         }
 
-        if (Utils::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
+        if (FlashlightState::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
             logger::info("Headgear requirement not met — turning the head flashlight off");
             Utils::turnFlashlightOff();
             return;
         }
 
-        if (Utils::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
+        if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }

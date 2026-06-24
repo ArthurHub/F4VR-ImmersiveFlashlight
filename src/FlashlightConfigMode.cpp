@@ -1,6 +1,7 @@
 #include "FlashlightConfigMode.h"
 
 #include "Config.h"
+#include "FlashlightState.h"
 #include "Utils.h"
 #include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
@@ -36,9 +37,9 @@ namespace
 
     int findCurrentColorIndex()
     {
-        const int r = *ImFl::Utils::flashlightColorRed;
-        const int g = *ImFl::Utils::flashlightColorGreen;
-        const int b = *ImFl::Utils::flashlightColorBlue;
+        const int r = *ImFl::FlashlightState::flashlightColorRed;
+        const int g = *ImFl::FlashlightState::flashlightColorGreen;
+        const int b = *ImFl::FlashlightState::flashlightColorBlue;
         for (std::size_t i = 0; i < COLOR_OPTIONS.size(); ++i) {
             const auto& c = COLOR_OPTIONS[i].rgb;
             if (c[0] == r && c[1] == g && c[2] == b) {
@@ -74,7 +75,7 @@ namespace
 
     void setConfigModeFlashlightLocation(const ImFl::FlashlightLocation location)
     {
-        ImFl::Utils::setFlashlightRuntimeLocationOverride(location);
+        ImFl::FlashlightState::setFlashlightRuntimeLocationOverride(location);
         ImFl::Utils::turnFlashlightOn();
     }
 
@@ -121,7 +122,7 @@ namespace
             loadGoboTextureFiles();
         }
         for (std::size_t i = 0; i < goboTextureFilePaths.size(); ++i) {
-            if (goboTextureFilePaths[i] == *ImFl::Utils::flashlightGoboPath) {
+            if (goboTextureFilePaths[i] == *ImFl::FlashlightState::flashlightGoboPath) {
                 return static_cast<int>(i);
             }
         }
@@ -146,7 +147,7 @@ namespace ImFl
         }
 
         logger::info("Open config by call...");
-        Utils::refreshFlashlightLocation();
+        FlashlightState::refreshFlashlightLocation();
         createMainConfigUI();
         Utils::turnFlashlightOn();
     }
@@ -161,10 +162,10 @@ namespace ImFl
         }
 
         // reload config to discard unsaved changes
-        Utils::setFlashlightRuntimeLocationOverride(std::nullopt);
+        FlashlightState::setFlashlightRuntimeLocationOverride(std::nullopt);
         g_config.load();
         if (Utils::isFlashlightOn()) {
-            Utils::toggleLightRefreshValues();
+            FlashlightState::toggleLightRefreshValues();
         }
 
         // unblock player input if needed
@@ -229,30 +230,30 @@ namespace ImFl
         if (primaryDirection.has_value()) {
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
-                *Utils::flashlightFade = fminf(*Utils::flashlightFade + 0.1f, 4.0f);
+                *FlashlightState::flashlightFade = fminf(*FlashlightState::flashlightFade + 0.1f, 4.0f);
                 break;
             case vrcf::Direction::Down:
-                *Utils::flashlightFade = fmaxf(*Utils::flashlightFade - 0.1f, 0.2f);
+                *FlashlightState::flashlightFade = fmaxf(*FlashlightState::flashlightFade - 0.1f, 0.2f);
                 break;
             case vrcf::Direction::Right:
-                *Utils::flashlightRadius = min(*Utils::flashlightRadius + 200, 10000);
+                *FlashlightState::flashlightRadius = min(*FlashlightState::flashlightRadius + 200, 10000);
                 break;
             case vrcf::Direction::Left:
-                *Utils::flashlightRadius = max(*Utils::flashlightRadius - 200, 1000);
+                *FlashlightState::flashlightRadius = max(*FlashlightState::flashlightRadius - 200, 1000);
                 break;
             }
-            Utils::toggleLightRefreshValues();
+            FlashlightState::toggleLightRefreshValues();
             _lastValuesChangeNotificationPensing = true;
         }
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
-                *Utils::flashlightFov = fminf(*Utils::flashlightFov + 5, 150);
-                Utils::toggleLightRefreshValues();
+                *FlashlightState::flashlightFov = fminf(*FlashlightState::flashlightFov + 5, 150);
+                FlashlightState::toggleLightRefreshValues();
                 _lastValuesChangeNotificationPensing = true;
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
-                *Utils::flashlightFov = fmaxf(*Utils::flashlightFov - 5, 5);
-                Utils::toggleLightRefreshValues();
+                *FlashlightState::flashlightFov = fmaxf(*FlashlightState::flashlightFov - 5, 5);
+                FlashlightState::toggleLightRefreshValues();
                 _lastValuesChangeNotificationPensing = true;
             }
         }
@@ -269,9 +270,9 @@ namespace ImFl
             _lastValuesChangeNotificationPensing = false;
             _lastValuesUpdateNotificationTime = now;
             f4vr::showNotification(std::format("Beam values updated:\nIntensity = {:.1f}\nDistance = {}\nSpread = {:.0f}\xC2\xB0",
-                *Utils::flashlightFade,
-                *Utils::flashlightRadius,
-                *Utils::flashlightFov));
+                *FlashlightState::flashlightFade,
+                *FlashlightState::flashlightRadius,
+                *FlashlightState::flashlightFov));
         }
     }
 
@@ -281,11 +282,11 @@ namespace ImFl
     void FlashlightConfigMode::switchBeamGobo()
     {
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
-        *Utils::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
+        *FlashlightState::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
 
-        Utils::toggleLightRefreshValues();
+        FlashlightState::toggleLightRefreshValues();
 
-        auto goboFileName = std::filesystem::path(*Utils::flashlightGoboPath).stem().string();
+        auto goboFileName = std::filesystem::path(*FlashlightState::flashlightGoboPath).stem().string();
         std::ranges::replace(goboFileName, '_', ' ');
         f4vr::showNotification(std::format("Beam Gobo: {}\nPreset: {} out of {}", goboFileName, nextGoboIndex + 1, goboTextureFilePaths.size()));
     }
@@ -296,11 +297,11 @@ namespace ImFl
     void FlashlightConfigMode::switchBeamColor()
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
-        *Utils::flashlightColorRed = COLOR_OPTIONS[nextColorIndex].rgb[0];
-        *Utils::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex].rgb[1];
-        *Utils::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
+        *FlashlightState::flashlightColorRed = COLOR_OPTIONS[nextColorIndex].rgb[0];
+        *FlashlightState::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex].rgb[1];
+        *FlashlightState::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
 
-        Utils::toggleLightRefreshValues();
+        FlashlightState::toggleLightRefreshValues();
 
         f4vr::showNotification(std::format("Beam Color: {}\nPreset: {} out of {}", COLOR_OPTIONS[nextColorIndex].name, nextColorIndex + 1, COLOR_OPTIONS.size()));
     }
@@ -311,7 +312,7 @@ namespace ImFl
     void FlashlightConfigMode::toggleBeamShadows(const bool shadowsEnabled)
     {
         g_config.setFlashlightFlagsBitmask(shadowsEnabled ? Utils::FLASHLIGHT_FLAGS_WITH_SHADOWS : Utils::FLASHLIGHT_FLAGS_NO_SHADOWS);
-        Utils::toggleLightRefreshValues();
+        FlashlightState::toggleLightRefreshValues();
         if (shadowsEnabled) {
             f4vr::showNotification(std::format("Flashlight Shadows: On\nMake sure Shadow Quality is set to HIGH in settings"));
         } else {
@@ -324,8 +325,8 @@ namespace ImFl
      */
     void FlashlightConfigMode::saveConfig()
     {
-        f4vr::showNotification(std::format("{} flashlight beam values saved", getFlashlightLocationLabel(Utils::flashlightLocation)));
-        g_config.saveFlashlightValues(Utils::flashlightLocation);
+        f4vr::showNotification(std::format("{} flashlight beam values saved", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
+        g_config.saveFlashlightValues(FlashlightState::flashlightLocation);
     }
 
     /**
@@ -333,9 +334,9 @@ namespace ImFl
      */
     void FlashlightConfigMode::resetConfig()
     {
-        f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(Utils::flashlightLocation)));
-        g_config.resetFlashlightValuesToDefault(Utils::flashlightLocation);
-        Utils::toggleLightRefreshValues();
+        f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
+        g_config.resetFlashlightValuesToDefault(FlashlightState::flashlightLocation);
+        FlashlightState::toggleLightRefreshValues();
     }
 
     void FlashlightConfigMode::switchingToOnHeadConfig()
@@ -372,7 +373,7 @@ namespace ImFl
             _row1ToggleContainer->clearToggleState();
             return;
         }
-        switch (Utils::flashlightLocation) {
+        switch (FlashlightState::flashlightLocation) {
         case FlashlightLocation::OnHead:
             _onHeadFLBtn->setToggleState(true);
             break;
@@ -463,6 +464,6 @@ namespace ImFl
         _configUI->addElement(header);
 
         g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
-        Utils::setFlashlightRuntimeLocationOverride(Utils::flashlightLocation);
+        FlashlightState::setFlashlightRuntimeLocationOverride(FlashlightState::flashlightLocation);
     }
 }
