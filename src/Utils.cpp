@@ -324,10 +324,6 @@ namespace ImFl
             return FlashlightLocation::InPrimaryHand;
         }
 
-        if (f4vr::isMeleeWeaponEquipped()) {
-            return FlashlightLocation::InOffhand;
-        }
-
         return FlashlightLocation::OnWeapon;
     }
 
