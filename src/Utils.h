@@ -27,7 +27,7 @@ namespace ImFl
 
         // Tracks the applied vanilla Pipboy-light-toggle disable state (nullopt until first applied, so the
         // first call always runs) and the original "fPipboyLightDelay:Controls" value to restore on re-enable.
-        inline static std::optional<bool> _vanillaFlashlightToggleDisabled;
+        inline static bool _vanillaFlashlightToggleDisabled = false;
         inline static float _originalPipboyLightDelay = -1.0f;
     };
 }

@@ -382,6 +382,7 @@ namespace ImFl
         headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", ""));
 
         weaponFlashlightRequired = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", false);
+        weaponFlashlightMountBeamToMesh = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightMountBeamToMesh", true);
         weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightMeshNodes", ""));
         weaponFlashlightMountTransform =
             getTransformValue(ini, DEFAULT_SECTION, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));
@@ -431,6 +432,10 @@ namespace ImFl
             DEFAULT_SECTION,
             "sSwitchFlashlightFromWeaponToOffhandBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
+        toggleWeaponFlashlightTwoHandedBinding = getInputBindingValue(ini,
+            DEFAULT_SECTION,
+            "sToggleWeaponFlashlightTwoHandedBinding",
+            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
         disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", true);
     }

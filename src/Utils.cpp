@@ -100,24 +100,25 @@ namespace ImFl
      */
     void Utils::updateVanillaFlashlightToggleDisabled()
     {
-        const bool disabled = g_config.disableVanillaFlashlightToggle;
-        if (_vanillaFlashlightToggleDisabled == disabled) {
+        if (_originalPipboyLightDelay <= 0) {
+            const auto setting = f4vr::getIniSetting("fPipboyLightDelay:Controls", true);
+            if (!setting) {
+                return;
+            }
+            _originalPipboyLightDelay = setting->GetFloat();
+        }
+
+        if (_vanillaFlashlightToggleDisabled == g_config.disableVanillaFlashlightToggle) {
             return;
         }
         const auto setting = f4vr::getIniSetting("fPipboyLightDelay:Controls", true);
-        if (!setting) {
-            return;
-        }
-        if (disabled) {
-            if (_originalPipboyLightDelay <= 0) {
-                _originalPipboyLightDelay = setting->GetFloat();
-            }
+        if (g_config.disableVanillaFlashlightToggle) {
             logger::info("Disable vanilla flashlight toggle");
             setting->SetFloat(99);
         } else {
             logger::info("Restore vanilla flashlight toggle ({})", _originalPipboyLightDelay);
             setting->SetFloat(_originalPipboyLightDelay);
         }
-        _vanillaFlashlightToggleDisabled = disabled;
+        _vanillaFlashlightToggleDisabled = g_config.disableVanillaFlashlightToggle;
     }
 }

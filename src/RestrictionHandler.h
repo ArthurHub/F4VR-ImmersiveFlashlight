@@ -17,6 +17,7 @@ namespace ImFl
     {
     public:
         static bool isHeadFlashlightAllowed();
+        static bool isWeaponEquipped();
         static bool isWeaponFlashlightAllowed();
         static void onFrameUpdate();
         static void invalidate();
@@ -39,7 +40,6 @@ namespace ImFl
 
         // Weapon-flashlight detection state
         inline static bool _currentWeaponMelee = false;
-        inline static bool _currentWeaponUnarmed = false;
         inline static RE::TESObjectWEAP* _currentWeapon = nullptr;
         inline static RE::NiAVObject* _weaponFlashlightNode = nullptr;
     };

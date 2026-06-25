@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Config.h"
+#include "RestrictionHandler.h"
 #include "Utils.h"
 #include "api/FRIKApi.h"
 #include "common/MatrixUtils.h"
@@ -247,7 +248,7 @@ namespace ImFl
             return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon() ? FlashlightLocation::OnWeapon : FlashlightLocation::InOffhand;
         }
 
-        if (!f4vr::IsWeaponDrawn()) {
+        if (!RestrictionHandler::isWeaponEquipped()) {
             return FlashlightLocation::InPrimaryHand;
         }
 

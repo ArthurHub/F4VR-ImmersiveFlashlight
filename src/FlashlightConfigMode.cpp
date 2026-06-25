@@ -359,7 +359,7 @@ namespace ImFl
      */
     void FlashlightConfigMode::trySwitchingToOnWeaponConfig() const
     {
-        if (!f4vr::isNodeVisible(f4vr::getWeaponNode()) || f4vr::isMeleeWeaponEquipped()) {
+        if (!f4vr::isNodeVisible(f4vr::getWeaponNode()) || f4vr::isMeleeWeaponDrawn()) {
             f4vr::showNotification("Equip a NON Melee weapon to tune on-weapon flashlight values");
             setFlashlightButtonsToggleStateByLocation();
             return;

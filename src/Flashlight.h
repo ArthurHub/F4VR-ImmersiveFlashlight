@@ -32,6 +32,11 @@ namespace ImFl
      *   from off, turns it on at the weapon (regular weapon drawn, regardless of stored location). A
      *   melee/unarmed weapon is inert. A long-press pulls an on-weapon light back to the offhand.
      *
+     * - Two-handed weapon toggle (zone-less offhand binding): while the offhand grips the weapon two-handed
+     *   (so it can't reach the primary-hand sphere) and the light is / would be on the weapon, a press of the
+     *   bound offhand button toggles the weapon light on/off from anywhere. Defers to the proximity gestures
+     *   when the offhand is inside one of their zones (so a shared button isn't handled twice).
+     *
      * Outside the gestures, entering/exiting power armor re-resolves the location (and restores a recently-on
      * light), and the in-game config UI can set the location directly.
      */
@@ -49,6 +54,7 @@ namespace ImFl
         bool checkBodyGrab(bool enabled);
         void checkHeadActivation();
         void checkPrimaryHandActivation();
+        void checkWeaponFlashlightToggle() const;
         static void adjustFlashlightTransformToHandOrHead();
         void maybeShowFPSStabilizerModWarning();
 

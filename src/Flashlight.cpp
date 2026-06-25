@@ -5,11 +5,13 @@
 #include "FlashlightState.h"
 #include "RestrictionHandler.h"
 #include "Utils.h"
+#include "api/FRIKApi.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersHaptic.h"
 #include "vrcf/VRControllersManager.h"
+#include "vrcf/VRControllersSuppressor.h"
 
 using namespace common;
 
@@ -54,9 +56,11 @@ namespace ImFl
     /**
      * Executed every frame to update to handle flashlight location and moving between hand and head.
      *
-     * Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, and the
-     * offhand-near-primary-hand activation. All three may toggle the light, so the on/off state is re-read
-     * below. They run before the early-return because their re-toggle turns the light back on from off.
+     * Stowed-on-body model + grab/return interaction, offhand-near-HMD head activation, the
+     * offhand-near-primary-hand activation, and the zone-less two-handed weapon toggle. All may toggle the
+     * light, so the on/off state is re-read below. They run before the early-return because their re-toggle
+     * turns the light back on from off. The two-handed toggle runs last so it can defer to the proximity
+     * gestures' suppression for the same offhand button this frame.
      */
     void Flashlight::onFrameUpdate()
     {
@@ -65,6 +69,7 @@ namespace ImFl
         updateBodyStow();
         checkHeadActivation();
         checkPrimaryHandActivation();
+        checkWeaponFlashlightToggle();
 
         FlashlightState::refreshFlashlightLocation();
 
@@ -144,7 +149,7 @@ namespace ImFl
         const auto location = FlashlightState::flashlightLocation;
         const bool offhandTapActive = location == FlashlightLocation::InOffhand || location == FlashlightLocation::OnWeapon || FlashlightState::isHeadMountedFlashlight() ||
             (location == FlashlightLocation::InPrimaryHand && !on);
-        const bool primaryTapActive = !f4vr::IsWeaponDrawn() &&
+        const bool primaryTapActive = !f4vr::isWeaponDrawn() &&
             (location == FlashlightLocation::InPrimaryHand || FlashlightState::isHeadMountedFlashlight() || (location == FlashlightLocation::InOffhand && !on));
 
         // The grab zone is anchored to the stowed model on the chest bone; mirror it for left-handed players.
@@ -238,11 +243,11 @@ namespace ImFl
         const bool on = Utils::isFlashlightOn();
         const auto location = FlashlightState::flashlightLocation;
 
-        const bool weaponDrawn = f4vr::IsWeaponDrawn();
-        const bool primaryHandUsable = RestrictionHandler::isWeaponFlashlightAllowed();
+        const bool weaponDrawn = f4vr::isWeaponDrawn();
+        const bool primaryHandUsable = !RestrictionHandler::isWeaponEquipped() || RestrictionHandler::isWeaponFlashlightAllowed();
         const bool tapActive = primaryHandUsable &&
             (location == FlashlightLocation::OnWeapon || (location == FlashlightLocation::InPrimaryHand && on) || (FlashlightState::isHeadMountedFlashlight() && weaponDrawn) ||
-                (location == FlashlightLocation::InOffhand && on) || (location == FlashlightLocation::InOffhand && !on && !weaponDrawn));
+                (location == FlashlightLocation::InOffhand && on) || (location == FlashlightLocation::InOffhand && !on && primaryHandUsable));
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
@@ -289,6 +294,38 @@ namespace ImFl
     }
 
     /**
+     * Zone-less offhand toggle of the weapon-mounted light, for two-handed weapon holds where the offhand
+     * grips the foregrip and can't reach the primary-hand activation sphere. Active only while the offhand is
+     * gripping the weapon (FRIK), the light is / would be on the weapon (the runtime location resolves to
+     * OnWeapon and the weapon may carry the light), and no proximity zone is already claiming the same offhand
+     * input this frame (so a shared button isn't handled twice).
+     */
+    void Flashlight::checkWeaponFlashlightToggle() const
+    {
+        if (!frik::api::FRIKApi::inst || !frik::api::FRIKApi::inst->isOffHandGrippingWeapon()) {
+            return;
+        }
+
+        const auto& binding = g_config.toggleWeaponFlashlightTwoHandedBinding;
+        if (!binding.isEnabled()) {
+            return;
+        }
+
+        if (FlashlightState::flashlightLocation != FlashlightLocation::OnWeapon || !RestrictionHandler::isWeaponFlashlightAllowed()) {
+            return;
+        }
+
+        if (_bodyGrabSphere.isSuppressing(binding) || _headSphere.isSuppressing(binding) || _primaryHandSphere.isSuppressing(binding)) {
+            return;
+        }
+
+        if (vrcf::VRControllers.check(binding)) {
+            logger::info("Toggle weapon flashlight in two-handed grip");
+            f4vr::togglePipboyLight(f4vr::getPlayer());
+        }
+    }
+
+    /**
      * Adjust the position of the light node to the hand that is holding it or revert to head position.
      * It is safer than moving the node as that can result in game crash.
      *
@@ -314,18 +351,17 @@ namespace ImFl
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
             if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
-                // TODO: handle moving light to the location of the flashlight mesh on the weapon
-                // if (auto* meshNode = RestrictionHandler::weaponFlashlightNode()) {
-                //     // Weapon-flashlight restriction on and a modeled flashlight found: root the beam at that
-                //     // mesh node with the configured mount offset instead of the generic tuned barrel guess.
-                //     attachNode = meshNode;
-                //     rotationOffset = g_config.weaponFlashlightMountTransform.rotate;
-                //     positionOffset = g_config.weaponFlashlightMountTransform.translate;
-                // } else {
-                attachNode = f4vr::getWeaponNode();
-                rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
-                positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
-                // }
+                if (auto* meshNode = g_config.weaponFlashlightMountBeamToMesh ? RestrictionHandler::weaponFlashlightNode() : nullptr) {
+                    // Beam-to-mesh rooting on and a modeled flashlight found: root the beam at that mesh node
+                    // with the configured mount offset instead of the generic tuned barrel guess.
+                    attachNode = meshNode;
+                    rotationOffset = g_config.weaponFlashlightMountTransform.rotate;
+                    positionOffset = g_config.weaponFlashlightMountTransform.translate;
+                } else {
+                    attachNode = f4vr::getWeaponNode();
+                    rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
+                    positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
+                }
             } else {
                 const bool isOffhand = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
@@ -352,6 +388,7 @@ namespace ImFl
         _bodyGrabSphere.detachDebug();
         _headSphere.detachDebug();
         _primaryHandSphere.detachDebug();
+        // The framework reset all input suppression before this hook, so forget what we believed we suppressed.
         RestrictionHandler::invalidate();
         Utils::updateVanillaFlashlightToggleDisabled();
     }

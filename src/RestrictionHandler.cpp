@@ -132,17 +132,21 @@ namespace ImFl
     }
 
     /**
-     * Whether the flashlight may mount on the equipped weapon. True unless the weapon-flashlight requirement
-     * is on (only then is a weapon tracked): a drawn melee/unarmed weapon is disallowed (it occupies the
-     * hand), and a regular weapon needs a detected flashlight mesh. Gates both enforceRestrictions() and the
-     * primary-hand move-to-weapon gesture (Flashlight::checkPrimaryHandActivation).
+     * Is there is physically equipped weapon.
+     */
+    bool RestrictionHandler::isWeaponEquipped()
+    {
+        return _currentWeapon || f4vr::isUnarmedWeaponDrawn();
+    }
+
+    /**
+     * Whether the flashlight may mount on the equipped weapon.
+     * A drawn melee/unarmed weapon is disallowed.
+     * If weapon-flashlight requirement is on the weapon must have found flashlight node.
      */
     bool RestrictionHandler::isWeaponFlashlightAllowed()
     {
-        if (!_currentWeapon) {
-            return true;
-        }
-        if (_currentWeaponMelee || _currentWeaponUnarmed) {
+        if (!_currentWeapon || _currentWeaponMelee || f4vr::isUnarmedWeaponDrawn()) {
             return false;
         }
         return !g_config.weaponFlashlightRequired || weaponFlashlightNode() != nullptr;
@@ -177,15 +181,13 @@ namespace ImFl
             if (_currentWeapon != equippedWeapon) {
                 logger::info("Equipped weapon changed to {}, re-scanning for flashlight node.", equippedWeapon ? equippedWeapon->GetFormEditorID() : "<none>");
                 _currentWeapon = equippedWeapon;
-                _currentWeaponMelee = f4vr::isMeleeWeaponEquipped();
-                _currentWeaponUnarmed = f4vr::isUnarmedWeaponEquipped();
+                _currentWeaponMelee = f4vr::isMeleeWeaponDrawn();
                 _weaponFlashlightNode = findWeaponFlashlightNode(weaponNode);
             }
         } else if (_currentWeapon) {
             logger::info("Equipped weapon changed to None");
             _currentWeapon = nullptr;
             _currentWeaponMelee = false;
-            _currentWeaponUnarmed = false;
             _weaponFlashlightNode = nullptr;
         }
     }
@@ -202,10 +204,8 @@ namespace ImFl
         }
         for (const auto& nodeName : g_config.weaponFlashlightMeshNodes) {
             if (auto* node = f4vr::findAVObject(weaponNode, nodeName)) {
-                if (f4vr::isNodeVisible(node)) {
-                    logger::info("Found visible weapon-mounted flashlight node: {}", nodeName);
-                    return node;
-                }
+                logger::info("Found visible weapon-mounted flashlight node: {}", nodeName);
+                return node;
             }
         }
         logger::debug("No visible weapon-mounted flashlight node found");
@@ -226,7 +226,8 @@ namespace ImFl
 
     /**
      * The cached weapon-mounted flashlight mesh node, or nullptr when none is mounted / the restriction is
-     * off. Valid for the frame after update(); the OnWeapon light placement roots the beam at it.
+     * off. Valid for the frame after update(); when weaponFlashlightMountBeamToMesh is on, the OnWeapon light
+     * placement roots the beam at it.
      */
     RE::NiAVObject* RestrictionHandler::weaponFlashlightNode()
     {

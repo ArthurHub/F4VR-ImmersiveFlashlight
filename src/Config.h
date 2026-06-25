@@ -182,9 +182,13 @@ namespace ImFl
         std::vector<std::pair<std::uint32_t, std::string>> headLightDenyList;
 
         // Optional restriction requiring a modeled flashlight on the equipped weapon before the light may
-        // mount on it (FlashlightLocation::OnWeapon). When on, RestrictionHandler roots the beam at the
-        // detected mesh node and turns an on-weapon light off when the weapon carries no such mesh.
+        // mount on it (FlashlightLocation::OnWeapon). When on, RestrictionHandler detects the mesh node and
+        // turns an on-weapon light off when the weapon carries no such mesh.
         bool weaponFlashlightRequired = false;
+        // When on (and weaponFlashlightRequired is on — detection only runs then), the weapon-mounted beam is
+        // rooted at the detected flashlight mesh node with the mount offset below instead of the generic
+        // tuned barrel offset. Has no effect while weaponFlashlightRequired is off.
+        bool weaponFlashlightMountBeamToMesh = true;
         // Flashlight mesh node names to search for under the equipped weapon 3D, in priority order (first
         // visible match wins). These are NIF node names, not editor IDs — verify in NifSkope. Parsed from a
         // comma-separated INI list. See the weapon_flashlight_detection reference.
@@ -246,6 +250,12 @@ namespace ImFl
         // long-press binding pulls the on-weapon light back to the offhand. Each "none" disables its gesture.
         vrcf::InputBinding activateFlashlightOnPrimaryHandBinding;
         vrcf::InputBinding switchFlashlightFromWeaponToOffhandBinding;
+
+        // Zone-less offhand toggle of the weapon-mounted light for two-handed weapon holds, where the offhand
+        // grips the foregrip and can't reach the primary-hand activation sphere (checkWeaponFlashlightToggle).
+        // Active only while the offhand is gripping the weapon (FRIK) and the light is / would be on the
+        // weapon; a press toggles it on/off from anywhere. "none" disables it.
+        vrcf::InputBinding toggleWeaponFlashlightTwoHandedBinding;
 
         // Disable the vanilla game's global flashlight toggle so only this mod's gestures control the light.
         bool disableVanillaFlashlightToggle = true;
