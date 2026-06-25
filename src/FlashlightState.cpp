@@ -231,6 +231,9 @@ namespace ImFl
     /**
      * Get the real flashlight location based on config and current game state.
      * A temporary override takes priority, otherwise gameplay state decides between head, PA head, hand, and weapon.
+     * For config InOffhand, a two-handed grip occupies the offhand: the light mounts on the weapon, but when the
+     * weapon-flashlight requirement is on and the weapon carries no modeled flashlight it falls back to the head
+     * (rather than turning off) until the grip is released and it returns to the offhand.
      */
     FlashlightLocation FlashlightState::getFlashlightLocation()
     {
@@ -245,7 +248,16 @@ namespace ImFl
         }
 
         if (configLocation == FlashlightConfigLocation::InOffhand) {
-            return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon() ? FlashlightLocation::OnWeapon : FlashlightLocation::InOffhand;
+            if (!frik::api::FRIKApi::inst || !frik::api::FRIKApi::inst->isOffHandGrippingWeapon()) {
+                return FlashlightLocation::InOffhand;
+            }
+            // The offhand grips a two-handed weapon and can't hold the light. Mount it on the weapon, unless the
+            // weapon-flashlight requirement is on and the weapon has no modeled flashlight — then fall back to the
+            // head instead of losing the light; releasing the grip resolves back to the offhand.
+            if (g_config.weaponFlashlightRequired && !RestrictionHandler::isWeaponFlashlightAllowed()) {
+                return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
+            }
+            return FlashlightLocation::OnWeapon;
         }
 
         if (!RestrictionHandler::isWeaponEquipped()) {
