@@ -252,9 +252,21 @@ namespace ImFl
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
 
+        // Anchor the sphere to the weapon's flashlight mesh when configured and one is mounted (the node is
+        // non-null only while the weapon-flashlight requirement is on), so the gesture is reached at the gun
+        // lamp; otherwise it sits on the primary-hand wand. A non-node mesh falls back to the wand.
+        auto sphereNode = f4vr::getPrimaryHandWandNode();
+        if (g_config.weaponFlashlightAnchorPrimaryHandSphereToMesh) {
+            if (auto* meshNode = RestrictionHandler::weaponFlashlightNode()) {
+                if (auto* meshNiNode = meshNode->IsNode()) {
+                    sphereNode = meshNiNode;
+                }
+            }
+        }
+
         _primaryHandSphere.onFrameUpdate(
             {
-                .node = f4vr::getPrimaryHandWandNode(),
+                .node = sphereNode,
                 .zone = g_config.flashlightPrimaryHandSphereTransform,
                 .bindings = {
                     tapActive ? g_config.activateFlashlightOnPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,

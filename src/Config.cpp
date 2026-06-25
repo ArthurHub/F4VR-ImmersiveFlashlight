@@ -383,6 +383,7 @@ namespace ImFl
 
         weaponFlashlightRequired = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", false);
         weaponFlashlightMountBeamToMesh = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightMountBeamToMesh", true);
+        weaponFlashlightAnchorPrimaryHandSphereToMesh = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightAnchorPrimaryHandSphereToMesh", true);
         weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightMeshNodes", ""));
         weaponFlashlightMountTransform =
             getTransformValue(ini, DEFAULT_SECTION, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));

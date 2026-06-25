@@ -189,6 +189,12 @@ namespace ImFl
         // rooted at the detected flashlight mesh node with the mount offset below instead of the generic
         // tuned barrel offset. Has no effect while weaponFlashlightRequired is off.
         bool weaponFlashlightMountBeamToMesh = true;
+        // When on (and weaponFlashlightRequired is on — detection only runs then), the primary-hand activation
+        // sphere (checkPrimaryHandActivation) is anchored to the detected flashlight mesh node instead of the
+        // primary-hand wand node, so the gesture is reached by bringing the offhand to the gun's lamp. The
+        // sphere transform is then read in the mesh node's local space. Falls back to the wand node when no
+        // mesh is found (or it isn't a node). Has no effect while weaponFlashlightRequired is off.
+        bool weaponFlashlightAnchorPrimaryHandSphereToMesh = true;
         // Flashlight mesh node names to search for under the equipped weapon 3D, in priority order (first
         // visible match wins). These are NIF node names, not editor IDs — verify in NifSkope. Parsed from a
         // comma-separated INI list. See the weapon_flashlight_detection reference.
