@@ -255,7 +255,7 @@ namespace ImFl
             return;
         }
 
-        if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
+        if (g_config.weaponFlashlightRequired && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }

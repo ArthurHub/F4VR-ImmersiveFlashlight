@@ -260,7 +260,7 @@ namespace ImFl
             return FlashlightLocation::OnWeapon;
         }
 
-        if (!RestrictionHandler::isWeaponEquipped()) {
+        if (g_config.weaponFlashlightRequired && !RestrictionHandler::isWeaponEquipped()) {
             return FlashlightLocation::InPrimaryHand;
         }
 
