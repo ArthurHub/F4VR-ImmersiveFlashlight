@@ -44,7 +44,7 @@ namespace ImFl
 
     bool FlashlightMod::isConfigOpen() const
     {
-        return _flashlightConfigMode->isOpen();
+        return _config->isConfigOpen();
     }
 
     /**
@@ -69,7 +69,7 @@ namespace ImFl
         RestrictionHandler::invalidate();
 
         _flashlight = std::make_unique<Flashlight>();
-        _flashlightConfigMode = std::make_unique<FlashlightConfigMode>();
+        _config = std::make_unique<config::MainScreen>();
 
         _frikInitialized = registerOpenConfigViaFRIK();
         if (_frikInitialized) {
@@ -82,7 +82,7 @@ namespace ImFl
      */
     void FlashlightMod::onGameSessionLoaded()
     {
-        _flashlightConfigMode->closeConfigMode();
+        _config->closeConfigMode();
         if (_flashlight) {
             _flashlight->onGameSessionLoaded();
         }
@@ -104,7 +104,7 @@ namespace ImFl
 
         _flashlight->onFrameUpdate();
 
-        _flashlightConfigMode->onFrameUpdate();
+        _config->onFrameUpdate();
 
         // Debug: dump the Immersive-rule headgear allow/block classification on request (one-shot INI token).
         if (g_config.checkDebugDumpDataOnceFor("headgear")) {
@@ -161,7 +161,7 @@ namespace ImFl
     void FlashlightMod::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
     {
         if (aMsg->type == 15) {
-            g_imFl._flashlightConfigMode->openConfigMode();
+            g_imFl._config->openConfigMode();
         } else {
             logger::error("ImmersiveFlashlight received unknown FRIK message type: {}!", aMsg->type);
         }

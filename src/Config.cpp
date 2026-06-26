@@ -82,6 +82,54 @@ namespace ImFl
     }
 
     /**
+     * Persist the debug grab/activation sphere visibility toggle. Read live by Flashlight each frame.
+     */
+    void Config::setDebugShowGrabSphere(const bool show)
+    {
+        debugShowGrabSphere = show;
+        saveIniConfigValue(DEFAULT_SECTION, "bDebugShowGrabSphere", show);
+    }
+
+    /**
+     * Persist the stowed-on-body model toggle. Read live by Flashlight::updateBodyStow each frame.
+     */
+    void Config::setShowFlashlightOnBody(const bool show)
+    {
+        showFlashlightOnBody = show;
+        saveIniConfigValue(DEFAULT_SECTION, "bShowFlashlightOnBody", show);
+    }
+
+    /**
+     * Persist the head-mounted-light headgear requirement. Read live by RestrictionHandler each frame; the
+     * Immersive rule reuses the form lists already resolved at load (no re-resolve needed to switch modes).
+     */
+    void Config::setFlashlightHeadgearRequirement(const FlashlightHeadgearRequirement requirement)
+    {
+        flashlightHeadgearRequirement = requirement;
+        saveIniConfigValue(DEFAULT_SECTION, "iFlashlightHeadgearRequirement", static_cast<int>(requirement));
+    }
+
+    /**
+     * Persist the weapon-flashlight requirement. The caller must follow with RestrictionHandler::invalidate()
+     * so the mesh-detection cache re-scans for the new state (programmatic saves don't fire the hot-reload).
+     */
+    void Config::setWeaponFlashlightRequired(const bool required)
+    {
+        weaponFlashlightRequired = required;
+        saveIniConfigValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", required);
+    }
+
+    /**
+     * Persist the vanilla-flashlight-toggle disable. The caller must follow with
+     * Utils::updateVanillaFlashlightToggleDisabled() to apply/restore the game setting live.
+     */
+    void Config::setDisableVanillaFlashlightToggle(const bool disabled)
+    {
+        disableVanillaFlashlightToggle = disabled;
+        saveIniConfigValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", disabled);
+    }
+
+    /**
      * Resolve the in-hand light-node transform for the given hand, grip style, and power-armor state.
      */
     const RE::NiTransform& Config::getFlashlightInHandLightTransform(const bool isOffhand, const FlashlightGripStyle grip, const bool inPowerArmor) const

@@ -1,9 +1,8 @@
-#include "FlashlightConfigMode.h"
+#include "BeamScreen.h"
 
 #include "Config.h"
 #include "FlashlightState.h"
 #include "Utils.h"
-#include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
@@ -16,7 +15,7 @@ using namespace common;
 
 namespace
 {
-    const char* CONTROLLERS_SUPRESS_KEY = "FlashlightConfigMode";
+    const char* CONTROLLERS_SUPRESS_KEY = "ImFl_BeamConfig";
 
     struct ColorOption
     {
@@ -50,11 +49,6 @@ namespace
     }
 
     std::vector<std::string> goboTextureFilePaths;
-
-    bool areFlashlightShadowsEnabled()
-    {
-        return ImFl::Utils::areFlashlightShadowsEnabled();
-    }
 
     std::string_view getFlashlightLocationLabel(const ImFl::FlashlightLocation location)
     {
@@ -130,32 +124,38 @@ namespace
     }
 }
 
-namespace ImFl
+namespace ImFl::config
 {
-    int FlashlightConfigMode::isOpen() const
+    bool BeamScreen::isOpen() const
     {
-        return _configUI != nullptr;
+        return _ui != nullptr;
+    }
+
+    void BeamScreen::setOnBackHandler(std::function<void()> handler)
+    {
+        _onBack = std::move(handler);
     }
 
     /**
-     * Open.
+     * Resolve the runtime location, build the UI (which sets the location preview override), and turn the
+     * light on so the tuned beam is visible.
      */
-    void FlashlightConfigMode::openConfigMode()
+    void BeamScreen::open()
     {
         if (isOpen()) {
             return;
         }
-
-        logger::info("Open config by call...");
+        logger::info("Open beam config screen...");
         FlashlightState::refreshFlashlightLocation();
-        createMainConfigUI();
+        createUI();
         Utils::turnFlashlightOn();
     }
 
     /**
-     * Close.
+     * Discard unsaved beam changes (reload config), clear the preview override, release controller
+     * suppression, and detach the UI.
      */
-    void FlashlightConfigMode::closeConfigMode()
+    void BeamScreen::close()
     {
         if (!isOpen()) {
             return;
@@ -172,8 +172,8 @@ namespace ImFl
         vrcf::VRControllersSuppress.release(CONTROLLERS_SUPRESS_KEY);
 
         // release the UI
-        g_uiManager->detachElement(_configUI, true);
-        _configUI.reset();
+        g_uiManager->detachElement(_ui, true);
+        _ui.reset();
         _beamTuningTglBtn.reset();
         _onHeadFLBtn.reset();
         _onPAHeadFLBtn.reset();
@@ -185,20 +185,15 @@ namespace ImFl
     }
 
     /**
-     * Handle main config on every frame update.
+     * Handle the beam config screen on every frame update.
      */
-    void FlashlightConfigMode::onFrameUpdate()
+    void BeamScreen::onFrameUpdate()
     {
         if (!isOpen()) {
             return;
         }
 
-        // close this mod config mode if FRIK config is opened
-        if (frik::api::FRIKApi::inst->isConfigOpen()) {
-            closeConfigMode();
-        }
-
-        _configUI->setPosition(0, 0, f4vr::isNodeVisible(f4vr::getWeaponNode()) ? 6.0f : 0.0f);
+        _ui->setPosition(0, 0, f4vr::isNodeVisible(f4vr::getWeaponNode()) ? 6.0f : 0.0f);
 
         _configMsg->setVisibility(!_beamTuningTglBtn->isToggleOn());
         _beamTuningMsg->setVisibility(_beamTuningTglBtn->isToggleOn());
@@ -218,7 +213,7 @@ namespace ImFl
      * Radius - the distance the beam reaches - primary thumbstick left/right
      * FOV - the spread of the beam - offhand thumbstick up/down
      */
-    void FlashlightConfigMode::handleBeamTuningAdjustments()
+    void BeamScreen::handleBeamTuningAdjustments()
     {
         if (!_beamTuningTglBtn->isToggleOn()) {
             return;
@@ -263,7 +258,7 @@ namespace ImFl
      * Show notification with current flashlight values after they were changed.
      * Try not to spam too much.
      */
-    void FlashlightConfigMode::showBeamCurrentValuesNotification()
+    void BeamScreen::showBeamCurrentValuesNotification()
     {
         const auto now = nowMillis();
         if (_lastValuesChangeNotificationPensing && now - _lastValuesUpdateNotificationTime > 3000) {
@@ -279,7 +274,7 @@ namespace ImFl
     /**
      * Switch the beam gobo to the next preset option.
      */
-    void FlashlightConfigMode::switchBeamGobo()
+    void BeamScreen::switchBeamGobo()
     {
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
         *FlashlightState::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
@@ -294,7 +289,7 @@ namespace ImFl
     /**
      * Switch the beam color to the next preset option.
      */
-    void FlashlightConfigMode::switchBeamColor()
+    void BeamScreen::switchBeamColor()
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
         *FlashlightState::flashlightColorRed = COLOR_OPTIONS[nextColorIndex].rgb[0];
@@ -307,23 +302,9 @@ namespace ImFl
     }
 
     /**
-     * Toggle the shadows on/off for the flashlight beam. This is a global setting that affects all flashlight locations.
-     */
-    void FlashlightConfigMode::toggleBeamShadows(const bool shadowsEnabled)
-    {
-        g_config.setFlashlightFlagsBitmask(shadowsEnabled ? Utils::FLASHLIGHT_FLAGS_WITH_SHADOWS : Utils::FLASHLIGHT_FLAGS_NO_SHADOWS);
-        FlashlightState::toggleLightRefreshValues();
-        if (shadowsEnabled) {
-            f4vr::showNotification(std::format("Flashlight Shadows: On\nMake sure Shadow Quality is set to HIGH in settings"));
-        } else {
-            f4vr::showNotification(std::format("Flashlight Shadows: Off"));
-        }
-    }
-
-    /**
      * Save the flashlight values only for the current selected location.
      */
-    void FlashlightConfigMode::saveConfig()
+    void BeamScreen::saveConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values saved", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
         g_config.saveFlashlightValues(FlashlightState::flashlightLocation);
@@ -332,24 +313,24 @@ namespace ImFl
     /**
      * Reset to default the flashlight values only for the current selected location.
      */
-    void FlashlightConfigMode::resetConfig()
+    void BeamScreen::resetConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
         g_config.resetFlashlightValuesToDefault(FlashlightState::flashlightLocation);
         FlashlightState::toggleLightRefreshValues();
     }
 
-    void FlashlightConfigMode::switchingToOnHeadConfig()
+    void BeamScreen::switchingToOnHeadConfig()
     {
         setConfigModeFlashlightLocation(FlashlightLocation::OnHead);
     }
 
-    void FlashlightConfigMode::switchingToOnPAHeadConfig()
+    void BeamScreen::switchingToOnPAHeadConfig()
     {
         setConfigModeFlashlightLocation(FlashlightLocation::OnPAHead);
     }
 
-    void FlashlightConfigMode::switchingToInHandConfig()
+    void BeamScreen::switchingToInHandConfig()
     {
         setConfigModeFlashlightLocation(FlashlightLocation::InOffhand);
     }
@@ -357,7 +338,7 @@ namespace ImFl
     /**
      * Switch to on-weapon config if NON melee weapon is equipped, otherwise show notification.
      */
-    void FlashlightConfigMode::trySwitchingToOnWeaponConfig() const
+    void BeamScreen::trySwitchingToOnWeaponConfig() const
     {
         if (!f4vr::isNodeVisible(f4vr::getWeaponNode()) || f4vr::isMeleeWeaponDrawn()) {
             f4vr::showNotification("Equip a NON Melee weapon to tune on-weapon flashlight values");
@@ -367,7 +348,7 @@ namespace ImFl
         setConfigModeFlashlightLocation(FlashlightLocation::OnWeapon);
     }
 
-    void FlashlightConfigMode::setFlashlightButtonsToggleStateByLocation() const
+    void BeamScreen::setFlashlightButtonsToggleStateByLocation() const
     {
         if (!Utils::isFlashlightOn()) {
             _row1ToggleContainer->clearToggleState();
@@ -391,9 +372,9 @@ namespace ImFl
     }
 
     /**
-     * Create all the main config UI elements.
+     * Create all the beam config UI elements.
      */
-    void FlashlightConfigMode::createMainConfigUI()
+    void BeamScreen::createUI()
     {
         _onHeadFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-on-head.nif");
         _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnHeadConfig(); });
@@ -423,15 +404,10 @@ namespace ImFl
         const auto switchColorBtn = std::make_shared<UIButton>("ui-config-main\\btn-switch-color.nif");
         switchColorBtn->setOnPressHandler([this](UIWidget*) { switchBeamColor(); });
 
-        const auto beamShadowsTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-shadows.nif");
-        beamShadowsTglBtn->setToggleState(areFlashlightShadowsEnabled());
-        beamShadowsTglBtn->setOnToggleHandler([](UIWidget*, const bool shadowsEnabled) { toggleBeamShadows(shadowsEnabled); });
-
         const auto row2Container = std::make_shared<UIContainer>("Row2", UIContainerLayout::HorizontalCenter, 0.3f);
         row2Container->addElement(_beamTuningTglBtn);
         row2Container->addElement(switchGoboBtn);
         row2Container->addElement(switchColorBtn);
-        row2Container->addElement(beamShadowsTglBtn);
 
         const auto saveBtn = std::make_shared<UIButton>("ui-common\\btn-save.nif");
         saveBtn->setOnPressHandler([this](UIWidget*) { saveConfig(); });
@@ -439,15 +415,19 @@ namespace ImFl
         const auto resetBtn = std::make_shared<UIButton>("ui-common\\btn-reset.nif");
         resetBtn->setOnPressHandler([this](UIWidget*) { resetConfig(); });
 
-        const auto exitBtn = std::make_shared<UIButton>("ui-common\\btn-exit.nif");
-        exitBtn->setOnPressHandler([this](UIWidget*) { closeConfigMode(); });
+        const auto backBtn = std::make_shared<UIButton>("ui-common\\btn-back.nif");
+        backBtn->setOnPressHandler([this](UIWidget*) {
+            if (_onBack) {
+                _onBack();
+            }
+        });
 
         const auto row3Container = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
         row3Container->addElement(saveBtn);
         row3Container->addElement(resetBtn);
-        row3Container->addElement(exitBtn);
+        row3Container->addElement(backBtn);
 
-        _configMsg = std::make_shared<UIWidget>("ui-config-main\\msg-main.nif");
+        _configMsg = std::make_shared<UIWidget>("ui-config-main\\msg-beam-main.nif");
         _beamTuningMsg = std::make_shared<UIWidget>("ui-config-main\\msg-beam-tuning.nif");
 
         const auto row4Container = std::make_shared<UIContainer>("Row4", UIContainerLayout::HorizontalCenter, 0.3f);
@@ -456,14 +436,14 @@ namespace ImFl
 
         const auto header = std::make_shared<UIWidget>("ui-config-main\\title.nif", 1.5f);
 
-        _configUI = std::make_shared<UIContainer>("Config", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
-        _configUI->addElement(row4Container);
-        _configUI->addElement(row3Container);
-        _configUI->addElement(row2Container);
-        _configUI->addElement(_row1ToggleContainer);
-        _configUI->addElement(header);
+        _ui = std::make_shared<UIContainer>("BeamConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
+        _ui->addElement(row4Container);
+        _ui->addElement(row3Container);
+        _ui->addElement(row2Container);
+        _ui->addElement(_row1ToggleContainer);
+        _ui->addElement(header);
 
-        g_uiManager->attachPresetToPrimaryWandTop(_configUI, { 0, 0, 0 });
+        g_uiManager->attachPresetToPrimaryWandTop(_ui, { 0, 0, 0 });
         FlashlightState::setFlashlightRuntimeLocationOverride(FlashlightState::flashlightLocation);
     }
 }

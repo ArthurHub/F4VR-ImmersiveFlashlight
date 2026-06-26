@@ -77,6 +77,11 @@ namespace ImFl
 
         void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
         void setFlashlightFlagsBitmask(const std::string& bitmask);
+        void setDebugShowGrabSphere(bool show);
+        void setShowFlashlightOnBody(bool show);
+        void setFlashlightHeadgearRequirement(FlashlightHeadgearRequirement requirement);
+        void setWeaponFlashlightRequired(bool required);
+        void setDisableVanillaFlashlightToggle(bool disabled);
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 

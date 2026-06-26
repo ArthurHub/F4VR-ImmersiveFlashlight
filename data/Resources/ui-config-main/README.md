@@ -5,17 +5,22 @@ Source PNGs for the in-game VR configuration UI. Each image is one sprite in the
 
 - **Location toggles** (`btn-flashlight-on-head`, `btn-flashlight-on-pa-head`,
   `btn-flashlight-in-hand`, `btn-flashlight-on-weapon`) — pick which mount the beam settings apply to.
-- **Beam controls** (`btn-beam-tuning`, `btn-switch-gobo`, `btn-switch-color`,
-  `btn-flashlight-shadows`) — tune intensity/radius/FOV, cycle gobo and color presets, toggle shadows.
+- **Beam controls** (`btn-beam-tuning`, `btn-switch-gobo`, `btn-switch-color`) — tune
+  intensity/radius/FOV, cycle gobo and color presets.
+- **Shadows toggle** (`btn-flashlight-shadows`) — now on the misc screen, not the beam screen.
 - **Messages** (`msg-main`, `msg-beam-tuning`) — the help panels shown below the buttons.
-- **Title** (`title`) — the config panel header.
-- **FRIK menu icon** (`btn-flashlight`) — the button registered in FRIK's main config menu to open this UI.
+- **Title** (`title`) — the config panel header (shared by all screens).
+- **Flashlight icon** (`btn-flashlight`) — both the button registered in FRIK's main config menu to open
+  this UI, and the main menu's "open beam config" button.
 
-These feed `FlashlightConfigMode::createMainConfigUI()` in
-[src/FlashlightConfigMode.cpp](../../../src/FlashlightConfigMode.cpp); the FRIK menu icon is
-registered in [src/FlashlightMod.cpp](../../../src/FlashlightMod.cpp). Edit the art
-here, then re-run the pack command below. (Shared buttons like Save/Reset/Exit live in the
-separate `ui-common` atlas.)
+These feed the in-game VR config UI in [src/config/](../../../src/config/): the beam controls /
+location toggles / messages are built by
+[BeamScreen::createUI()](../../../src/config/BeamScreen.cpp), the shadows toggle by
+[MiscScreen::createUI()](../../../src/config/MiscScreen.cpp), and the title + flashlight icon by
+[MainScreen::createMenuUI()](../../../src/config/MainScreen.cpp); the FRIK menu icon is registered in
+[src/FlashlightMod.cpp](../../../src/FlashlightMod.cpp). Edit the art here, then re-run the pack command
+below. (Shared buttons like Save/Reset/Back/Exit and the menu's misc/advanced/wiki/debug-spheres icons
+live in the separate `ui-common` atlas.)
 
 ## Pack command
 
