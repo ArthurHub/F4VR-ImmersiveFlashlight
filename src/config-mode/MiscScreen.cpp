@@ -113,14 +113,27 @@ namespace ImFl::config
     }
 
     /**
-     * Toggle the weapon-flashlight requirement. Invalidates the restriction cache so the mesh detection
-     * re-scans for the new state (the programmatic save does not fire the config hot-reload).
+     * Cycle the weapon-flashlight-mesh requirement (Disabled -> Enabled -> AutoDetect). Invalidates the
+     * restriction cache so the mesh detection and resolved effective state re-scan for the new value (the
+     * programmatic save does not fire the config hot-reload).
      */
-    void MiscScreen::toggleWeaponFlashlightRequired(const bool required)
+    void MiscScreen::onWeaponMeshRequirementChanged(const FlashlightWeaponMeshRequirement requirement)
     {
-        g_config.setWeaponFlashlightRequired(required);
+        g_config.setWeaponFlashlightMeshRequirement(requirement);
         RestrictionHandler::invalidate();
-        f4vr::showNotification(required ? "Weapon needs modeled flashlight: On" : "Weapon needs modeled flashlight: Off");
+        switch (requirement) {
+        case FlashlightWeaponMeshRequirement::Disabled:
+            f4vr::showNotification("No restriction on flashlight on weapon");
+            break;
+        case FlashlightWeaponMeshRequirement::Enabled:
+            f4vr::showNotification("Require a modeled flashlight mesh on the weapon");
+            break;
+        case FlashlightWeaponMeshRequirement::AutoDetect:
+            f4vr::showNotification(RestrictionHandler::isWeaponFlashlightMeshRequired()
+                    ? "Auto detect mods with flashlight support\nSupported mod detected, weapon flashlight restriction is ON!"
+                    : "Auto detect mods with flashlight support\nNo supported mod detected, weapon flashlight restriction is OFF!");
+            break;
+        }
     }
 
     /**
@@ -150,9 +163,16 @@ namespace ImFl::config
         headgearReqBtn->setOnStateChangedHandler(
             [](UIMultiStateToggleButton<FlashlightHeadgearRequirement>*, const FlashlightHeadgearRequirement state) { onHeadgearRequirementChanged(state); });
 
-        const auto weaponReqTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-restrict-on-weapon-on.nif");
-        weaponReqTglBtn->setToggleState(g_config.weaponFlashlightRequired);
-        weaponReqTglBtn->setOnToggleHandler([](UIWidget*, const bool required) { toggleWeaponFlashlightRequired(required); });
+        // weapon-mesh requirement cycles through its 3 states; each state has its own nif
+        const std::map<FlashlightWeaponMeshRequirement, std::string> weaponReqNifs{
+            { FlashlightWeaponMeshRequirement::Disabled, "ui-config-main\\btn-restrict-on-weapon-none.nif" },
+            { FlashlightWeaponMeshRequirement::Enabled, "ui-config-main\\btn-restrict-on-weapon-on.nif" },
+            { FlashlightWeaponMeshRequirement::AutoDetect, "ui-config-main\\btn-restrict-on-weapon-auto.nif" },
+        };
+        const auto weaponReqBtn = std::make_shared<UIMultiStateToggleButton<FlashlightWeaponMeshRequirement>>(weaponReqNifs);
+        weaponReqBtn->setState(g_config.weaponFlashlightMeshRequirement);
+        weaponReqBtn->setOnStateChangedHandler(
+            [](UIMultiStateToggleButton<FlashlightWeaponMeshRequirement>*, const FlashlightWeaponMeshRequirement state) { onWeaponMeshRequirementChanged(state); });
 
         const auto showOnBodyTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-mesh-on-body.nif");
         showOnBodyTglBtn->setToggleState(g_config.showFlashlightOnBody);
@@ -164,7 +184,7 @@ namespace ImFl::config
 
         const auto row1 = std::make_shared<UIContainer>("MiscRow1", UIContainerLayout::HorizontalCenter, 0.3f);
         row1->addElement(headgearReqBtn);
-        row1->addElement(weaponReqTglBtn);
+        row1->addElement(weaponReqBtn);
         row1->addElement(showOnBodyTglBtn);
         row1->addElement(disableVanillaTglBtn);
 

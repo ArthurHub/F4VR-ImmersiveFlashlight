@@ -10,8 +10,8 @@ namespace ImFl
      *
      * Gates the head-mounted light (out of power armor) behind worn headgear per
      * Config::flashlightHeadgearRequirement, and optionally requires a modeled flashlight on the equipped
-     * weapon before the light may mount on it (Config::weaponFlashlightRequired). Static like Utils: there
-     * is a single player / flashlight, and the resolved form sets + detection caches are global state.
+     * weapon before the light may mount on it (Config::weaponFlashlightMeshRequirement). Static like Utils:
+     * there is a single player / flashlight, and the resolved form sets + detection caches are global state.
      */
     class RestrictionHandler
     {
@@ -19,6 +19,7 @@ namespace ImFl
         static bool isHeadFlashlightAllowed();
         static bool isWeaponEquipped();
         static bool isWeaponFlashlightAllowed();
+        static bool isWeaponFlashlightMeshRequired();
         static void onFrameUpdate();
         static void invalidate();
         static RE::NiAVObject* weaponFlashlightNode();
@@ -26,6 +27,7 @@ namespace ImFl
 
     private:
         static void resolveForms();
+        static bool resolveWeaponFlashlightMeshRequired();
         static void checkWeaponChangeForFlashlightOnWeaponDetection();
         static void enforceRestrictions();
         static const RE::TESObjectARMO* getWornHeadgear();
@@ -37,6 +39,10 @@ namespace ImFl
         inline static std::unordered_set<std::uint32_t> _headLightKeywordIds;
         inline static std::unordered_set<std::uint32_t> _headLightAllowIds;
         inline static std::unordered_set<std::uint32_t> _headLightDenyIds;
+
+        // Effective on/off of the weapon-flashlight-mesh requirement, resolved from
+        // Config::weaponFlashlightMeshRequirement by resolveForms() (AutoDetect checks installed plugins).
+        inline static bool _weaponFlashlightMeshRequired = false;
 
         // Weapon-flashlight detection state
         inline static bool _currentWeaponMelee = false;

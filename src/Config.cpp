@@ -110,13 +110,14 @@ namespace ImFl
     }
 
     /**
-     * Persist the weapon-flashlight requirement. The caller must follow with RestrictionHandler::invalidate()
-     * so the mesh-detection cache re-scans for the new state (programmatic saves don't fire the hot-reload).
+     * Persist the weapon-flashlight-mesh requirement. The caller must follow with RestrictionHandler::invalidate()
+     * so the mesh-detection cache and resolved effective state re-scan for the new value (programmatic saves
+     * don't fire the hot-reload).
      */
-    void Config::setWeaponFlashlightRequired(const bool required)
+    void Config::setWeaponFlashlightMeshRequirement(const FlashlightWeaponMeshRequirement requirement)
     {
-        weaponFlashlightRequired = required;
-        saveIniConfigValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", required);
+        weaponFlashlightMeshRequirement = requirement;
+        saveIniConfigValue(DEFAULT_SECTION, "iWeaponFlashlightMeshRequired", static_cast<int>(requirement));
     }
 
     /**
@@ -429,7 +430,8 @@ namespace ImFl
         headLightAllowList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightAllowList", ""));
         headLightDenyList = parseFormPluginList(ini.GetValue(DEFAULT_SECTION, "sHeadLightDenyList", ""));
 
-        weaponFlashlightRequired = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightRequired", false);
+        weaponFlashlightMeshRequirement = static_cast<FlashlightWeaponMeshRequirement>(ini.GetLongValue(DEFAULT_SECTION, "iWeaponFlashlightMeshRequired", 0));
+        weaponFlashlightAutoDetectPlugins = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightAutoDetectPlugins", ""));
         weaponFlashlightMountBeamToMesh = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightMountBeamToMesh", true);
         weaponFlashlightAnchorPrimaryHandSphereToMesh = ini.GetBoolValue(DEFAULT_SECTION, "bWeaponFlashlightAnchorPrimaryHandSphereToMesh", true);
         weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(DEFAULT_SECTION, "sWeaponFlashlightMeshNodes", ""));

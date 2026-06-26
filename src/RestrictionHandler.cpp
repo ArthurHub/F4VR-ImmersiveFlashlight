@@ -55,6 +55,43 @@ namespace ImFl
         }
 
         logger::info("Resolved headgear requirement forms: {} keyword(s), {} allow, {} deny", _headLightKeywordIds.size(), _headLightAllowIds.size(), _headLightDenyIds.size());
+
+        _weaponFlashlightMeshRequired = resolveWeaponFlashlightMeshRequired();
+    }
+
+    /**
+     * Resolve Config::weaponFlashlightMeshRequirement to an effective on/off. Enabled is always on, Disabled
+     * always off; AutoDetect is on only when one of the configured supported plugins
+     * (Config::weaponFlashlightAutoDetectPlugins) is present in the load order. Plugin presence is fixed for
+     * the session, so this is resolved once here (re-run on config reload / invalidate) rather than per frame.
+     */
+    bool RestrictionHandler::resolveWeaponFlashlightMeshRequired()
+    {
+        switch (g_config.weaponFlashlightMeshRequirement) {
+        case FlashlightWeaponMeshRequirement::Enabled:
+            return true;
+        case FlashlightWeaponMeshRequirement::AutoDetect:
+            for (const auto& plugin : g_config.weaponFlashlightAutoDetectPlugins) {
+                if (Utils::isPluginLoaded(plugin)) {
+                    logger::info("AutoDetect: supported weapon mod '{}' found — weapon-flashlight-mesh requirement on", plugin);
+                    return true;
+                }
+            }
+            logger::info("AutoDetect: no supported weapon mod found — weapon-flashlight-mesh requirement off");
+            return false;
+        case FlashlightWeaponMeshRequirement::Disabled:
+        default:
+            return false;
+        }
+    }
+
+    /**
+     * Whether the weapon-flashlight-mesh requirement is effectively on (Enabled, or AutoDetect with a
+     * supported plugin installed). Cached; resolved by resolveForms() at load and on config reload / invalidate.
+     */
+    bool RestrictionHandler::isWeaponFlashlightMeshRequired()
+    {
+        return _weaponFlashlightMeshRequired;
     }
 
     /**
@@ -149,7 +186,7 @@ namespace ImFl
         if (!_currentWeapon || _currentWeaponMelee || f4vr::isUnarmedWeaponDrawn()) {
             return false;
         }
-        return !g_config.weaponFlashlightRequired || weaponFlashlightNode() != nullptr;
+        return !isWeaponFlashlightMeshRequired() || weaponFlashlightNode() != nullptr;
     }
 
     /**
@@ -171,7 +208,7 @@ namespace ImFl
      */
     void RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
     {
-        if (!g_config.weaponFlashlightRequired) {
+        if (!isWeaponFlashlightMeshRequired()) {
             return;
         }
 
@@ -255,7 +292,7 @@ namespace ImFl
             return;
         }
 
-        if (g_config.weaponFlashlightRequired && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
+        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }

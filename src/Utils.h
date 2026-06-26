@@ -14,6 +14,7 @@ namespace ImFl
         static constexpr const char* FLASHLIGHT_FLAGS_NO_SHADOWS = "0100000000100001";
 
         static bool isVRFPSStabilizerModInstalled();
+        static bool isPluginLoaded(std::string_view pluginName);
         static const char* getHandLabel(vrcf::Hand hand);
         static void loadGoboTexture(const std::string& goboFilePath);
         static bool isFlashlightOn();

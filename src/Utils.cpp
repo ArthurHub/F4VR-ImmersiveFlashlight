@@ -40,6 +40,16 @@ namespace ImFl
     }
 
     /**
+     * Whether the given content plugin (.esp/.esm) is present in the current load order. Matched by filename
+     * load-order-independently via TESDataHandler, so it works regardless of the plugin's index.
+     */
+    bool Utils::isPluginLoaded(const std::string_view pluginName)
+    {
+        const auto dataHandler = RE::TESDataHandler::GetSingleton();
+        return dataHandler && dataHandler->LookupLoadedModByName(pluginName) != nullptr;
+    }
+
+    /**
      * Load the gobo texture into the game so it will be available to the flashlight light.
      * The game caches the texture so when the path is set on "textureName" it can find it.
      * Only load each texture once.

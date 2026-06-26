@@ -31,7 +31,7 @@ namespace ImFl::config
         static void toggleDebugSpheres(bool enabled);
         static void toggleShowOnBody(bool enabled);
         static void onHeadgearRequirementChanged(FlashlightHeadgearRequirement requirement);
-        static void toggleWeaponFlashlightRequired(bool required);
+        static void onWeaponMeshRequirementChanged(FlashlightWeaponMeshRequirement requirement);
         static void toggleDisableVanillaToggle(bool enabled);
 
         std::shared_ptr<vrui::UIContainer> _ui;

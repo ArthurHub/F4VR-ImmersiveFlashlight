@@ -254,13 +254,13 @@ namespace ImFl
             // The offhand grips a two-handed weapon and can't hold the light. Mount it on the weapon, unless the
             // weapon-flashlight requirement is on and the weapon has no modeled flashlight — then fall back to the
             // head instead of losing the light; releasing the grip resolves back to the offhand.
-            if (g_config.weaponFlashlightRequired && !RestrictionHandler::isWeaponFlashlightAllowed()) {
+            if (RestrictionHandler::isWeaponFlashlightMeshRequired() && !RestrictionHandler::isWeaponFlashlightAllowed()) {
                 return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
             }
             return FlashlightLocation::OnWeapon;
         }
 
-        if (g_config.weaponFlashlightRequired && !RestrictionHandler::isWeaponEquipped()) {
+        if (RestrictionHandler::isWeaponFlashlightMeshRequired() && !RestrictionHandler::isWeaponEquipped()) {
             return FlashlightLocation::InPrimaryHand;
         }
 

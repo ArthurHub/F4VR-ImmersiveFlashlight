@@ -68,6 +68,20 @@ namespace ImFl
         Immersive
     };
 
+    /**
+     * Optional restriction requiring a modeled flashlight on the equipped weapon before the light may sit
+     * on it (FlashlightLocation::OnWeapon).
+     * Disabled: no restriction (the weapon light always applies).
+     * Enabled: always require a modeled flashlight mesh on the weapon.
+     * AutoDetect: require it only when a supported weapon mod is installed (Config::weaponFlashlightAutoDetectPlugins).
+     */
+    enum class FlashlightWeaponMeshRequirement : uint8_t
+    {
+        Disabled = 0,
+        Enabled,
+        AutoDetect
+    };
+
     class Config : public ConfigBase
     {
     public:
@@ -80,7 +94,7 @@ namespace ImFl
         void setDebugShowGrabSphere(bool show);
         void setShowFlashlightOnBody(bool show);
         void setFlashlightHeadgearRequirement(FlashlightHeadgearRequirement requirement);
-        void setWeaponFlashlightRequired(bool required);
+        void setWeaponFlashlightMeshRequirement(FlashlightWeaponMeshRequirement requirement);
         void setDisableVanillaFlashlightToggle(bool disabled);
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
@@ -187,18 +201,23 @@ namespace ImFl
         std::vector<std::pair<std::uint32_t, std::string>> headLightDenyList;
 
         // Optional restriction requiring a modeled flashlight on the equipped weapon before the light may
-        // mount on it (FlashlightLocation::OnWeapon). When on, RestrictionHandler detects the mesh node and
-        // turns an on-weapon light off when the weapon carries no such mesh.
-        bool weaponFlashlightRequired = false;
-        // When on (and weaponFlashlightRequired is on — detection only runs then), the weapon-mounted beam is
-        // rooted at the detected flashlight mesh node with the mount offset below instead of the generic
-        // tuned barrel offset. Has no effect while weaponFlashlightRequired is off.
+        // mount on it (FlashlightLocation::OnWeapon). See FlashlightWeaponMeshRequirement. When effectively
+        // on (RestrictionHandler::isWeaponFlashlightMeshRequired() — Enabled, or AutoDetect with a supported
+        // mod installed), RestrictionHandler detects the mesh node and turns an on-weapon light off when the
+        // weapon carries no such mesh.
+        FlashlightWeaponMeshRequirement weaponFlashlightMeshRequirement = FlashlightWeaponMeshRequirement::Disabled;
+        // Plugins whose presence enables the requirement under AutoDetect. Parsed from a comma-separated INI
+        // list of plugin filenames (.esp/.esm); matched against the loaded mods load-order-independently.
+        std::vector<std::string> weaponFlashlightAutoDetectPlugins;
+        // When on (and the mesh requirement is effectively on — detection only runs then), the weapon-mounted
+        // beam is rooted at the detected flashlight mesh node with the mount offset below instead of the
+        // generic tuned barrel offset. Has no effect while the requirement is off.
         bool weaponFlashlightMountBeamToMesh = true;
-        // When on (and weaponFlashlightRequired is on — detection only runs then), the primary-hand activation
-        // sphere (checkPrimaryHandActivation) is anchored to the detected flashlight mesh node instead of the
-        // primary-hand wand node, so the gesture is reached by bringing the offhand to the gun's lamp. The
-        // sphere transform is then read in the mesh node's local space. Falls back to the wand node when no
-        // mesh is found (or it isn't a node). Has no effect while weaponFlashlightRequired is off.
+        // When on (and the mesh requirement is effectively on — detection only runs then), the primary-hand
+        // activation sphere (checkPrimaryHandActivation) is anchored to the detected flashlight mesh node
+        // instead of the primary-hand wand node, so the gesture is reached by bringing the offhand to the
+        // gun's lamp. The sphere transform is then read in the mesh node's local space. Falls back to the
+        // wand node when no mesh is found (or it isn't a node). Has no effect while the requirement is off.
         bool weaponFlashlightAnchorPrimaryHandSphereToMesh = true;
         // Flashlight mesh node names to search for under the equipped weapon 3D, in priority order (first
         // visible match wins). These are NIF node names, not editor IDs — verify in NifSkope. Parsed from a
