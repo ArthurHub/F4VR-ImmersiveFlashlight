@@ -174,7 +174,7 @@ namespace ImFl::config
     void MainScreen::openWiki()
     {
         logger::info("Open wiki");
-        ShellExecuteA(nullptr, "open", "explorer.exe", "https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/wiki", nullptr, SHELL_SW_SHOWNORMAL);
+        ShellExecuteA(nullptr, "open", "explorer.exe", "https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/README.md", nullptr, SHELL_SW_SHOWNORMAL);
         f4vr::showNotification("Help wiki opened in your browser.\nSwitch to your monitor to read it.");
     }
 
