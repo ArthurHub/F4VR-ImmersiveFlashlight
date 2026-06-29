@@ -20,15 +20,15 @@ namespace ImFl
         static bool isWeaponEquipped();
         static bool isWeaponFlashlightAllowed();
         static bool isWeaponFlashlightMeshRequired();
-        static void onFrameUpdate();
+        static bool onFrameUpdate();
         static void invalidate();
-        static RE::NiAVObject* weaponFlashlightNode();
+        static std::pair<RE::NiAVObject*, RE::NiTransform> getOnWeaponFlashlightMeshNode();
         static void dumpHeadgear();
 
     private:
         static void resolveForms();
         static bool resolveWeaponFlashlightMeshRequired();
-        static void checkWeaponChangeForFlashlightOnWeaponDetection();
+        static bool checkWeaponChangeForFlashlightOnWeaponDetection();
         static void enforceRestrictions();
         static const RE::TESObjectARMO* getWornHeadgear();
         static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);

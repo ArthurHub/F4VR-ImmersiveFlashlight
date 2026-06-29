@@ -2,6 +2,7 @@
 
 #include "BodyFlashlightMesh.h"
 #include "FlashlightMesh.h"
+#include "OnWeaponBeamMesh.h"
 #include "f4vr/WandActivationSphere.h"
 #include "vrcf/VRControllersManager.h"
 
@@ -63,6 +64,7 @@ namespace ImFl
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
 
         FlashlightMesh _inHandFlashlightMesh;
+        OnWeaponBeamMesh _onWeaponBeamMesh;
         BodyFlashlightMesh _bodyFlashlightMesh;
         f4vr::WandActivationSphere _bodyGrabSphere;
         f4vr::WandActivationSphere _headSphere;

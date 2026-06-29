@@ -73,16 +73,21 @@ namespace ImFl
 
         FlashlightState::refreshFlashlightLocation();
 
-        RestrictionHandler::onFrameUpdate();
+        if (RestrictionHandler::onFrameUpdate()) {
+            // weapon changed
+            _onWeaponBeamMesh.invalidate();
+        }
 
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
+            _onWeaponBeamMesh.onFrameUpdate();
             return;
         }
 
         FlashlightState::refreshGripStyle();
 
         _inHandFlashlightMesh.onFrameUpdate(true);
+        _onWeaponBeamMesh.onFrameUpdate();
 
         adjustFlashlightTransformToHandOrHead();
 
@@ -99,6 +104,8 @@ namespace ImFl
         if (isInPowerArmor != _wasInPowerArmor) {
             _wasInPowerArmor = isInPowerArmor;
             _bodyFlashlightMesh.invalidate();
+            RestrictionHandler::invalidate();
+            _onWeaponBeamMesh.invalidate();
             _bodyGrabSphere.detachDebug();
             _headSphere.detachDebug();
             _primaryHandSphere.detachDebug();
@@ -252,22 +259,25 @@ namespace ImFl
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
 
+        auto zone = g_config.flashlightPrimaryHandSphereTransform;
+
         // Anchor the sphere to the weapon's flashlight mesh when configured and one is mounted (the node is
         // non-null only while the weapon-flashlight requirement is on), so the gesture is reached at the gun
         // lamp; otherwise it sits on the primary-hand wand. A non-node mesh falls back to the wand.
         auto sphereNode = f4vr::getPrimaryHandWandNode();
         if (g_config.weaponFlashlightAnchorPrimaryHandSphereToMesh) {
-            if (auto* meshNode = RestrictionHandler::weaponFlashlightNode()) {
-                if (auto* meshNiNode = meshNode->IsNode()) {
-                    sphereNode = meshNiNode;
-                }
+            const auto [meshNode, meshTransform] = RestrictionHandler::getOnWeaponFlashlightMeshNode();
+            if (meshNode) {
+                sphereNode = meshNode->parent;
+                zone = meshTransform;
+                zone.scale = g_config.flashlightPrimaryHandSphereTransform.scale;
             }
         }
 
         _primaryHandSphere.onFrameUpdate(
             {
                 .node = sphereNode,
-                .zone = g_config.flashlightPrimaryHandSphereTransform,
+                .zone = zone,
                 .bindings = {
                     tapActive ? g_config.activateFlashlightOnPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
                     weaponToOffhandActive ? g_config.switchFlashlightFromWeaponToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
@@ -363,7 +373,7 @@ namespace ImFl
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
             if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
-                if (auto* meshNode = g_config.weaponFlashlightMountBeamToMesh ? RestrictionHandler::weaponFlashlightNode() : nullptr) {
+                if (auto* meshNode = RestrictionHandler::getOnWeaponFlashlightMeshNode().first) {
                     // Beam-to-mesh rooting on and a modeled flashlight found: root the beam at that mesh node
                     // with the configured mount offset instead of the generic tuned barrel guess.
                     attachNode = meshNode;
@@ -396,6 +406,7 @@ namespace ImFl
     void Flashlight::onGameSessionLoaded()
     {
         _inHandFlashlightMesh.invalidate();
+        _onWeaponBeamMesh.invalidate();
         _bodyFlashlightMesh.invalidate();
         _bodyGrabSphere.detachDebug();
         _headSphere.detachDebug();

@@ -186,18 +186,20 @@ namespace ImFl
         if (!_currentWeapon || _currentWeaponMelee || f4vr::isUnarmedWeaponDrawn()) {
             return false;
         }
-        return !isWeaponFlashlightMeshRequired() || weaponFlashlightNode() != nullptr;
+        return !isWeaponFlashlightMeshRequired() || _weaponFlashlightNode != nullptr;
     }
 
     /**
      * Per-frame driver (called from Flashlight::onFrameUpdate): refresh the weapon-flashlight detection cache,
      * then enforce the active restrictions.
      */
-    void RestrictionHandler::onFrameUpdate()
+    bool RestrictionHandler::onFrameUpdate()
     {
-        checkWeaponChangeForFlashlightOnWeaponDetection();
+        const bool weaponChanged = checkWeaponChangeForFlashlightOnWeaponDetection();
 
         enforceRestrictions();
+
+        return weaponChanged;
     }
 
     /**
@@ -206,10 +208,10 @@ namespace ImFl
      * its melee/unarmed flags, and the found node (or nullptr). Clears the cache when the weapon is holstered
      * or unequipped.
      */
-    void RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
+    bool RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
     {
         if (!isWeaponFlashlightMeshRequired()) {
-            return;
+            return false;
         }
 
         auto* weaponNode = f4vr::getWeaponNode();
@@ -220,13 +222,16 @@ namespace ImFl
                 _currentWeapon = equippedWeapon;
                 _currentWeaponMelee = f4vr::isMeleeWeaponDrawn();
                 _weaponFlashlightNode = findWeaponFlashlightNode(weaponNode);
+                return true;
             }
         } else if (_currentWeapon) {
             logger::info("Equipped weapon changed to None");
             _currentWeapon = nullptr;
             _currentWeaponMelee = false;
             _weaponFlashlightNode = nullptr;
+            return true;
         }
+        return false;
     }
 
     /**
@@ -262,13 +267,22 @@ namespace ImFl
     }
 
     /**
-     * The cached weapon-mounted flashlight mesh node, or nullptr when none is mounted / the restriction is
-     * off. Valid for the frame after update(); when weaponFlashlightMountBeamToMesh is on, the OnWeapon light
-     * placement roots the beam at it.
+     * Get the node that has the flashlight on the weapon only if it is configured to use it as the mount and
+     * interaction point and it is found on the weapon.
+     * The transform is a small offset hack to handle Tactical Weapons Mod and DOOMBASED mod together.
      */
-    RE::NiAVObject* RestrictionHandler::weaponFlashlightNode()
+    std::pair<RE::NiAVObject*, RE::NiTransform> RestrictionHandler::getOnWeaponFlashlightMeshNode()
     {
-        return _weaponFlashlightNode;
+        RE::NiTransform transform{};
+        const auto onWeaponMeshNode = g_config.weaponFlashlightMountBeamToMesh ? _weaponFlashlightNode : nullptr;
+        if (onWeaponMeshNode) {
+            transform = onWeaponMeshNode->local;
+            transform.translate.y += -0.5f;
+            if (f4vr::isNodeVisible(onWeaponMeshNode)) {
+                transform.translate.y += -4.0f;
+            }
+        }
+        return { onWeaponMeshNode, transform };
     }
 
     /**
@@ -292,7 +306,7 @@ namespace ImFl
             return;
         }
 
-        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && !isWeaponFlashlightAllowed()) {
+        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _currentWeapon && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }
