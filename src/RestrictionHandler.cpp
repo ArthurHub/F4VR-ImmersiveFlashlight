@@ -173,7 +173,7 @@ namespace ImFl
      */
     bool RestrictionHandler::isWeaponEquipped()
     {
-        return _currentWeapon || f4vr::isUnarmedWeaponDrawn();
+        return _weaponHandler.isDrawn() || f4vr::isUnarmedWeaponDrawn();
     }
 
     /**
@@ -183,7 +183,7 @@ namespace ImFl
      */
     bool RestrictionHandler::isWeaponFlashlightAllowed()
     {
-        if (!_currentWeapon || _currentWeaponMelee || f4vr::isUnarmedWeaponDrawn()) {
+        if (!_weaponHandler.isDrawn() || _weaponHandler.isMelee() || f4vr::isUnarmedWeaponDrawn()) {
             return false;
         }
         return !isWeaponFlashlightMeshRequired() || _weaponFlashlightNode != nullptr;
@@ -203,35 +203,21 @@ namespace ImFl
     }
 
     /**
-     * Refresh the weapon-flashlight detection cache; a no-op while the requirement is off. The recursive walk
-     * of the weapon 3D for a flashlight mesh runs only when the equipped weapon changes, caching the weapon,
-     * its melee/unarmed flags, and the found node (or nullptr). Clears the cache when the weapon is holstered
-     * or unequipped.
+     * Refresh the weapon-flashlight detection cache; a no-op while the requirement is off. Equipped-weapon
+     * tracking (drawn weapon, melee flag, power-armor state) is delegated to EquippedWeaponHandler; when it
+     * reports a change, the recursive walk of the weapon 3D for a flashlight mesh re-runs, caching the found
+     * node (or nullptr when the weapon was holstered/unequipped). Returns whether the weapon changed.
      */
     bool RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
     {
         if (!isWeaponFlashlightMeshRequired()) {
             return false;
         }
-
-        auto* weaponNode = f4vr::getWeaponNode();
-        if (weaponNode && f4vr::isNodeVisible(weaponNode)) {
-            auto* equippedWeapon = f4vr::getEquippedWeapon();
-            if (_currentWeapon != equippedWeapon) {
-                logger::info("Equipped weapon changed to {}, re-scanning for flashlight node.", equippedWeapon ? equippedWeapon->GetFormEditorID() : "<none>");
-                _currentWeapon = equippedWeapon;
-                _currentWeaponMelee = f4vr::isMeleeWeaponDrawn();
-                _weaponFlashlightNode = findWeaponFlashlightNode(weaponNode);
-                return true;
-            }
-        } else if (_currentWeapon) {
-            logger::info("Equipped weapon changed to None");
-            _currentWeapon = nullptr;
-            _currentWeaponMelee = false;
-            _weaponFlashlightNode = nullptr;
-            return true;
+        if (!_weaponHandler.detectChange()) {
+            return false;
         }
-        return false;
+        _weaponFlashlightNode = _weaponHandler.isDrawn() ? findWeaponFlashlightNode(f4vr::getWeaponNode()) : nullptr;
+        return true;
     }
 
     /**
@@ -261,7 +247,7 @@ namespace ImFl
      */
     void RestrictionHandler::invalidate()
     {
-        _currentWeapon = nullptr;
+        _weaponHandler.invalidate();
         _weaponFlashlightNode = nullptr;
         resolveForms();
     }
@@ -306,7 +292,7 @@ namespace ImFl
             return;
         }
 
-        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _currentWeapon && !isWeaponFlashlightAllowed()) {
+        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _weaponHandler.isDrawn() && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
         }

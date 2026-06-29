@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <unordered_set>
 
+#include "f4vr/EquippedWeaponHandler.h"
+
 namespace ImFl
 {
     /**
@@ -44,9 +46,8 @@ namespace ImFl
         // Config::weaponFlashlightMeshRequirement by resolveForms() (AutoDetect checks installed plugins).
         inline static bool _weaponFlashlightMeshRequired = false;
 
-        // Weapon-flashlight detection state
-        inline static bool _currentWeaponMelee = false;
-        inline static RE::TESObjectWEAP* _currentWeapon = nullptr;
+        // Weapon-flashlight detection state: the equipped-weapon tracker (drawn / melee / power-armor state)
+        inline static f4vr::EquippedWeaponHandler _weaponHandler;
         inline static RE::NiAVObject* _weaponFlashlightNode = nullptr;
     };
 }
