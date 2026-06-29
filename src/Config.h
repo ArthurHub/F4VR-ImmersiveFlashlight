@@ -167,7 +167,8 @@ namespace ImFl
 
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;
-        // Primary-hand pose of the mesh for the Forward grip. Offhand mirrors Z translate and heading at attach time.
+        // Pose of the mesh for the Forward grip, authored for the right-hand bone. The left-hand bone (the
+        // offhand, or the primary hand in left-handed mode) mirrors Z translate and heading at attach time.
         RE::NiTransform flashlightMeshTransform{};
         // Same, for the Overhand (fist) grip.
         RE::NiTransform flashlightMeshTransformOverhand{};

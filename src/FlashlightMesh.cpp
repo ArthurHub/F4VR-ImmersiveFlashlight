@@ -161,11 +161,18 @@ namespace ImFl
     }
 
     /**
-     * Set the mesh node's local transform based on the provided config transform, applying location-specific adjustments.
+     * Set the mesh node's local transform based on the provided config transform, mirroring it (Z translate
+     * + heading) when it lands on the left-hand bone so one authored value reads for both hands.
+     *
+     * The transform is authored for the right-hand bone (RArm_Hand); resolveParentNode() attaches to that
+     * bone for the primary hand out of left-handed mode and for the offhand in left-handed mode. The other
+     * cases land on the mirror-image left-hand bone (LArm_Hand) — the offhand out of left-handed mode, or
+     * the primary hand in it — so mirror exactly when location-is-offhand and left-handed-mode disagree.
      */
     void FlashlightMesh::setMeshTransform(const RE::NiTransform& transform) const
     {
-        const float sign = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand ? -1.0f : 1.0f;
+        const bool leftHandBone = (FlashlightState::flashlightLocation == FlashlightLocation::InOffhand) != f4vr::isLeftHandedMode();
+        const float sign = leftHandBone ? -1.0f : 1.0f;
         _meshNode->local.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
 
         float heading, roll, attitude;
