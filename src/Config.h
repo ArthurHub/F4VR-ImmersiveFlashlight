@@ -100,7 +100,7 @@ namespace ImFl
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 
         // Resolve the active in-hand spatial config by hand / grip style / power-armor state.
-        const RE::NiTransform& getFlashlightInHandLightTransform(bool isOffhand, FlashlightGripStyle grip, bool inPowerArmor) const;
+        const RE::NiTransform& getFlashlightInHandLightTransform(bool isOffhand, FlashlightGripStyle grip) const;
         const RE::NiTransform& getFlashlightMeshTransform(FlashlightGripStyle grip, bool inPowerArmor) const;
         const frik::api::FRIKApi::HandPoseData& getFlashlightHandPose(FlashlightGripStyle grip, bool inPowerArmor) const;
         const RE::NiTransform& getFlashlightBodyTransform(bool inPowerArmor) const;
@@ -144,12 +144,6 @@ namespace ImFl
         // Same, for the Overhand (fist) grip.
         RE::NiTransform flashlightInOffhandTransformOverhand{};
         RE::NiTransform flashlightInPrimaryHandTransformOverhand{};
-        // Power-armor variants of the above. PA gauntlets are larger and posed differently than bare hands,
-        // so the light needs its own offsets. Each defaults to the matching non-PA transform.
-        RE::NiTransform flashlightInOffhandTransformPA{};
-        RE::NiTransform flashlightInPrimaryHandTransformPA{};
-        RE::NiTransform flashlightInOffhandTransformOverhandPA{};
-        RE::NiTransform flashlightInPrimaryHandTransformOverhandPA{};
 
         // flashlight values attached to weapon
         float flashlightOnWeaponFade = 0.0f;

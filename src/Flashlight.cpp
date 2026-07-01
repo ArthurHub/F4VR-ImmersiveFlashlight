@@ -387,7 +387,7 @@ namespace ImFl
             } else {
                 const bool isOffhand = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
-                const auto& handTransform = g_config.getFlashlightInHandLightTransform(isOffhand, FlashlightState::flashlightGripStyle, f4vr::isInPowerArmor());
+                const auto& handTransform = g_config.getFlashlightInHandLightTransform(isOffhand, FlashlightState::flashlightGripStyle);
                 rotationOffset = handTransform.rotate;
                 // not clear to me why I need to manipulate the offset this way, but it works (need to dig into it)
                 positionOffset = (rotationOffset * attachNode->world.rotate).Transpose() * handTransform.translate;

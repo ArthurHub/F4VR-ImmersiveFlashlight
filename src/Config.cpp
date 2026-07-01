@@ -131,19 +131,13 @@ namespace ImFl
     }
 
     /**
-     * Resolve the in-hand light-node transform for the given hand, grip style, and power-armor state.
+     * Resolve the in-hand light-node transform for the given hand and grip style.
      */
-    const RE::NiTransform& Config::getFlashlightInHandLightTransform(const bool isOffhand, const FlashlightGripStyle grip, const bool inPowerArmor) const
+    const RE::NiTransform& Config::getFlashlightInHandLightTransform(const bool isOffhand, const FlashlightGripStyle grip) const
     {
         const bool overhand = grip == FlashlightGripStyle::Overhand;
         if (isOffhand) {
-            if (inPowerArmor) {
-                return overhand ? flashlightInOffhandTransformOverhandPA : flashlightInOffhandTransformPA;
-            }
             return overhand ? flashlightInOffhandTransformOverhand : flashlightInOffhandTransform;
-        }
-        if (inPowerArmor) {
-            return overhand ? flashlightInPrimaryHandTransformOverhandPA : flashlightInPrimaryHandTransformPA;
         }
         return overhand ? flashlightInPrimaryHandTransformOverhand : flashlightInPrimaryHandTransform;
     }
@@ -332,13 +326,6 @@ namespace ImFl
             getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhand", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
         flashlightInPrimaryHandTransformOverhand =
             getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhand", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
-
-        // Power-armor variants of the in-hand light transforms; default to the matching non-PA transform.
-        flashlightInOffhandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformPA", flashlightInOffhandTransform);
-        flashlightInPrimaryHandTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformPA", flashlightInPrimaryHandTransform);
-        flashlightInOffhandTransformOverhandPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInOffhandTransformOverhandPA", flashlightInOffhandTransformOverhand);
-        flashlightInPrimaryHandTransformOverhandPA =
-            getTransformValue(ini, DEFAULT_SECTION, "tFlashlightInPrimaryHandTransformOverhandPA", flashlightInPrimaryHandTransformOverhand);
 
         // Attached to weapon flashlight defaults
         flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));
