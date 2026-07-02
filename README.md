@@ -1,7 +1,7 @@
 # Immersive Flashlight VR
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](LICENSE)
 
 > A Fallout 4 VR F4SE plugin that replaces the Pip-Boy flashlight with a versatile, fully configurable light you can hold in hand, mount on your head, or attach to your weapon.
 
@@ -114,4 +114,4 @@ This mod is built on the work of the Fallout VR modding community and public cod
 
 ## License
 
-[MIT](LICENSE) (c) 2025 Arthur
+[GPL-3.0](LICENSE) © 2025 Arthur T
