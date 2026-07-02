@@ -27,7 +27,7 @@ namespace ImFl
 
     private:
         void attach(RE::NiNode* parentNode);
-        void setMeshTransform(const RE::NiTransform& transform) const;
+        void setMeshTransform() const;
         void detach();
         void hide(bool clearPose) const;
         void show() const;

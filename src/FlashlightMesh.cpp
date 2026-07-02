@@ -93,7 +93,7 @@ namespace ImFl
 
         // grip style changes don't require re-attach (same parent), just re-apply transform.
         if (_attachedTo && _attachedForGripStyle != FlashlightState::flashlightGripStyle) {
-            setMeshTransform(activeMeshTransform());
+            setMeshTransform();
             _attachedForGripStyle = FlashlightState::flashlightGripStyle;
         }
 
@@ -133,6 +133,8 @@ namespace ImFl
         }
 
         show();
+
+        setMeshTransform();
     }
 
     /** Forces the cached mesh to detach so it can reattach to fresh skeleton nodes later. */
@@ -157,7 +159,7 @@ namespace ImFl
         _attachedForLocation = FlashlightState::flashlightLocation;
         _attachedForGripStyle = FlashlightState::flashlightGripStyle;
 
-        setMeshTransform(activeMeshTransform());
+        setMeshTransform();
     }
 
     /**
@@ -169,8 +171,16 @@ namespace ImFl
      * cases land on the mirror-image left-hand bone (LArm_Hand) — the offhand out of left-handed mode, or
      * the primary hand in it — so mirror exactly when location-is-offhand and left-handed-mode disagree.
      */
-    void FlashlightMesh::setMeshTransform(const RE::NiTransform& transform) const
+    void FlashlightMesh::setMeshTransform() const
     {
+        if (!_meshNode) {
+            return;
+        }
+
+        f4vr::updateTransformsDown(_meshNode.get(), true);
+
+        const auto transform = activeMeshTransform();
+
         const bool leftHandBone = (FlashlightState::flashlightLocation == FlashlightLocation::InOffhand) != f4vr::isLeftHandedMode();
         const float sign = leftHandBone ? -1.0f : 1.0f;
         _meshNode->local.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
