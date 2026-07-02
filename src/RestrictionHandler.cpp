@@ -183,7 +183,7 @@ namespace ImFl
      */
     bool RestrictionHandler::isWeaponFlashlightAllowed()
     {
-        if (!_weaponHandler.isDrawn() || _weaponHandler.isMelee() || f4vr::isUnarmedWeaponDrawn()) {
+        if (!_weaponHandler.isDrawn() || _weaponHandler.isMelee() || _weaponHandler.isUnarmed()) {
             return false;
         }
         return !isWeaponFlashlightMeshRequired() || _weaponFlashlightNode != nullptr;

@@ -119,6 +119,10 @@ namespace ImFl
             return;
         }
 
+        if (!flashlightFade) {
+            refreshConfigReferences();
+        }
+
         // global to all flashlight locations
         light->data.nearDistance = g_config.flashlightNearDistance;
         light->data.flags = static_cast<RE::TES_LIGHT_FLAGS>(std::stoul(g_config.flashlightFlagsBitmask, nullptr, 2));
@@ -258,6 +262,10 @@ namespace ImFl
                 return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
             }
             return FlashlightLocation::OnWeapon;
+        }
+
+        if (configLocation == FlashlightConfigLocation::InPrimaryHand && f4vr::isUnarmedWeaponDrawn()) {
+            return FlashlightLocation::InPrimaryHand;
         }
 
         if (RestrictionHandler::isWeaponFlashlightMeshRequired() && !RestrictionHandler::isWeaponEquipped()) {
