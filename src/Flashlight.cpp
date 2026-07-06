@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "FlashlightMod.h"
 #include "FlashlightState.h"
+#include "NpcDetectionHandler.h"
 #include "RestrictionHandler.h"
 #include "Utils.h"
 #include "api/FRIKApi.h"
@@ -90,6 +91,8 @@ namespace ImFl
         _onWeaponBeamMesh.onFrameUpdate();
 
         adjustFlashlightTransformToHandOrHead();
+
+        NpcDetectionHandler::onFrameUpdate();
 
         maybeShowFPSStabilizerModWarning();
     }

@@ -1,5 +1,6 @@
 #include "Config.h"
 
+#include <algorithm>
 #include <sstream>
 
 #include "Utils.h"
@@ -476,5 +477,17 @@ namespace ImFl
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
         disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", true);
+
+        // NPC light detection (NpcDetectionHandler)
+        npcDetectionEnabled = ini.GetBoolValue(DEFAULT_SECTION, "bNpcDetectionEnabled", true);
+        npcDetectionOnlyWhenSneaking = ini.GetBoolValue(DEFAULT_SECTION, "bNpcDetectionOnlyWhenSneaking", false);
+        npcDetectionIgnoreCompanions = ini.GetBoolValue(DEFAULT_SECTION, "bNpcDetectionIgnoreCompanions", true);
+        npcDetectionIntervalMs = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iNpcDetectionIntervalMs", 500));
+        npcDetectionDirectEnabled = ini.GetBoolValue(DEFAULT_SECTION, "bNpcDetectionDirectEnabled", true);
+        npcDetectionDirectSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iNpcDetectionDirectSoundLevel", 100)), 0, 500);
+        npcDetectionLitSpotEnabled = ini.GetBoolValue(DEFAULT_SECTION, "bNpcDetectionLitSpotEnabled", true);
+        npcDetectionLitSpotSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iNpcDetectionLitSpotSoundLevel", 40)), 0, 500);
+        npcDetectionMaxRange = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fNpcDetectionMaxRange", 2000.0));
+        npcDetectionFovMult = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fNpcDetectionFovMult", 0.75));
     }
 }

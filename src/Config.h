@@ -285,6 +285,33 @@ namespace ImFl
         // Disable the vanilla game's global flashlight toggle so only this mod's gestures control the light.
         bool disableVanillaFlashlightToggle = true;
 
+        // NPC light detection: on a throttled tick while the light is on, NpcDetectionHandler posts a
+        // player-owned detection event at what the beam touches — near the nearest lit NPC (with line of
+        // sight), or on the beam's lit spot on world geometry — so NPCs notice the beam directionally.
+        // See docs/tech/npc-light-detection.md.
+        bool npcDetectionEnabled = true;
+        // Restrict the whole feature to while the player is sneaking.
+        bool npcDetectionOnlyWhenSneaking = false;
+        // Skip companions/teammates (they know where you are; saves them investigating your beam).
+        bool npcDetectionIgnoreCompanions = true;
+        // Detection tick interval (ms). The engine's own detection AI updates at a similar cadence.
+        int npcDetectionIntervalMs = 500;
+        // Enable the direct-on-NPC detection path (event near the lit NPC). Lets it be toggled off for
+        // debugging without losing the tuned sound level below.
+        bool npcDetectionDirectEnabled = true;
+        // Base sound level of the direct-hit event (the Papyrus-mod-equivalent 0-500 scale; 0 disables
+        // the direct path). Scaled down with beam distance.
+        int npcDetectionDirectSoundLevel = 100;
+        // Enable the lit-spot detection path (event where the beam paints world geometry). Independently
+        // toggleable from the direct path for debugging.
+        bool npcDetectionLitSpotEnabled = true;
+        // Base sound level of the lit-spot event when the beam touches nobody (0 disables the lit-spot path).
+        int npcDetectionLitSpotSoundLevel = 40;
+        // Detection reach cap (game units), independent of the visual beam radius (which reaches ~7000).
+        float npcDetectionMaxRange = 2000.0f;
+        // Fraction of the visual beam FOV used as the detection cone — the dim outer edge shouldn't alert.
+        float npcDetectionFovMult = 0.75f;
+
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
     };
