@@ -1,6 +1,8 @@
 #include "NpcDetectionHandler.h"
 
 #include <algorithm>
+#include <cmath>
+#include <format>
 #include <ranges>
 #include <vector>
 
@@ -9,6 +11,7 @@
 #include "Utils.h"
 #include "common/CommonUtils.h"
 #include "common/MatrixUtils.h"
+#include "debug/DebugDraw.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -64,6 +67,9 @@ namespace ImFl
             // disabled, config-UI beam preview, or sneak-gated off: nothing to alert
             return;
         }
+        if (g_config.debug.drawEnabled) {
+            drawDebugOverlay();
+        }
         if (!isNowTimePassed(_lastTickTime, g_config.npcDetectionIntervalMs)) {
             return;
         }
@@ -79,8 +85,10 @@ namespace ImFl
      */
     void NpcDetectionHandler::runDetectionTick()
     {
+        _debugReason.clear();
         BeamCone cone;
         if (!getBeamCone(cone)) {
+            _debugReason = "no beam cone";
             return;
         }
 
@@ -103,11 +111,13 @@ namespace ImFl
     bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone)
     {
         if (!g_config.npcDetectionDirectEnabled) {
+            _debugReason = "direct off";
             return false;
         }
 
         const auto npc = findNearestLitNpc(cone);
         if (!npc) {
+            _debugReason = _debugConeCount > 0 ? std::format("{} in cone, no LOS", _debugConeCount) : "no npc in cone";
             return false;
         }
 
@@ -122,14 +132,19 @@ namespace ImFl
         const float offset = (std::min)(toPlayerDist, std::clamp(DIRECT_EVENT_OFFSET_FRACTION * toPlayerDist, DIRECT_EVENT_OFFSET_MIN, DIRECT_EVENT_OFFSET_MAX));
         const auto eventPos = toPlayerDist > 1.0f ? npcPos + toPlayer * (offset / toPlayerDist) : npcPos;
         const float beamDist = MatrixUtils::vec3Len(npcPos - cone.origin);
-        logger::debug("NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event ({:.0f},{:.0f},{:.0f}) offset {:.0f} toward player",
+        logger::sampleDebug(3000,
+            "NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event ({:.0f},{:.0f},{:.0f}) offset {:.0f} toward player",
             npc->formID,
             beamDist,
             eventPos.x,
             eventPos.y,
             eventPos.z,
             offset);
-        postDetectionEvent(eventPos, scaleSoundLevelByBeamStrength(g_config.npcDetectionDirectSoundLevel, beamDist));
+        const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionDirectSoundLevel, beamDist);
+        postDetectionEvent(eventPos, soundLevel);
+        _debugEvent =
+            DebugEventState{ .eventPos = eventPos, .npcPos = npcPos + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), .soundLevel = soundLevel, .direct = true, .timeMs = nowMillis() };
+        _debugReason = std::format("hit npc {:08X}, direct lvl {}, ({} npc in cone)", npc->formID, soundLevel, _debugConeCount);
         return true;
     }
 
@@ -141,14 +156,24 @@ namespace ImFl
      */
     void NpcDetectionHandler::runLitSpotDetection(const BeamCone& cone)
     {
+        // preserve the direct-path miss reason (if any) and append the lit-spot outcome to it
+        const std::string directMiss = _debugReason.empty() ? "" : _debugReason + " - ";
         if (!g_config.npcDetectionLitSpotEnabled || g_config.npcDetectionLitSpotSoundLevel <= 0) {
+            _debugReason = directMiss + "lit-spot off";
             return;
         }
 
-        if (RE::NiPoint3 spot; getBeamTerminationSpot(cone, spot)) {
-            const float spotDist = MatrixUtils::vec3Len(spot - cone.origin);
-            postDetectionEvent(spot, scaleSoundLevelByBeamStrength(g_config.npcDetectionLitSpotSoundLevel, spotDist));
+        RE::NiPoint3 spot;
+        if (!getBeamTerminationSpot(cone, spot)) {
+            _debugReason = directMiss + "no beam termination spot found";
+            return;
         }
+
+        const float spotDist = MatrixUtils::vec3Len(spot - cone.origin);
+        const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionLitSpotSoundLevel, spotDist);
+        postDetectionEvent(spot, soundLevel);
+        _debugEvent = DebugEventState{ .eventPos = spot, .soundLevel = soundLevel, .direct = false, .timeMs = nowMillis() };
+        _debugReason = std::format("lit spot, lvl {}", soundLevel);
     }
 
     /**
@@ -194,6 +219,7 @@ namespace ImFl
      */
     RE::Actor* NpcDetectionHandler::findNearestLitNpc(const BeamCone& cone)
     {
+        _debugConeCount = 0;
         const auto player = f4vr::getPlayer();
         if (!player) {
             return nullptr;
@@ -222,6 +248,7 @@ namespace ImFl
             }
             inCone.emplace_back(dist, npc);
         }
+        _debugConeCount = static_cast<int>(inCone.size());
 
         // Physics raycasts per tick spent finding a visible in-cone NPC (nearest first).
         constexpr int MAX_LOS_CHECKS_PER_TICK = 3;
@@ -299,6 +326,55 @@ namespace ImFl
             return;
         }
         player->currentProcess->SetActorsDetectionEvent(player, location, soundLevel, nullptr);
-        logger::debug("NpcDetector: Posted flashlight detection event at ({:.0f},{:.0f},{:.0f}) level={}", location.x, location.y, location.z, soundLevel);
+        logger::sampleDebug(3000, "NpcDetector: Posted flashlight detection event at ({:.0f},{:.0f},{:.0f}) level={}", location.x, location.y, location.z, soundLevel);
+    }
+
+    /**
+     * Render the live detection state via the framework debug overlay (gated by its bDebugDrawEnabled),
+     * called every frame the feature is active so the visuals track the beam and auto-vanish with it:
+     * the detection cone (yellow — narrower and shorter than the visual beam by design), the last
+     * tick's event as a sphere + world label (red = direct on an NPC with a magenta line from the
+     * beam origin to the lit NPC, orange = lit-spot on geometry), and a watch table (framework default
+     * HUD in front of the HMD) reporting the cone, next tick, last event, and — key for tuning — WHY
+     * the last tick did or didn't post an event ("npc why"). All draws are tagged with the
+     * "NPC-DETECTION" channel so they can be silenced via sDebugDrawDisabledChannels without turning
+     * the overlay off.
+     */
+    void NpcDetectionHandler::drawDebugOverlay()
+    {
+        auto& dd = debug::dd();
+        const auto channel = dd.channelScope("NPC-DETECTION");
+
+        BeamCone cone;
+        if (!getBeamCone(cone)) {
+            dd.watch("BEAM", "none");
+            return;
+        }
+        const float fovDeg = 2.0f * MatrixUtils::radsToDegrees(std::acos(std::clamp(cone.cosHalfAngle, -1.0f, 1.0f)));
+        dd.cone(cone.origin, cone.direction, cone.range, fovDeg, debug::Color{ 1, 1, 0, 0.5f });
+        dd.watch("BEAM", std::format("range {:.0f} fov {:.1f}", cone.range, fovDeg));
+
+        // reason from the last throttled tick — the answer to "why didn't an NPC react" (shown every
+        // frame; the tick only runs every iNpcDetectionIntervalMs)
+        dd.watch("NPC EVENT", _debugReason.empty() ? "no tick yet" : _debugReason);
+
+        if (_debugEvent.timeMs == 0) {
+            dd.watch("LAST NPC EVENT", "none");
+            return;
+        }
+
+        // keep showing the last event for a few ticks so short flashes are inspectable
+        const float ageSec = static_cast<float>(nowMillis() - _debugEvent.timeMs) / 1000.0f;
+        dd.watch("LAST NPC EVENT", std::format("{} lvl {} {:.1f} sec ago", _debugEvent.direct ? "direct" : "lit-spot", _debugEvent.soundLevel, ageSec));
+        if (ageSec <= static_cast<float>(g_config.npcDetectionIntervalMs) / 1000.0f * 4.0f) {
+            const auto& eventColor = _debugEvent.direct ? debug::colors::Red : debug::colors::Orange;
+            // distance-scaled so the event marker stays visible however far the beam reaches
+            dd.sphere(_debugEvent.eventPos, 9.0f, true, eventColor);
+            dd.label(std::format("lvl {}", _debugEvent.soundLevel), _debugEvent.eventPos, eventColor);
+            if (_debugEvent.direct) {
+                dd.line(cone.origin, _debugEvent.npcPos, debug::colors::Magenta);
+                dd.point(_debugEvent.npcPos, 6.0f, true, debug::colors::Magenta);
+            }
+        }
     }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace ImFl
 {
@@ -34,6 +35,18 @@ namespace ImFl
             float cosHalfAngle = 1;
         };
 
+        /**
+         * Last posted detection event, kept only to feed the debug overlay between ticks.
+         */
+        struct DebugEventState
+        {
+            RE::NiPoint3 eventPos;
+            RE::NiPoint3 npcPos; // valid only when direct
+            int soundLevel = 0;
+            bool direct = false;
+            uint64_t timeMs = 0;
+        };
+
         static void runDetectionTick();
         static bool runNpcDirectDetection(const BeamCone& cone);
         static void runLitSpotDetection(const BeamCone& cone);
@@ -42,7 +55,13 @@ namespace ImFl
         static bool isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to);
         static bool getBeamTerminationSpot(const BeamCone& cone, RE::NiPoint3& spot);
         static void postDetectionEvent(const RE::NiPoint3& location, int soundLevel);
+        static void drawDebugOverlay();
 
         inline static uint64_t _lastTickTime = 0;
+        inline static DebugEventState _debugEvent;
+        // Debug-overlay diagnostics from the last tick: why the tick did or didn't post an event, and
+        // how many NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS").
+        inline static std::string _debugReason;
+        inline static int _debugConeCount = 0;
     };
 }
