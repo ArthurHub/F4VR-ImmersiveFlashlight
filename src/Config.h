@@ -6,6 +6,7 @@
 #include "ConfigBase.h"
 #include "Resources.h"
 #include "api/FRIKApi.h"
+#include "f4vr/WandActivationSphere.h"
 #include "vrcf/VRControllersManager.h"
 
 namespace ImFl
@@ -91,7 +92,7 @@ namespace ImFl
 
         void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
         void setFlashlightFlagsBitmask(const std::string& bitmask);
-        void setDebugShowGrabSphere(bool show);
+        void setShowAllActivationSpheres(bool show);
         void setShowFlashlightOnBody(bool show);
         void setFlashlightHeadgearRequirement(FlashlightHeadgearRequirement requirement);
         void setWeaponFlashlightMeshRequirement(FlashlightWeaponMeshRequirement requirement);
@@ -104,7 +105,6 @@ namespace ImFl
         const RE::NiTransform& getFlashlightMeshTransform(FlashlightGripStyle grip, bool inPowerArmor) const;
         const frik::api::FRIKApi::HandPoseData& getFlashlightHandPose(FlashlightGripStyle grip, bool inPowerArmor) const;
         const RE::NiTransform& getFlashlightBodyTransform(bool inPowerArmor) const;
-        const RE::NiTransform& getFlashlightGrabSphereTransform(bool inPowerArmor) const;
 
         // Flashlight location, configured independently for out of / in power armor (iFlashlightLocation / iFlashlightLocationInPA).
         FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
@@ -239,42 +239,31 @@ namespace ImFl
         RE::NiTransform flashlightBodyTransform{};
         RE::NiTransform flashlightBodyTransformPA{};
 
-        // Transform of the spherical grab zone, in the same body-bone space as the stowed model (mirrored
-        // the same way, PA variant defaults to non-PA). The base sphere mesh is 1 unit, so the transform's
-        // scale is the grab radius. Defaults to the stowed-model transform when omitted.
-        RE::NiTransform flashlightGrabSphereTransform{};
-        RE::NiTransform flashlightGrabSphereTransformPA{};
+        // Body grab activation sphere (Flashlight::checkBodyGrab): reach a hand into the chest-stowed model's
+        // grab zone and fire its binding to take/return the light. `primary` is the offhand grab, `secondary`
+        // the primary-hand grab. `zone` is the grab-sphere transform (offset from the stowed model,
+        // auto-mirrored when left-handed); `zonePA` is its optional power-armor variant (selected via
+        // WandActivationConfig::zoneFor, falling back to `zone`). The base sphere mesh is unit-diameter, so
+        // the zone scale is the grab diameter. Loaded from the [ImFl_BodyActivationSphere] INI section.
+        f4vr::WandActivationConfig bodyActivation;
 
-        // Head activation: bring the offhand near the HMD and fire the binding to put the flashlight on the
-        // head (on from off, switch to head from a hand, or off when already head-mounted). Offhand only;
-        // always active (set the binding to "none" to disable it).
-        // Activation sphere around the HMD, authored in HMD-local space (not mirrored — centered on the
-        // head). The base sphere mesh is unit-diameter, so the transform scale is the grab diameter. No PA
-        // variant: the zone is measured off the HMD, which sits in the same place in and out of power armor.
-        RE::NiTransform flashlightHeadSphereTransform{};
+        // Head activation sphere (Flashlight::checkHeadActivation): bring the offhand near the HMD; `primary`
+        // (tap) puts the light on the head / toggles it off, `secondary` (long-press) pulls a head-mounted
+        // light to the offhand. Zone authored in HMD-local space (not mirrored, no PA variant — the HMD sits
+        // the same in/out of power armor). Each binding "none" disables its gesture. Section [ImFl_HeadActivationSphere].
+        f4vr::WandActivationConfig headActivation;
 
-        // Activation sphere around the primary-hand wand node, authored in primary-hand-local space (not
-        // mirrored — anchored to the hand, so one value reads for both handedness; no PA variant). The base
-        // sphere mesh is unit-diameter, so the transform scale is the activation diameter.
-        RE::NiTransform flashlightPrimaryHandSphereTransform{};
+        // Primary-hand activation sphere (Flashlight::checkPrimaryHandActivation): bring the offhand near the
+        // primary-hand wand; `primary` (tap) moves the light between the offhand and the primary hand / weapon
+        // and toggles the on-weapon light, `secondary` (long-press) pulls the on-weapon light to the offhand.
+        // Zone authored in primary-hand-local space (not mirrored, no PA variant). Only its scale is used when
+        // the sphere is re-anchored to the weapon flashlight mesh (weaponFlashlightAnchorPrimaryHandSphereToMesh).
+        // Section [ImFl_PrimaryHandActivationSphere].
+        f4vr::WandActivationConfig primaryHandActivation;
 
-        // Render the grab/activation spheres (framework debug sphere mesh) at their exact size/location for tuning.
-        bool debugShowGrabSphere = false;
-
-        // Grab/return input bindings, one per hand. Set a hand to "none" to disable grabbing with it.
-        vrcf::InputBinding grabFlashlightByOffhandBinding;
-        vrcf::InputBinding grabFlashlightByPrimaryHandBinding;
-        // Offhand-near-HMD head activation sphere (checkHeadActivation): the tap binding puts the light on the
-        // head / toggles it off; the long-press binding pulls the head-mounted light to the offhand. Each
-        // "none" disables its gesture.
-        vrcf::InputBinding activateFlashlightOnHeadBinding;
-        vrcf::InputBinding switchFlashlightFromHeadToOffhandBinding;
-
-        // Offhand-near-primary-hand activation sphere (checkPrimaryHandActivation): with the light on, moves
-        // it between the offhand and the primary hand / weapon and toggles the on-weapon light on/off; the
-        // long-press binding pulls the on-weapon light back to the offhand. Each "none" disables its gesture.
-        vrcf::InputBinding activateFlashlightOnPrimaryHandBinding;
-        vrcf::InputBinding switchFlashlightFromWeaponToOffhandBinding;
+        // Force every grab/activation sphere to always render — a global master that overrides each sphere's
+        // own WandActivationConfig::showSphere to Always (for tuning or discovering the zones).
+        bool showAllActivationSpheres = false;
 
         // Zone-less offhand toggle of the weapon-mounted light for two-handed weapon holds, where the offhand
         // grips the foregrip and can't reach the primary-hand activation sphere (checkWeaponFlashlightToggle).

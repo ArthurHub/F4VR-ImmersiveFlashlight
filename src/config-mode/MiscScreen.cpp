@@ -76,7 +76,7 @@ namespace ImFl::config
      */
     void MiscScreen::toggleDebugSpheres(const bool enabled)
     {
-        g_config.setDebugShowGrabSphere(enabled);
+        g_config.setShowAllActivationSpheres(enabled);
         if (enabled) {
             f4vr::showNotification("Immersive activation areas spheres shown on the body/weapon");
         }
@@ -193,7 +193,7 @@ namespace ImFl::config
         shadowsTglBtn->setOnToggleHandler([](UIWidget*, const bool shadowsEnabled) { toggleShadows(shadowsEnabled); });
 
         const auto debugSpheresTglBtn = std::make_shared<UIToggleButton>("ui-common\\btn-debug-spheres.nif");
-        debugSpheresTglBtn->setToggleState(g_config.debugShowGrabSphere);
+        debugSpheresTglBtn->setToggleState(g_config.showAllActivationSpheres);
         debugSpheresTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleDebugSpheres(enabled); });
 
         const auto backBtn = std::make_shared<UIButton>("ui-common\\btn-back.nif");

@@ -170,10 +170,11 @@ namespace ImFl
                 .node = zoneNode,
                 .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
                 .bindings = {
-                    offhandTapActive ? g_config.grabFlashlightByOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
-                    primaryTapActive ? g_config.grabFlashlightByPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    { offhandTapActive ? g_config.bodyActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.bodyActivation.primaryHaptic },
+                    { primaryTapActive ? g_config.bodyActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.bodyActivation.secondaryHaptic },
                 },
-                .showDebug = g_config.debugShowGrabSphere,
+                .entryHaptic = g_config.bodyActivation.entryHaptic,
+                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.bodyActivation.showSphere,
             },
             [&](const vrcf::InputBinding& binding) {
                 const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
@@ -208,23 +209,24 @@ namespace ImFl
         _headSphere.onFrameUpdate(
             {
                 .node = f4vr::getPlayerNodes()->HmdNode,
-                .zone = g_config.flashlightHeadSphereTransform,
+                .zone = g_config.headActivation.zone,
                 .bindings = {
-                    headTapActive ? g_config.activateFlashlightOnHeadBinding : vrcf::VRControllersManager::DisabledBinding,
-                    headToOffhandActive ? g_config.switchFlashlightFromHeadToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    { headTapActive ? g_config.headActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.headActivation.primaryHaptic },
+                    { headToOffhandActive ? g_config.headActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.headActivation.secondaryHaptic },
                 },
-                .showDebug = g_config.debugShowGrabSphere,
-                // The HMD node doesn't render its children; draw the debug sphere under the rendered skeleton root.
+                .entryHaptic = g_config.headActivation.entryHaptic,
+                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.headActivation.showSphere,
+                // The HMD node doesn't render its children; draw the sphere under the rendered skeleton root.
                 .debugNode = f4vr::getRootNode(),
             },
             [&](const vrcf::InputBinding& binding) {
-                // Long-press head -> offhand (only fed while the light is head-mounted).
-                if (binding == g_config.switchFlashlightFromHeadToOffhandBinding) {
+                // Long-press head -> offhand (headActivation.secondary; only fed while the light is head-mounted).
+                if (binding == g_config.headActivation.secondary) {
                     logger::info("Switching flashlight from head to offhand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;
                 }
-                // Tap binding.
+                // Tap binding (headActivation.primary).
                 if (!Utils::isFlashlightOn()) {
                     logger::info("Turning flashlight ON on head");
                     Utils::turnFlashlightOn();
@@ -262,7 +264,7 @@ namespace ImFl
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
 
-        auto zone = g_config.flashlightPrimaryHandSphereTransform;
+        auto zone = g_config.primaryHandActivation.zone;
 
         // Anchor the sphere to the weapon's flashlight mesh when configured and one is mounted (the node is
         // non-null only while the weapon-flashlight requirement is on), so the gesture is reached at the gun
@@ -273,7 +275,7 @@ namespace ImFl
             if (meshNode) {
                 sphereNode = meshNode->parent;
                 zone = meshTransform;
-                zone.scale = g_config.flashlightPrimaryHandSphereTransform.scale;
+                zone.scale = g_config.primaryHandActivation.zone.scale;
             }
         }
 
@@ -282,16 +284,17 @@ namespace ImFl
                 .node = sphereNode,
                 .zone = zone,
                 .bindings = {
-                    tapActive ? g_config.activateFlashlightOnPrimaryHandBinding : vrcf::VRControllersManager::DisabledBinding,
-                    weaponToOffhandActive ? g_config.switchFlashlightFromWeaponToOffhandBinding : vrcf::VRControllersManager::DisabledBinding,
+                    { tapActive ? g_config.primaryHandActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.primaryHandActivation.primaryHaptic },
+                    { weaponToOffhandActive ? g_config.primaryHandActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.primaryHandActivation.secondaryHaptic },
                 },
-                .showDebug = g_config.debugShowGrabSphere,
-                // The wand node doesn't render its children; draw the debug sphere under the rendered skeleton root.
+                .entryHaptic = g_config.primaryHandActivation.entryHaptic,
+                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.primaryHandActivation.showSphere,
+                // The wand node doesn't render its children; draw the sphere under the rendered skeleton root.
                 .debugNode = f4vr::getRootNode(),
             },
             [&](const vrcf::InputBinding& binding) {
-                // Long-press weapon -> offhand (only fed while the light is on the weapon).
-                if (binding == g_config.switchFlashlightFromWeaponToOffhandBinding) {
+                // Long-press weapon -> offhand (primaryHandActivation.secondary; only fed while on the weapon).
+                if (binding == g_config.primaryHandActivation.secondary) {
                     logger::info("Switching flashlight from weapon to offhand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;

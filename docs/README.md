@@ -77,16 +77,16 @@ When you grip a weapon **two-handed** your offhand is on the foregrip and can't 
 
 ## Default Control Bindings
 
-All bindings use the format `<hand> <type> <button> [duration] [+modifier]` (e.g. `offhand tap trigger`, `primary longpress A`, `none`). The full guide is in the [framework input-binding docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
+All bindings use the format `<hand> <type> <button> [duration] [suppress] [+modifier]` (e.g. `offhand tap trigger`, `primary longpress A`, `none`). The three proximity gestures are grouped into per-gesture INI **sections** (each with a `sPrimaryBinding` / `sSecondaryBinding` plus its zone and haptics); the full guide is in the [framework input-binding & activation-sphere docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
 
-| Gesture | INI key | Default |
+| Gesture | INI section → key | Default |
 | --- | --- | --- |
-| Grab/stow with offhand | `sGrabFlashlightByOffhandBinding` | `offhand tap trigger` |
-| Grab/stow with primary hand | `sGrabFlashlightByPrimaryHandBinding` | `primary tap trigger` |
-| Put light on head / toggle off | `sActivateFlashlightOnHeadBinding` | `offhand tap trigger` |
-| Pull head light to offhand | `sSwitchFlashlightFromHeadToOffhandBinding` | `offhand longpress trigger` |
-| Move light to primary hand / weapon | `sActivateFlashlightOnPrimaryHandBinding` | `offhand tap trigger` |
-| Pull weapon light to offhand | `sSwitchFlashlightFromWeaponToOffhandBinding` | `offhand longpress trigger` |
+| Grab/stow with offhand | `[ImFl_BodyActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
+| Grab/stow with primary hand | `[ImFl_BodyActivationSphere]` → `sSecondaryBinding` | `primary tap trigger` |
+| Put light on head / toggle off | `[ImFl_HeadActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
+| Pull head light to offhand | `[ImFl_HeadActivationSphere]` → `sSecondaryBinding` | `offhand longpress trigger` |
+| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
+| Pull weapon light to offhand | `[ImFl_PrimaryHandActivationSphere]` → `sSecondaryBinding` | `offhand longpress trigger` |
 | Toggle weapon light (two-handed) | `sToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger` |
 
 The same `offhand tap trigger` is shared by several gestures on purpose — they apply in mutually exclusive situations (near your head vs. near your hand vs. gripping two-handed), and only the relevant one fires while suppressing the button from the game.
@@ -110,7 +110,7 @@ Open the FRIK configuration UI (hold both thumbsticks for ~2 seconds) and select
 
 - **Main menu** — opens the beam and misc screens, opens the INI file for advanced editing, opens the wiki, or exits.
 - **Beam screen** — location toggles, live beam tuning, gobo and color presets, and Save / Reset. Unsaved changes are discarded when you close it.
-- **Misc screen** — global toggles: beam shadows, debug spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, and the vanilla-toggle disable. Each is saved immediately and applied live.
+- **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, and the vanilla-toggle disable. Each is saved immediately and applied live.
 
 Everything is applied while you watch, so you can tune the beam against the actual scene.
 
@@ -162,7 +162,7 @@ Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlas
 
 Logs are written to `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`.
 
-Set `bDebugShowGrabSphere = true` to render the grab / head / primary-hand interaction zones at their exact size and position while tuning their transforms. See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
+Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation zone at its exact size and position while tuning (or set a single gesture's `sShowSphere` to `always` / `wheninside` in its section). See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
 
 ## Mod Recommendations
 

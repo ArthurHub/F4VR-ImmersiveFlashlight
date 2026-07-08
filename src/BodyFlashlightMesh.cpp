@@ -120,7 +120,7 @@ namespace ImFl
      */
     RE::NiTransform BodyFlashlightMesh::grabZoneTransform() const
     {
-        RE::NiTransform orb = g_config.getFlashlightGrabSphereTransform(_attachedInPA);
+        RE::NiTransform orb = g_config.bodyActivation.zoneFor(_attachedInPA);
         orb.translate += g_config.getFlashlightBodyTransform(_attachedInPA).translate;
         return orb;
     }

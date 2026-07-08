@@ -12,6 +12,11 @@ namespace
 {
     const char* DEFAULT_SECTION = Version::PROJECT.data();
 
+    // Per-sphere INI sections for the activation-sphere gestures (WandActivationConfig).
+    constexpr const char* SECTION_BODY_ACTIVATION_SPHERE = "ImFl_BodyActivationSphere";
+    constexpr const char* SECTION_HEAD_ACTIVATION_SPHERE = "ImFl_HeadActivationSphere";
+    constexpr const char* SECTION_PRIMARY_HAND_ACTIVATION_SPHERE = "ImFl_PrimaryHandActivationSphere";
+
     /**
      * Split a comma-separated INI value into trimmed, non-empty tokens.
      */
@@ -83,12 +88,12 @@ namespace ImFl
     }
 
     /**
-     * Persist the debug grab/activation sphere visibility toggle. Read live by Flashlight each frame.
+     * Persist the "show all activation spheres" master toggle. Read live by Flashlight each frame.
      */
-    void Config::setDebugShowGrabSphere(const bool show)
+    void Config::setShowAllActivationSpheres(const bool show)
     {
-        debugShowGrabSphere = show;
-        saveIniConfigValue(DEFAULT_SECTION, "bDebugShowGrabSphere", show);
+        showAllActivationSpheres = show;
+        saveIniConfigValue(DEFAULT_SECTION, "bShowAllActivationSpheres", show);
     }
 
     /**
@@ -173,14 +178,6 @@ namespace ImFl
     const RE::NiTransform& Config::getFlashlightBodyTransform(const bool inPowerArmor) const
     {
         return inPowerArmor ? flashlightBodyTransformPA : flashlightBodyTransform;
-    }
-
-    /**
-     * Resolve the grab-sphere transform for the given power-armor state.
-     */
-    const RE::NiTransform& Config::getFlashlightGrabSphereTransform(const bool inPowerArmor) const
-    {
-        return inPowerArmor ? flashlightGrabSphereTransformPA : flashlightGrabSphereTransform;
     }
 
     void Config::saveFlashlightValues(const FlashlightLocation location)
@@ -434,43 +431,40 @@ namespace ImFl
         flashlightBodyTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransform", bodyTransformDefault);
         flashlightBodyTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightBodyTransformPA", flashlightBodyTransform);
 
-        RE::NiTransform sphereTransformDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-        sphereTransformDefault.scale = 20.0f;
-        flashlightGrabSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransform", sphereTransformDefault);
-        flashlightGrabSphereTransformPA = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightGrabSphereTransformPA", flashlightGrabSphereTransform);
-        debugShowGrabSphere = ini.GetBoolValue(DEFAULT_SECTION, "bDebugShowGrabSphere", false);
-        grabFlashlightByOffhandBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sGrabFlashlightByOffhandBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
-        grabFlashlightByPrimaryHandBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sGrabFlashlightByPrimaryHandBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
+        // Activation-sphere gestures, each grouped in its own INI section (see WandActivationConfig). The
+        // suppress flag is a per-binding token in the binding string; the default binding literals set
+        // .suppress = true so the shipped gestures still intercept their button even if the INI omits it.
+        showAllActivationSpheres = ini.GetBoolValue(DEFAULT_SECTION, "bShowAllActivationSpheres", false);
+
+        RE::NiTransform grabSphereDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        grabSphereDefault.scale = 20.0f;
+        bodyActivation = loadWandActivationConfig(ini,
+            SECTION_BODY_ACTIVATION_SPHERE,
+            f4vr::WandActivationConfig{
+                .zone = grabSphereDefault,
+                .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+                .secondary = { .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+            });
 
         RE::NiTransform headSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         headSphereDefault.scale = 24.0f;
-        flashlightHeadSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightHeadSphereTransform", headSphereDefault);
-        activateFlashlightOnHeadBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sActivateFlashlightOnHeadBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
-        switchFlashlightFromHeadToOffhandBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sSwitchFlashlightFromHeadToOffhandBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
+        headActivation = loadWandActivationConfig(ini,
+            SECTION_HEAD_ACTIVATION_SPHERE,
+            f4vr::WandActivationConfig{
+                .zone = headSphereDefault,
+                .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+                .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+            });
 
         RE::NiTransform primaryHandSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         primaryHandSphereDefault.scale = 20.0f;
-        flashlightPrimaryHandSphereTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightPrimaryHandSphereTransform", primaryHandSphereDefault);
-        activateFlashlightOnPrimaryHandBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sActivateFlashlightOnPrimaryHandBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
-        switchFlashlightFromWeaponToOffhandBinding = getInputBindingValue(ini,
-            DEFAULT_SECTION,
-            "sSwitchFlashlightFromWeaponToOffhandBinding",
-            vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger });
+        primaryHandActivation = loadWandActivationConfig(ini,
+            SECTION_PRIMARY_HAND_ACTIVATION_SPHERE,
+            f4vr::WandActivationConfig{
+                .zone = primaryHandSphereDefault,
+                .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+                .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
+            });
         toggleWeaponFlashlightTwoHandedBinding = getInputBindingValue(ini,
             DEFAULT_SECTION,
             "sToggleWeaponFlashlightTwoHandedBinding",
