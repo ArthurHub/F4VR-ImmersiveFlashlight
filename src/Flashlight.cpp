@@ -175,6 +175,8 @@ namespace ImFl
                 },
                 .entryHaptic = g_config.bodyActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.bodyActivation.showSphere,
+                .sphereNif = g_config.bodyActivation.sphereNif,
+                .sphereScale = g_config.bodyActivation.sphereScale,
             },
             [&](const vrcf::InputBinding& binding) {
                 const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
@@ -218,6 +220,8 @@ namespace ImFl
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.headActivation.showSphere,
                 // The HMD node doesn't render its children; draw the sphere under the rendered skeleton root.
                 .debugNode = f4vr::getRootNode(),
+                .sphereNif = g_config.headActivation.sphereNif,
+                .sphereScale = g_config.headActivation.sphereScale,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press head -> offhand (headActivation.secondary; only fed while the light is head-mounted).
@@ -291,6 +295,8 @@ namespace ImFl
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.primaryHandActivation.showSphere,
                 // The wand node doesn't render its children; draw the sphere under the rendered skeleton root.
                 .debugNode = f4vr::getRootNode(),
+                .sphereNif = g_config.primaryHandActivation.sphereNif,
+                .sphereScale = g_config.primaryHandActivation.sphereScale,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press weapon -> offhand (primaryHandActivation.secondary; only fed while on the weapon).
