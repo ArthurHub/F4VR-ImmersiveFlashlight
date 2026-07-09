@@ -10,7 +10,6 @@
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
-#include "vrcf/VRControllersHaptic.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
 
@@ -109,9 +108,9 @@ namespace ImFl
             _bodyFlashlightMesh.invalidate();
             RestrictionHandler::invalidate();
             _onWeaponBeamMesh.invalidate();
-            _bodyGrabSphere.detachDebug();
-            _headSphere.detachDebug();
-            _primaryHandSphere.detachDebug();
+            _bodyGrabSphere.detachVisual();
+            _headSphere.detachVisual();
+            _primaryHandSphere.detachVisual();
             const bool isFlashlightOn = Utils::isFlashlightOn();
             const bool wasFlashlightOnRecently = isFlashlightOn || _flashlightOnRecentlyFrames > 0;
             if (wasFlashlightOnRecently && !isFlashlightOn) {
@@ -170,8 +169,8 @@ namespace ImFl
                 .node = zoneNode,
                 .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
                 .bindings = {
-                    { offhandTapActive ? g_config.bodyActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.bodyActivation.primaryHaptic },
-                    { primaryTapActive ? g_config.bodyActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.bodyActivation.secondaryHaptic },
+                    { .binding=offhandTapActive ? g_config.bodyActivation.primary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.bodyActivation.primaryHaptic },
+                    { .binding=primaryTapActive ? g_config.bodyActivation.secondary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.bodyActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.bodyActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.bodyActivation.showSphere,
@@ -213,13 +212,11 @@ namespace ImFl
                 .node = f4vr::getPlayerNodes()->HmdNode,
                 .zone = g_config.headActivation.zone,
                 .bindings = {
-                    { headTapActive ? g_config.headActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.headActivation.primaryHaptic },
-                    { headToOffhandActive ? g_config.headActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.headActivation.secondaryHaptic },
+                    { .binding=headTapActive ? g_config.headActivation.primary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.headActivation.primaryHaptic },
+                    { .binding=headToOffhandActive ? g_config.headActivation.secondary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.headActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.headActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.headActivation.showSphere,
-                // The HMD node doesn't render its children; draw the sphere under the rendered skeleton root.
-                .debugNode = f4vr::getRootNode(),
                 .sphereNif = g_config.headActivation.sphereNif,
                 .sphereScale = g_config.headActivation.sphereScale,
             },
@@ -288,13 +285,11 @@ namespace ImFl
                 .node = sphereNode,
                 .zone = zone,
                 .bindings = {
-                    { tapActive ? g_config.primaryHandActivation.primary : vrcf::VRControllersManager::DisabledBinding, g_config.primaryHandActivation.primaryHaptic },
-                    { weaponToOffhandActive ? g_config.primaryHandActivation.secondary : vrcf::VRControllersManager::DisabledBinding, g_config.primaryHandActivation.secondaryHaptic },
+                    { .binding=tapActive ? g_config.primaryHandActivation.primary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.primaryHandActivation.primaryHaptic },
+                    { .binding=weaponToOffhandActive ? g_config.primaryHandActivation.secondary : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.primaryHandActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.primaryHandActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.primaryHandActivation.showSphere,
-                // The wand node doesn't render its children; draw the sphere under the rendered skeleton root.
-                .debugNode = f4vr::getRootNode(),
                 .sphereNif = g_config.primaryHandActivation.sphereNif,
                 .sphereScale = g_config.primaryHandActivation.sphereScale,
             },
@@ -420,9 +415,9 @@ namespace ImFl
         _inHandFlashlightMesh.invalidate();
         _onWeaponBeamMesh.invalidate();
         _bodyFlashlightMesh.invalidate();
-        _bodyGrabSphere.detachDebug();
-        _headSphere.detachDebug();
-        _primaryHandSphere.detachDebug();
+        _bodyGrabSphere.detachVisual();
+        _headSphere.detachVisual();
+        _primaryHandSphere.detachVisual();
         // The framework reset all input suppression before this hook, so forget what we believed we suppressed.
         RestrictionHandler::invalidate();
         Utils::updateVanillaFlashlightToggleDisabled();
