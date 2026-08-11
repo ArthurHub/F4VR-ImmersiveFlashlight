@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "FlashlightState.h"
 #include "api/FRIKApi.h"
+#include "api/FRIKApiV2.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
@@ -11,10 +12,10 @@ namespace
 {
     constexpr const char* HAND_POSE_TAG = "ImFl_Hold";
 
-    /** Returns true when the initialized FRIK API supports v4 hand-pose features. */
-    bool isFrikApiV4()
+    /** Returns true when both FRIK API tables used by the hand pose are initialized (v2 provides the full pose override). */
+    bool isFrikHandPoseApiReady()
     {
-        return frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->getVersion() >= 4;
+        return frik::api::FRIKApi::inst && frik::api::FRIKApiV2::inst;
     }
 
     /** Maps an Immersive Flashlight location to the matching FRIK hand. */
@@ -52,13 +53,20 @@ namespace
      */
     bool setFlashlightHandPose(const frik::api::FRIKApi::Hand hand)
     {
-        return isFrikApiV4() && frik::api::FRIKApi::inst->setHandPoseCustom(HAND_POSE_TAG, hand, activeHandPose(), false);
+        if (!isFrikHandPoseApiReady()) {
+            return false;
+        }
+        // v1 and v2 declare Hand and HandPoseData with the same values and layout, so the configured pose carries over as-is.
+        return frik::api::FRIKApiV2::inst->setHandPoseCustom(HAND_POSE_TAG,
+            static_cast<frik::api::FRIKApiV2::Hand>(hand),
+            frik::api::FRIKApiV2::HandPoseData::fromFloats(activeHandPose().asFloatView()),
+            frik::api::FRIKApiV2::HAND_POSE_PRIORITY_DEFAULT);
     }
 
     /** Returns true when FRIK is actively using our hand-pose tag. */
     frik::api::FRIKApi::HandPoseTagState getFlashlightHandPoseState(const frik::api::FRIKApi::Hand hand)
     {
-        if (!isFrikApiV4()) {
+        if (!isFrikHandPoseApiReady()) {
             return frik::api::FRIKApi::HandPoseTagState::None;
         }
         return frik::api::FRIKApi::inst->getHandPoseSetTagState(HAND_POSE_TAG, hand);
@@ -112,7 +120,7 @@ namespace ImFl
         }
 
         // Apply the pose when first setting it, or refresh its values in place when the grip style changes.
-        // Refreshing an existing tag with forceTop=false keeps its position in FRIK's override stack, so a
+        // Refreshing an existing tag at the default priority keeps its position in FRIK's override stack, so a
         // system currently overriding our tag stays on top and our updated pose only takes effect once it releases.
         if (!_handPoseSet || _handPoseSetForGripStyle != FlashlightState::flashlightGripStyle) {
             if (setFlashlightHandPose(hand)) {

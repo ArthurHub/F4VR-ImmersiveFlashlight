@@ -2,6 +2,7 @@
 
 #include "RestrictionHandler.h"
 #include "api/FRIKApi.h"
+#include "api/FRIKApiV2.h"
 #include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
@@ -52,10 +53,10 @@ namespace ImFl
      */
     void FlashlightMod::onModLoaded(const F4SE::LoadInterface*)
     {
-        const int err = FRIKApi::initialize(4);
+        const int err = FRIKApiV2::initialize();
         if (err == 0) {
             logger::info("Disable FRIK flashlight feature");
-            FRIKApi::inst->blockFeature("ImmersiveFlashlight", FRIKApi::Feature::Flashlight, true);
+            FRIKApiV2::inst->blockFeature("ImmersiveFlashlight", FRIKApiV2::Feature::Flashlight, true);
         }
     }
 
