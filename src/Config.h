@@ -281,8 +281,10 @@ namespace ImFl
         bool npcDetectionEnabled = true;
         // Restrict the whole feature to while the player is sneaking.
         bool npcDetectionOnlyWhenSneaking = false;
-        // Skip companions/teammates (they know where you are; saves them investigating your beam).
-        bool npcDetectionIgnoreCompanions = true;
+        // Only NPCs hostile to the player react to the beam (engine faction/relationship hostility), so the
+        // per-tick line-of-sight raycast budget is spent on actual threats instead of settlers and townsfolk.
+        // Off = everyone reacts (a guard notices your beam too), at the cost of crowds eating that budget.
+        bool npcDetectionOnlyHostileNpcs = true;
         // Detection tick interval (ms). The engine's own detection AI updates at a similar cadence.
         int npcDetectionIntervalMs = 500;
         // Enable the direct-on-NPC detection path (event near the lit NPC). Lets it be toggled off for

@@ -484,7 +484,7 @@ namespace ImFl
         // NPC light detection (NpcDetectionHandler)
         npcDetectionEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", true);
         npcDetectionOnlyWhenSneaking = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionOnlyWhenSneaking", false);
-        npcDetectionIgnoreCompanions = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionIgnoreCompanions", true);
+        npcDetectionOnlyHostileNpcs = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionOnlyHostileNpcs", true);
         npcDetectionIntervalMs = static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionIntervalMs", 500));
         npcDetectionDirectEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionDirectEnabled", true);
         npcDetectionDirectSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionDirectSoundLevel", 100)), 0, 500);

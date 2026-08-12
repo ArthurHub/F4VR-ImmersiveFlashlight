@@ -59,9 +59,11 @@ namespace ImFl
 
         inline static uint64_t _lastTickTime = 0;
         inline static DebugEventState _debugEvent;
-        // Debug-overlay diagnostics from the last tick: why the tick did or didn't post an event, and
-        // how many NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS").
+        // Debug-overlay diagnostics from the last tick: why the tick did or didn't post an event, how many
+        // NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS"), and how many the
+        // hostile-only filter dropped (to tell "nobody in cone" from "only friendlies in cone").
         inline static std::string _debugReason;
         inline static int _debugConeCount = 0;
+        inline static int _debugFriendlyCount = 0;
     };
 }

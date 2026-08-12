@@ -48,9 +48,16 @@ fNpcDetectionMaxRange)` (beam radii reach 7000 units ≈ 90 m; alerting at that 
    unreasonable, so an independent cap, default 2000 ≈ 25 m). The cap gates only _eligibility_ —
    per-location beam strength still differentiates how hard the ping lands (step 4).
 2. **Candidates** — all loaded actors within range of the beam origin via the engine's own
-   `ProcessLists::GetActorsWithinRangeOfPoint`, filtered: not the player, not dead, optionally not
-   companions/teammates. A point-in-cone test (dot product against the cone's cosine) at chest
-   height picks the actors the beam is touching.
+   `ProcessLists::GetActorsWithinRangeOfPoint`, filtered: not the player, not dead, not
+   companions/teammates (they already know where the player is). A point-in-cone test (dot product against the cone's cosine) at chest
+   height picks the actors the beam is touching. In-cone actors then pass a hostility filter when
+   `bNpcDetectionOnlyHostileNpcs` is on (default): `Actor::GetHostileToActor(player)`, the engine's own
+   faction/relationship + combat-state hostility query (VR `RelocationID(1148686, 2229968)`). It runs
+   **last** in the filter chain — it's a native call, so only the handful of actors the beam actually
+   touches are worth asking about, and it keeps step 3's small raycast budget aimed at real threats
+   instead of a crowd of neutrals standing between the player and the enemy behind them. The cost is
+   that conditionally-hostile NPCs (a guard who'd only turn on you after catching you, trespass cases)
+   stop reacting; turn the flag off to get the vanilla-style everyone-notices behavior back.
 3. **Line of sight** — nearest-first, up to 3 candidates per tick get a physics raycast
    (`bhkPickData` + `CombatUtilities::CalculateProjectileLOS`, the same primitive the framework's
    `isMovementSafe()` uses) from the beam origin to the chest point. The target point sits inside
@@ -114,8 +121,9 @@ transform.
 ## 5. Cost
 
 Per tick (default 2/s, only while the light is on and no config-UI preview is active): one engine
-range query, a dot product per nearby actor, at most 4 raycasts (3 LOS + 1 lit-spot), one detection
-event write. Nothing runs per frame; nothing allocates beyond the query's scrap array.
+range query, a dot product per nearby actor, one hostility query per _in-cone_ actor (usually 0-2),
+at most 4 raycasts (3 LOS + 1 lit-spot), one detection event write. Nothing runs per frame; nothing
+allocates beyond the query's scrap array.
 
 ## 6. Tuning cheat-sheet
 
@@ -123,7 +131,7 @@ event write. Nothing runs per frame; nothing allocates beyond the query's scrap 
 | ----------------------------- | ---------------------------------------------------- |
 | Disable entirely              | `bNpcDetectionEnabled = false`                       |
 | Only matter while sneaking    | `bNpcDetectionOnlyWhenSneaking = true`               |
-| Companions react too          | `bNpcDetectionIgnoreCompanions = false`              |
+| Neutral NPCs react too        | `bNpcDetectionOnlyHostileNpcs = false`               |
 | Snappier / lazier reactions   | `iNpcDetectionIntervalMs` down / up                  |
 | Beam edge alerts too          | `fNpcDetectionFovMult` up toward 1.0                 |
 | Long-range beam discipline    | `fNpcDetectionMaxRange` up (game units, 100 ≈ 1.4 m) |

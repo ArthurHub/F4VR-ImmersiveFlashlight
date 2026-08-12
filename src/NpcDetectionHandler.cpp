@@ -117,7 +117,13 @@ namespace ImFl
 
         const auto npc = findNearestLitNpc(cone);
         if (!npc) {
-            _debugReason = _debugConeCount > 0 ? std::format("{} in cone, no LOS", _debugConeCount) : "no npc in cone";
+            if (_debugConeCount > 0) {
+                _debugReason = std::format("{} in cone, no LOS", _debugConeCount);
+            } else if (_debugFriendlyCount > 0) {
+                _debugReason = std::format("{} friendly in cone, ignored", _debugFriendlyCount);
+            } else {
+                _debugReason = "no npc in cone";
+            }
             return false;
         }
 
@@ -216,10 +222,13 @@ namespace ImFl
      * The nearest loaded NPC inside the beam cone with clear line of sight from the beam origin, or null.
      * Candidates come from the engine's own radius query; the in-cone test is a dot product against the
      * cone's cosine at chest height; at most MAX_LOS_CHECKS_PER_TICK candidates are raycast, nearest first.
+     * Teammates are always skipped, and non-hostile actors too when bNpcDetectionOnlyHostileNpcs is on, so
+     * the raycast budget isn't spent on a crowd that wouldn't act on the beam anyway.
      */
     RE::Actor* NpcDetectionHandler::findNearestLitNpc(const BeamCone& cone)
     {
         _debugConeCount = 0;
+        _debugFriendlyCount = 0;
         const auto player = f4vr::getPlayer();
         if (!player) {
             return nullptr;
@@ -234,7 +243,8 @@ namespace ImFl
             if (!npc || npc == player || npc->IsDead(true)) {
                 continue;
             }
-            if (g_config.npcDetectionIgnoreCompanions && RE::IsPlayerTeammate(*npc)) {
+            // Companions/teammates already know where the player is - no point investigating the beam.
+            if (RE::IsPlayerTeammate(*npc)) {
                 continue;
             }
             const auto target = npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET);
@@ -244,6 +254,11 @@ namespace ImFl
                 continue;
             }
             if (MatrixUtils::vec3Dot(toNpc * (1.0f / dist), cone.direction) < cone.cosHalfAngle) {
+                continue;
+            }
+            // Last, because it's a native call: only actors the beam actually touches are worth asking about.
+            if (g_config.npcDetectionOnlyHostileNpcs && !npc->GetHostileToActor(player)) {
+                _debugFriendlyCount++;
                 continue;
             }
             inCone.emplace_back(dist, npc);
