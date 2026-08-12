@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace ImFl
 {
@@ -47,15 +48,33 @@ namespace ImFl
             uint64_t timeMs = 0;
         };
 
+        /**
+         * One raycast and what stopped it. `what` is the whole point: a beam that dies in mid-air is only
+         * explicable once you can read the hit's collision layer (it was `actorZone` — invisible AI trigger
+         * volumes), and nothing about that is visible in-game.
+         */
+        struct RayProbe
+        {
+            std::string label; // what the ray was for ("los <npc>" / "lit spot"), also the watch-table key
+            RE::NiPoint3 from;
+            RE::NiPoint3 to;
+            RE::NiPoint3 hitPos; // valid when blocked
+            bool blocked = false;
+            bool hitActor = false; // the ray stopped on a body rather than on cover
+            std::string what; // "<node> [<layer>] at <dist>" when blocked, else why nothing stopped it
+        };
+
         static void runDetectionTick();
         static bool runNpcDirectDetection(const BeamCone& cone);
         static void runLitSpotDetection(const BeamCone& cone);
         static bool getBeamCone(BeamCone& cone);
         static RE::Actor* findNearestLitNpc(const BeamCone& cone);
-        static bool isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to);
+        static bool isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label);
+        static bool castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe);
         static bool getBeamTerminationSpot(const BeamCone& cone, RE::NiPoint3& spot);
         static void postDetectionEvent(const RE::NiPoint3& location, int soundLevel);
         static void drawDebugOverlay();
+        static void drawProbesDebug();
 
         inline static uint64_t _lastTickTime = 0;
         inline static DebugEventState _debugEvent;
@@ -65,5 +84,8 @@ namespace ImFl
         inline static std::string _debugReason;
         inline static int _debugConeCount = 0;
         inline static int _debugFriendlyCount = 0;
+        // Every raycast the last tick made (LOS checks + the lit-spot probe), kept because the tick is
+        // throttled while the overlay draws every frame.
+        inline static std::vector<RayProbe> _debugProbes;
     };
 }

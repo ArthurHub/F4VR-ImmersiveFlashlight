@@ -58,11 +58,11 @@ fNpcDetectionMaxRange)` (beam radii reach 7000 units ≈ 90 m; alerting at that 
    instead of a crowd of neutrals standing between the player and the enemy behind them. The cost is
    that conditionally-hostile NPCs (a guard who'd only turn on you after catching you, trespass cases)
    stop reacting; turn the flag off to get the vanilla-style everyone-notices behavior back.
-3. **Line of sight** — nearest-first, up to 3 candidates per tick get a physics raycast
-   (`bhkPickData` + `CombatUtilities::CalculateProjectileLOS`, the same primitive the framework's
-   `isMovementSafe()` uses) from the beam origin to the chest point. The target point sits inside
-   the NPC's own collision capsule, so a clear path still reports a "hit" just short of the target;
-   only a hit meaningfully short of it (> ~60 units, capsule radius + margin) counts as a wall.
+3. **Line of sight** — nearest-first, up to 3 candidates per tick get a physics raycast from the beam
+   origin to the chest point (see §4 for which engine query, and for the debugging surface around it).
+   The target point sits inside the NPC's own collision capsule, so a clear path still reports a "hit"
+   just short of the target; only a hit meaningfully short of it (> ~60 units, capsule radius +
+   margin) counts as a wall.
 4. **One detection event** per tick, placed by what the beam touched:
    - **Direct hit** (an NPC is in the cone with LOS): the event is placed near the lit NPC, offset
      _toward the player_ by **25 % of the NPC→player distance, clamped to [150, 1000] units** and
@@ -118,6 +118,60 @@ render). So reading `lightNode->world` in the same frame returned the **head-lig
 from the weapon mount's `Euler(90, 0, −90)`) happened to point "down" only because of this stale head
 transform.
 
+## 4. The line-of-sight raycast
+
+Both the per-NPC LOS check and the lit-spot probe are the same ray — beam origin → target, cast by
+`NpcDetectionHandler::castRay()` through `bhkWorld::PickObject(bhkPickData&)` on the physics world of
+the player's cell (`player->parentCell->GetbhkWorld()`), the same call ROCK uses for VR world ray
+clipping. Start/end go in as **game-space** points (`bhkPickData::SetStartEnd` converts to Havok's ~1/70
+scale internally), and the call happens on the game thread from `onFrameUpdate`, which is what
+`PickObject`'s internal world locking expects.
+
+The **collision filter** is `sNpcDetectionLosCollisionFilter`, default `02420028` — the game's own
+item-picker filter, which other VR physics mods use for "where does this ray hit the world". Layers are
+`RE::COL_LAYER`, the low 7 bits of the filter word.
+
+> The player's own filter (`Actor::GetCollisionFilter()`) was the original choice, on the reasoning that
+> its collision **group** makes the ray ignore the player's body. It also makes the ray look like a
+> character controller, which is what broke it — see below.
+
+> The combat AI's `CombatUtilities::CalculateProjectileLOS(actor, projectile, pickData)` was evaluated
+> as an alternative and rejected: it re-derives the physics query from a `BGSProjectile` form, so its
+> answer depends on which projectile it is handed — by default whatever sorts first in the load order,
+> i.e. a function of the user's mod list. `PickObject` is the same raycast without that input.
+
+### Passing through what can't block light
+
+A raycast stops on the first body it meets, and plenty of those are things a light beam goes straight
+through. The one that actually broke this feature is **`kActorZone`**: invisible AI trigger volumes
+that exist to catch *character controllers* — which is exactly what the ray looked like while it
+carried the player's collision filter. The beam terminated on a trigger box in the middle of a room, so
+the lit spot landed in mid-air and NPC LOS read as blocked by nothing.
+
+The item-picker filter doesn't collide with those, which is the primary fix. Behind it, `castRay()`
+also retries: when a hit's layer is in `PASS_THROUGH_LAYERS` (actor zones, triggers, portals, acoustic
+spaces, invisible walls, stair helpers, camera/door detection volumes, gas and cloud traps, and the
+transparent/glass layers — a `constexpr` mask built from `RE::COL_LAYER` enumerators, not configurable),
+it resumes the cast 2 units past that surface and keeps going, up to 4 times. Hit distance is
+accumulated back onto the **original** ray, so `hitPos` stays comparable. Running out of retries is
+reported as open air, not as a wall — a stack of five volumes is a room full of triggers, not cover.
+Pass-throughs are named in the probe, so if the filter ever starts catching something new, it's visible
+rather than silent.
+
+### Debugging what the beam hit
+
+The diagnostic that solved this was one string: the hit's **collision layer**. A beam dying in mid-air
+is inexplicable until the label reads `actorZone`. So each cast records a `RayProbe` — the ray, the hit
+point, and `what` ("`<node>` [`<layer>`] at `<distance>`", or why nothing stopped it) — and with the
+framework's `bDebugDrawEnabled` on, `drawProbesDebug()` draws the ray **cyan** (it reached a body — the
+hit is on one of `ACTOR_LAYERS`, which for the LOS test is the good outcome), **red** (cover stopped it)
+or **green** (nothing stopped it), marks and labels the hit point in-world, and puts `what` in the watch
+table (channel `NPC-DETECTION`) keyed by which ray it was. Anything the ray passed through is named in
+the same string, as is `no physics world` (cell transition — LOS then fails open).
+
+The probes are the overlay's alone: with `bDebugDrawEnabled` off, `castRay()` skips every label and hit
+description and records nothing, setting only the `blocked` / `hitPos` its callers read.
+
 ## 5. Cost
 
 Per tick (default 2/s, only while the light is on and no config-UI preview is active): one engine
@@ -137,3 +191,6 @@ allocates beyond the query's scrap array.
 | Long-range beam discipline    | `fNpcDetectionMaxRange` up (game units, 100 ≈ 1.4 m) |
 | Softer / harder direct alert  | `iNpcDetectionDirectSoundLevel` (0 disables direct)  |
 | No "they saw the light patch" | `iNpcDetectionLitSpotSoundLevel = 0`                 |
+| LOS wrong (walls / open air)  | `bDebugDrawEnabled = true`, then read §4             |
+| Beam stops on thin air        | add its layer to `PASS_THROUGH_LAYERS` (code)        |
+| Beam passes through walls     | `sNpcDetectionLosCollisionFilter` (another layer)    |

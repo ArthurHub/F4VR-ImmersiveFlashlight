@@ -4,6 +4,7 @@
 #include <cmath>
 #include <format>
 #include <ranges>
+#include <string>
 #include <vector>
 
 #include "Config.h"
@@ -12,6 +13,7 @@
 #include "common/CommonUtils.h"
 #include "common/MatrixUtils.h"
 #include "debug/DebugDraw.h"
+#include "f4vr/CollisionLayers.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -33,6 +35,40 @@ namespace
     // exceed the configured base level without running away.
     constexpr float STRENGTH_FLOOR = 0.25f;
     constexpr float STRENGTH_CAP = 1.5f;
+
+    // Collision layers the beam passes through instead of terminating on: invisible gameplay volumes and
+    // see-through geometry, none of which can stop light. kActorZone is the one that forced this — those
+    // volumes exist to catch character controllers, so they stop any ray carrying a character-controller-ish
+    // filter, and the beam died in mid-air. The rest are the same kind of thing (triggers, portals, acoustic
+    // spaces, camera/door detection boxes, stair and avoid helpers) plus glass, which you can see through.
+    constexpr std::uint64_t PASS_THROUGH_LAYERS = f4vr::collisionLayerMask({
+        RE::COL_LAYER::kTransparent,
+        RE::COL_LAYER::kTransparentSmall,
+        RE::COL_LAYER::kTransparentSmallAnim,
+        RE::COL_LAYER::kTrigger,
+        RE::COL_LAYER::kNonCollidable,
+        RE::COL_LAYER::kCloudTrap,
+        RE::COL_LAYER::kGasTrap,
+        RE::COL_LAYER::kPortal,
+        RE::COL_LAYER::kAcousticSpace,
+        RE::COL_LAYER::kActorZone,
+        RE::COL_LAYER::kProjectileZone,
+        RE::COL_LAYER::kInvisibleWall,
+        RE::COL_LAYER::kStairHelper,
+        RE::COL_LAYER::kAvoidBox,
+        RE::COL_LAYER::kCameraSphere,
+        RE::COL_LAYER::kDoorDetection,
+    });
+
+    // The layers an actor's own collision lives on. A ray stopping on one of these reached a body rather
+    // than cover — for the LOS test that's the good outcome (the target point sits inside that capsule, see
+    // LOS_TARGET_CAPSULE_MARGIN), so the debug overlay draws it in its own color.
+    constexpr std::uint64_t ACTOR_LAYERS = f4vr::collisionLayerMask({
+        RE::COL_LAYER::kCharController,
+        RE::COL_LAYER::kBiped,
+        RE::COL_LAYER::kBipedNoCC,
+        RE::COL_LAYER::kDeadBip,
+    });
 
     /**
      * Sound level scaled by the active beam's strength at the given distance: linear falloff over the
@@ -86,6 +122,7 @@ namespace ImFl
     void NpcDetectionHandler::runDetectionTick()
     {
         _debugReason.clear();
+        _debugProbes.clear();
         BeamCone cone;
         if (!getBeamCone(cone)) {
             _debugReason = "no beam cone";
@@ -274,7 +311,8 @@ namespace ImFl
             if (losChecks++ >= MAX_LOS_CHECKS_PER_TICK) {
                 break;
             }
-            if (isLineOfSightClear(cone.origin, npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET))) {
+            const auto label = g_config.debug.drawEnabled ? std::format("los {:08X}", npc->formID) : std::string();
+            if (isLineOfSightClear(cone.origin, npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), label)) {
                 return npc;
             }
         }
@@ -284,27 +322,16 @@ namespace ImFl
     /**
      * Physics raycast from the beam origin to the NPC test point, clear when nothing blocks meaningfully
      * short of the target (the target point is inside the NPC's own capsule — see LOS_TARGET_CAPSULE_MARGIN).
-     * Fails open when the raycast itself is unavailable, matching f4vr::isMovementSafe.
+     * Fails open when the raycast itself is unavailable (no physics world mid-cell-transition).
      */
-    bool NpcDetectionHandler::isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to)
+    bool NpcDetectionHandler::isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label)
     {
-        const auto player = f4vr::getPlayer();
-        const auto projectile = f4vr::getAnyProjectile();
-        if (!player || !projectile) {
-            return true;
-        }
-
-        RE::bhkPickData pickData;
-        pickData.SetStartEnd(from, to);
-        pickData.collisionFilter = player->GetCollisionFilter();
-        if (!RE::CombatUtilities::CalculateProjectileLOS(player, projectile, pickData)) {
-            return true;
-        }
-        if (!pickData.HasHit()) {
+        RayProbe probe;
+        if (!castRay(from, to, label, probe)) {
             return true;
         }
         const float dist = MatrixUtils::vec3Len(to - from);
-        return pickData.GetHitFraction() * dist >= dist - LOS_TARGET_CAPSULE_MARGIN;
+        return MatrixUtils::vec3Len(probe.hitPos - from) >= dist - LOS_TARGET_CAPSULE_MARGIN;
     }
 
     /**
@@ -313,20 +340,97 @@ namespace ImFl
      */
     bool NpcDetectionHandler::getBeamTerminationSpot(const BeamCone& cone, RE::NiPoint3& spot)
     {
-        const auto player = f4vr::getPlayer();
-        const auto projectile = f4vr::getAnyProjectile();
-        if (!player || !projectile) {
+        RayProbe probe;
+        if (!castRay(cone.origin, cone.origin + cone.direction * cone.range, "lit spot", probe)) {
             return false;
         }
-
-        RE::bhkPickData pickData;
-        pickData.SetStartEnd(cone.origin, cone.origin + cone.direction * cone.range);
-        pickData.collisionFilter = player->GetCollisionFilter();
-        if (!RE::CombatUtilities::CalculateProjectileLOS(player, projectile, pickData) || !pickData.HasHit()) {
-            return false;
-        }
-        spot = cone.origin + cone.direction * (cone.range * pickData.GetHitFraction());
+        spot = probe.hitPos;
         return true;
+    }
+
+    /**
+     * The raycast behind both LOS and the lit spot: from -> to in game space (bhkPickData converts to Havok
+     * units), against the physics world of the player's cell, filtered by Config::npcDetectionLosCollisionFilter.
+     * Returns whether something solid blocked it (then probe.hitPos is where), and records what it hit for the
+     * debug overlay.
+     *
+     * Hits on layers light passes through anyway (PASS_THROUGH_LAYERS) don't end the ray: the cast resumes
+     * just past them, so the beam terminates on real geometry instead of on an invisible trigger box. Running
+     * out of retries means the beam is threading a stack of volumes, which is open air, not cover.
+     */
+    bool NpcDetectionHandler::castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe)
+    {
+        // The probe feeds the debug overlay and nothing else, so with the overlay off none of its strings
+        // are formatted and nothing is retained — only probe.blocked / probe.hitPos, which the callers read.
+        const bool recording = g_config.debug.drawEnabled;
+        if (recording) {
+            probe.label = label;
+            probe.from = from;
+            probe.to = to;
+        }
+        std::string through; // what the ray went through on its way, reported alongside what stopped it
+        const auto record = [&]<typename... Args>(const std::format_string<Args...> fmt, Args&&... args) {
+            if (recording) {
+                probe.what = std::format(fmt, std::forward<Args>(args)...);
+                if (!through.empty()) {
+                    probe.what += std::format(" (through {})", through);
+                }
+                _debugProbes.push_back(probe);
+            }
+            return probe.blocked;
+        };
+
+        const auto player = f4vr::getPlayer();
+        const auto cell = player ? player->parentCell : nullptr;
+        const auto world = cell ? cell->GetbhkWorld() : nullptr;
+        if (!world) {
+            return record("no physics world");
+        }
+        const float rayLen = MatrixUtils::vec3Len(to - from);
+        if (rayLen < 1.0f) {
+            return record("degenerate ray");
+        }
+        const auto direction = (to - from) * (1.0f / rayLen);
+
+        constexpr int MAX_PASS_THROUGH_HITS = 2;
+
+        auto start = from;
+        for (int pass = 0; pass <= MAX_PASS_THROUGH_HITS; pass++) {
+            RE::bhkPickData pickData;
+            pickData.SetStartEnd(start, to);
+            pickData.collisionFilter.filter = g_config.npcDetectionLosCollisionFilter;
+
+            if (!world->PickObject(pickData) || !pickData.HasHit()) {
+                return record("clear over {:.0f}", rayLen);
+            }
+
+            // hit distance along the ORIGINAL ray, so hitPos stays comparable across retries
+            const float hitDist = MatrixUtils::vec3Len(start - from) + pickData.GetHitFraction() * MatrixUtils::vec3Len(to - start);
+            const auto hitFilter = pickData.result.hitBodyInfo.m_shapeCollisionFilterInfo.storage;
+            const auto node = pickData.GetNiAVObject();
+            const auto hit = recording ? std::format("{} [{}]", node && !node->name.empty() ? node->name.c_str() : "?", f4vr::getCollisionLayerName(hitFilter)) : std::string();
+
+            if (f4vr::isCollisionLayerInMask(hitFilter, PASS_THROUGH_LAYERS)) {
+                constexpr float PASS_THROUGH_STEP = 2.0f;
+                if (pass >= MAX_PASS_THROUGH_HITS) {
+                    return record("pass-through limit");
+                }
+                if (recording) {
+                    through += (through.empty() ? "" : ", ") + hit;
+                }
+                if (hitDist + PASS_THROUGH_STEP >= rayLen) {
+                    return record("nothing beyond"); // the volume sat at the very end of the ray
+                }
+                start = from + direction * (hitDist + PASS_THROUGH_STEP);
+                continue;
+            }
+
+            probe.blocked = true;
+            probe.hitActor = f4vr::isCollisionLayerInMask(hitFilter, ACTOR_LAYERS);
+            probe.hitPos = from + direction * hitDist;
+            return record("{} at {:.0f}", hit, hitDist);
+        }
+        return record("pass-through limit");
     }
 
     /**
@@ -366,12 +470,13 @@ namespace ImFl
             return;
         }
         const float fovDeg = 2.0f * MatrixUtils::radsToDegrees(std::acos(std::clamp(cone.cosHalfAngle, -1.0f, 1.0f)));
-        dd.cone(cone.origin, cone.direction, cone.range, fovDeg, debug::Color{ 1, 1, 0, 0.5f });
+        dd.cone(cone.origin, cone.direction, cone.range, fovDeg, debug::Color{ .r = 1, .g = 1, .b = 0, .a = 0.5f });
         dd.watch("BEAM", std::format("range {:.0f} fov {:.1f}", cone.range, fovDeg));
 
         // reason from the last throttled tick — the answer to "why didn't an NPC react" (shown every
         // frame; the tick only runs every iNpcDetectionIntervalMs)
         dd.watch("NPC EVENT", _debugReason.empty() ? "no tick yet" : _debugReason);
+        drawProbesDebug();
 
         if (_debugEvent.timeMs == 0) {
             dd.watch("LAST NPC EVENT", "none");
@@ -390,6 +495,30 @@ namespace ImFl
                 dd.line(cone.origin, _debugEvent.npcPos, debug::colors::Magenta);
                 dd.point(_debugEvent.npcPos, 6.0f, true, debug::colors::Magenta);
             }
+        }
+    }
+
+    /**
+     * Draw the last tick's raycasts, colored by what ended them — cyan on a body (the beam reached an
+     * actor), red on cover, green when nothing stopped them — each labelled in-world and in the watch table
+     * with what it hit: the scene node and, decisively, its collision layer.
+     */
+    void NpcDetectionHandler::drawProbesDebug()
+    {
+        auto& dd = debug::dd();
+        dd.watch("LOS FILTER", std::format("{:08X}/{}", g_config.npcDetectionLosCollisionFilter, f4vr::getCollisionLayerName(g_config.npcDetectionLosCollisionFilter)));
+        if (_debugProbes.empty()) {
+            dd.watch("LOS RAYS", "none cast last tick");
+            return;
+        }
+        for (const auto& probe : _debugProbes) {
+            const auto& color = !probe.blocked ? debug::colors::Green : probe.hitActor ? debug::colors::Cyan : debug::colors::Red;
+            dd.line(probe.from, probe.blocked ? probe.hitPos : probe.to, color);
+            if (probe.blocked) {
+                dd.point(probe.hitPos, 7.0f, true, color);
+                dd.label(probe.label, probe.hitPos + RE::NiPoint3(0, 0, g_config.debug.flowFlag1), color);
+            }
+            dd.watch(probe.label, probe.what);
         }
     }
 }

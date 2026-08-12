@@ -302,6 +302,13 @@ namespace ImFl
         float npcDetectionMaxRange = 2000.0f;
         // Fraction of the visual beam FOV used as the detection cone — the dim outer edge shouldn't alert.
         float npcDetectionFovMult = 0.75f;
+        // The game's own item-picker collision filter: what other VR physics mods use to clip a ray against
+        // world geometry, and unlike the player's own collision filter it doesn't collide with the invisible
+        // actor-zone volumes that exist to catch character controllers.
+        static constexpr std::uint32_t DEFAULT_LOS_COLLISION_FILTER = 0x02420028;
+
+        // Havok collision-filter word for the line-of-sight / lit-spot raycast (low 7 bits = COL_LAYER).
+        std::uint32_t npcDetectionLosCollisionFilter = DEFAULT_LOS_COLLISION_FILTER;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;

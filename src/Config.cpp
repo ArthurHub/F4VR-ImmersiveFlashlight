@@ -54,23 +54,41 @@ namespace
         for (const auto& entry : parseCommaList(raw)) {
             const auto pipe = entry.find('|');
             if (pipe == std::string::npos) {
-                logger::warn("Ignoring malformed headgear list entry (expected 'formID|plugin'): '{}'", entry);
+                logger::warn("Ignoring malformed form list entry (expected 'formID|plugin'): '{}'", entry);
                 continue;
             }
             const auto idStr = common::trim(entry.substr(0, pipe));
             const auto plugin = common::trim(entry.substr(pipe + 1));
             if (idStr.empty() || plugin.empty()) {
-                logger::warn("Ignoring malformed headgear list entry (empty formID or plugin): '{}'", entry);
+                logger::warn("Ignoring malformed form list entry (empty formID or plugin): '{}'", entry);
                 continue;
             }
             try {
                 const auto localId = static_cast<std::uint32_t>(std::stoul(idStr, nullptr, 16));
                 out.emplace_back(localId, plugin);
             } catch (const std::exception&) {
-                logger::warn("Ignoring headgear list entry with unparsable formID: '{}'", entry);
+                logger::warn("Ignoring form list entry with unparsable formID: '{}'", entry);
             }
         }
         return out;
+    }
+
+    /**
+     * Parse a hex Havok collision-filter word ("02420028", with or without "0x"). The low 7 bits are the
+     * COL_LAYER; the high bits carry the collision group.
+     */
+    std::uint32_t parseCollisionFilter(const std::string& raw, const std::uint32_t defaultValue)
+    {
+        const auto value = common::trim(raw);
+        if (value.empty()) {
+            return defaultValue;
+        }
+        try {
+            return static_cast<std::uint32_t>(std::stoul(value, nullptr, 16));
+        } catch (const std::exception&) {
+            logger::warn("Ignoring unparsable collision filter value: '{}'", value);
+            return defaultValue;
+        }
     }
 }
 
@@ -492,5 +510,6 @@ namespace ImFl
         npcDetectionLitSpotSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionLitSpotSoundLevel", 40)), 0, 500);
         npcDetectionMaxRange = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionMaxRange", 2000.0));
         npcDetectionFovMult = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionFovMult", 0.75));
+        npcDetectionLosCollisionFilter = parseCollisionFilter(ini.GetValue(SECTION_NPC_DETECTION, "sNpcDetectionLosCollisionFilter", ""), DEFAULT_LOS_COLLISION_FILTER);
     }
 }
