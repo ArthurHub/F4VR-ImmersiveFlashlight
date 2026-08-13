@@ -47,16 +47,21 @@ Every detection tick (`iNpcDetectionIntervalMs`, default 500 ms) while the light
 fNpcDetectionMaxRange)` (beam radii reach 7000 units ≈ 90 m; alerting at that distance is
    unreasonable, so an independent cap, default 2000 ≈ 25 m). The cap gates only _eligibility_ —
    per-location beam strength still differentiates how hard the ping lands (step 4).
-2. **Candidates** — all loaded actors within range of the beam origin via the engine's own
+2. **Candidates** — all loaded actors within reach of the beam via the engine's own
    `ProcessLists::GetActorsWithinRangeOfPoint`, filtered: not the player, not dead, not
-   companions/teammates (they already know where the player is). A point-in-cone test (dot product against the cone's cosine) at chest
-   height picks the actors the beam is touching. How well an NPC already sees the player is deliberately
+   companions/teammates (they already know where the player is). Gathered **once per tick** and shared by
+   both events in step 4, since both are questions about the same set of actors. The query radius is the
+   cone range **plus** the lit-spot witness range (§3.2): the lit patch can sit a full cone range out and
+   its witness is that much further from the beam origin again, so a cone-sized query would miss exactly
+   the actors the lit-spot path looks for. A point-in-cone test (dot product against the cone's cosine) at chest
+   height then tags the actors the beam is touching. How well an NPC already sees the player is deliberately
    **not** part of the filter — that skip was built and then removed; §3.0 records why, and the knowledge
-   behind it. In-cone actors then pass a
-   hostility filter when
+   behind it. Candidates then pass a
+   hostility filter — the in-cone ones here, the lit-spot witnesses in §3.2 — when
    `bNpcDetectionOnlyHostileNpcs` is on (default): `Actor::GetHostileToActor(player)`, the engine's own
-   faction/relationship + combat-state hostility query (VR `RelocationID(1148686, 2229968)`). It runs
-   **last** in the filter chain — it's a native call, so only the handful of actors the beam actually
+   faction/relationship + combat-state hostility query (VR `RelocationID(1148686, 2229968)`). It is
+   deliberately **not** part of the shared gather pass and runs **last** in each path's own filter chain —
+   it's a native call, so only the handful of actors the beam actually
    touches are worth asking about, and it keeps step 3's small raycast budget aimed at real threats
    instead of a crowd of neutrals standing between the player and the enemy behind them. The cost is
    that conditionally-hostile NPCs (a guard who'd only turn on you after catching you, trespass cases)
@@ -83,7 +88,8 @@ fNpcDetectionMaxRange)` (beam radii reach 7000 units ≈ 90 m; alerting at that 
      7000-radius / 1.4-fade hand torch pings at ~full strength while the 2000-radius / 1.1-fade
      head lamp is already down at the floor.
    - **Lit spot** (nobody in the cone): the beam center is raycast to where it terminates, and a
-     weaker event (`iNpcDetectionLitSpotSoundLevel`, default 40) is placed on the lit surface. An
+     weaker event (`iNpcDetectionLitSpotSoundLevel`, default 40) is placed on the lit surface — but
+     only when some NPC could actually have **seen** that patch (§3.2). An
      NPC standing next to the bright patch on the wall investigates the patch — which faces them
      toward the beam, and the next ticks escalate via the direct path once they step into the cone.
      This also covers the light pool at the player's own feet giving them away at close quarters.
@@ -259,6 +265,52 @@ commandingActor)` with the second null for anyone aggroing on its own account. C
   made it the shakiest chain on paper; in practice it works, it is simply deferred, which is why an
   immediately-following state read still shows `activeCombat false`.
 
+### 3.2 The lit spot needs a witness
+
+A detection event is a **sound**. `SetActorsDetectionEvent` posts onto the AI's hearing channel: the engine
+attenuates it by distance and nothing else — no facing test, no line of sight, no wall occlusion. Every
+actor in range processes it.
+
+That is fine for the direct path, whose recipient is by construction an NPC the beam is shining at with
+clear LOS. It was **not** fine for the lit spot, which posted unconditionally wherever the beam terminated:
+walking a corridor with the light on broadcast a ~2 Hz noise off the floor, so NPCs behind walls and NPCs
+facing the other way came to investigate a light patch they could not possibly have seen. The floor was
+making a sound.
+
+So the lit-spot event is now gated on a **witness** — the nearest NPC that could plausibly have noticed the
+patch:
+
+1. **within `LIT_SPOT_WITNESS_RANGE_MULT` × `fNpcDetectionMaxRange` of the spot** (0.5, a code constant): a
+   bright patch on a wall is a far weaker cue than the beam in your eyes, so it carries a fraction of the
+   distance. Not configurable — the gate exists to make the event plausible, and
+   `iNpcDetectionLitSpotSoundLevel` remains the knob for how much the event is worth.
+2. **facing it**, `SPOTTED_FACING_DEGREES` (90°, the same forward-hemisphere half-angle §3.1 uses on the
+   player) via `f4vr::isActorFacing`.
+3. **hostile**, if `bNpcDetectionOnlyHostileNpcs` is on — inherited from the shared filter rather than
+   hardcoded, so turning that flag off still lets a settler notice the patch on his wall.
+4. **with line of sight to the spot**, up to 2 raycasts nearest-first. Facing alone doesn't answer the wall
+   case: an NPC can face a wall with the lit patch on the far side of it. The ray runs **spot → NPC**, not
+   the reverse, so it starts on the lit surface instead of inside the NPC's own collision capsule (which it
+   would hit immediately) — and the target point then sits inside that capsule exactly as the direct path's
+   rays expect, so `LOS_TARGET_CAPSULE_MARGIN` reads the same here. It starts `LIT_SPOT_LOS_LIFT` (60 units)
+   **above** that surface: on uneven ground — a slope, rubble, a doorstep — the ground the beam is painting
+   shadows its own ray and every witness reads as blocked by nothing. Only the sight-line test is lifted;
+   the event still goes on the spot itself.
+
+Order matters: 1 and 2 are arithmetic, 3 is the native call, 4 is the raycast, and each stage is only asked
+of what survived the cheaper one. When no candidate is anywhere near the beam the termination raycast is
+skipped outright, which is the common case of walking a lit corridor alone — the path then costs nothing.
+
+**What this does not fix:** the posted event is still omnidirectional. Once a witness earns it, everyone in
+range hears it, wall or no wall. The gate changes the event's *meaning* — "somebody saw your light" rather
+than "the floor made a noise" — and their reaction alerting others through a wall is the engine's own
+behavior, which is fine. Making the event itself directional isn't possible through this native.
+
+The overlay draws the witness: a magenta line from the lit patch to the NPC that earned the event (the
+direct path's line runs from the beam origin instead — there, the beam is what matters), plus the
+`spot los <formID>` probe ray in `LOS RAYS`, and an `NPC EVENT` reason that separates "nobody nearby",
+"nobody looking at it", and "N looking, no LOS".
+
 ### What was deliberately not done
 
 - **`kModDetectionLight` perk / `HandleEntryPoint` hook** (the brief's "Strategy B"). A runtime perk
@@ -346,12 +398,15 @@ description and records nothing, setting only the `blocked` / `hitPos` its calle
 
 ## 5. Cost
 
-Per tick (default 2/s, only while the light is on and no config-UI preview is active): one engine
-range query, a dot product per nearby actor, one hostility query per _in-cone_ actor (usually 0-2),
-at most 4 raycasts (3 LOS + 1 lit-spot), one detection event write, and — only on a direct hit — one
-facing angle plus one more hostility query. Nothing runs per frame; nothing allocates beyond the
-query's scrap array. The per-NPC detection-level query is debug-only (§3.0) and costs nothing with the
-overlay off.
+Per tick (default 2/s, only while the light is on and no config-UI preview is active): **one** engine
+range query shared by both paths (radius widened per step 2, so a few more actors reach the cheap
+filters), a dot product per nearby actor, one hostility query per _in-cone_ actor (usually 0-2), at most
+6 raycasts (3 direct LOS + 1 lit-spot termination + 2 witness LOS), one detection event write, and —
+only on a direct hit — one facing angle plus one more hostility query. The lit-spot path adds its own
+arithmetic pass over the same candidates plus a facing angle and a hostility query per actor near the
+spot, and skips its raycasts entirely when nobody is nearby (§3.2). Nothing runs per frame; nothing
+allocates beyond the query's scrap array and the shared candidate vector. The per-NPC detection-level
+query is debug-only (§3.0) and costs nothing with the overlay off.
 
 ## 6. Tuning cheat-sheet
 
@@ -367,6 +422,7 @@ overlay off.
 | Long-range beam discipline    | `fNpcDetectionMaxRange` up (game units, 100 ≈ 1.4 m) |
 | Softer / harder direct alert  | `iNpcDetectionDirectSoundLevel` (0 disables direct)  |
 | No "they saw the light patch" | `iNpcDetectionLitSpotSoundLevel = 0`                 |
+| Lit patch noticed from afar   | `LIT_SPOT_WITNESS_RANGE_MULT` (code, §3.2)           |
 | LOS wrong (walls / open air)  | `bDebugDrawEnabled = true`, then read §4             |
 | Beam stops on thin air        | add its layer to `PASS_THROUGH_LAYERS` (code)        |
 | Beam passes through walls     | `sNpcDetectionLosCollisionFilter` (another layer)    |

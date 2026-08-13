@@ -28,10 +28,31 @@ namespace
     // hit just short of it; only a hit more than capsule-radius-plus-margin short counts as blocking.
     constexpr float LOS_TARGET_CAPSULE_MARGIN = 60.0f;
 
-    // Half-angle off the NPC's own heading within which the player counts as being in front of it, for the
-    // instant-spot escalation — 90 is the whole forward hemisphere, which is as loose as "looking at you"
-    // can be without becoming "facing away from you".
+    // Half-angle off the NPC's own heading within which a point counts as being in front of it — 90 is the
+    // whole forward hemisphere, which is as loose as "looking at it" can be without becoming "facing away
+    // from it". Used for the player, for the instant-spot escalation, and for the lit patch, for the
+    // lit-spot witness test.
     constexpr float SPOTTED_FACING_DEGREES = 90.0f;
+
+    // How close an NPC has to be to the lit patch to count as able to notice it, as a fraction of the beam's
+    // own eligibility reach (fNpcDetectionMaxRange). A bright spot on a wall is a far weaker cue than the
+    // beam in your eyes, so it carries a fraction of the distance; the shorter reach also keeps the witness
+    // scan and its raycasts cheap.
+    constexpr float LIT_SPOT_WITNESS_RANGE_MULT = 0.5f;
+
+    // The witness ray starts on the very surface the beam painted, so on uneven ground — a slope, rubble, a
+    // doorstep — that surface shadows its own ray and every witness reads as blocked by nothing. Lifting the
+    // origin clears the local bumps without changing what the ray asks. The event itself still goes on the
+    // spot; only the sight-line test starts above it.
+    constexpr float LIT_SPOT_LOS_LIFT = 60.0f;
+
+    /**
+     * How far from the lit patch an NPC may stand and still be a candidate for having noticed it.
+     */
+    float litSpotWitnessRange()
+    {
+        return ImFl::g_config.npcDetectionMaxRange * LIT_SPOT_WITNESS_RANGE_MULT;
+    }
 
     // The posted sound level scales with the beam's strength at the target — distance falloff over the
     // FULL visual radius (not the fNpcDetectionMaxRange eligibility cap) times the beam intensity (fade) —
@@ -121,6 +142,9 @@ namespace ImFl
      * there — near the nearest lit NPC (offset toward the player) when the direct path is enabled, else on
      * the beam's lit spot on world geometry when the lit-spot path is enabled. The two paths are separately
      * gated (bNpcDetection{Direct,LitSpot}Enabled) so each can be toggled independently.
+     *
+     * Both paths answer a question about the NPCs around the beam, so the actors are gathered once here and
+     * handed to each in turn rather than queried and walked twice per tick.
      */
     void NpcDetectionHandler::runDetectionTick()
     {
@@ -131,11 +155,70 @@ namespace ImFl
             return;
         }
 
-        if (runNpcDirectDetection(cone)) {
+        std::vector<Candidate> candidates;
+        gatherCandidates(cone, candidates);
+
+        if (runNpcDirectDetection(cone, candidates)) {
             return;
         }
 
-        runLitSpotDetection(cone);
+        runLitSpotDetection(cone, candidates);
+    }
+
+    /**
+     * The loaded NPCs this tick may act on, from the engine's own radius query, filtered down by the checks
+     * that cost nothing (alive, not the player, not a teammate) and tagged with whether each one stands
+     * inside the detection cone — which is what splits the direct path's candidates from the lit-spot path's.
+     *
+     * The query reaches past the cone by the lit-spot witness range: the lit patch can sit a full cone range
+     * out, and an NPC standing next to it is that much further from the beam origin again, so a cone-sized
+     * query would systematically miss exactly the witnesses the lit-spot path is looking for.
+     *
+     * Deliberately does NOT apply the hostile-only filter — that one costs an engine call per actor, and both
+     * paths narrow their candidates down to a handful first (see isBeamReactingNpc).
+     */
+    void NpcDetectionHandler::gatherCandidates(const BeamCone& cone, std::vector<Candidate>& candidates)
+    {
+        const auto player = f4vr::getPlayer();
+        if (!player) {
+            return;
+        }
+
+        RE::BSScrapArray<RE::NiPointer<RE::Actor>> nearby;
+        f4vr::getActorsWithinRangeOfPoint(cone.origin, cone.range + litSpotWitnessRange(), nearby);
+
+        for (const auto& handle : nearby) {
+            const auto npc = handle.get();
+            if (!npc || npc == player || npc->IsDead(true)) {
+                continue;
+            }
+            // Companions/teammates already know where the player is - no point investigating the beam.
+            if (RE::IsPlayerTeammate(*npc)) {
+                continue;
+            }
+            const auto target = npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET);
+            const auto toNpc = target - cone.origin;
+            const float dist = MatrixUtils::vec3Len(toNpc);
+            if (dist < 1.0f) {
+                continue;
+            }
+            const bool inCone = dist <= cone.range && MatrixUtils::vec3Dot(toNpc * (1.0f / dist), cone.direction) >= cone.cosHalfAngle;
+            candidates.push_back({ .actor = handle, .distToOrigin = dist, .inCone = inCone });
+        }
+    }
+
+    /**
+     * Whether this NPC would act on the beam at all, i.e. survives the hostile-only filter
+     * (bNpcDetectionOnlyHostileNpcs). The engine call inside is why both paths call this last, once their
+     * cheap geometric filters have cut the list down to the few actors the beam actually reaches.
+     */
+    bool NpcDetectionHandler::isBeamReactingNpc(RE::Actor* npc)
+    {
+        if (!g_config.npcDetectionOnlyHostileNpcs) {
+            return true;
+        }
+        const auto player = f4vr::getPlayer();
+        return player && npc->GetHostileToActor(player);
     }
 
     /**
@@ -144,14 +227,14 @@ namespace ImFl
      * NPC and the player — the engine's investigate-the-location behavior then turns them toward the light
      * instead of their own feet — or on the player at point blank / on a hit counting as being seen.
      */
-    bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone)
+    bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone, const std::vector<Candidate>& candidates)
     {
         if (!g_config.npcDetectionDirectEnabled) {
             _debug.setReason("direct off");
             return false;
         }
 
-        const auto npc = findNearestLitNpc(cone);
+        const auto npc = findNearestLitNpc(cone, candidates);
         if (!npc) {
             _debug.recordNoNpcFound();
             return false;
@@ -214,14 +297,26 @@ namespace ImFl
 
     /**
      * Lit-spot fallback (the beam touched no NPC directly): post a weaker detection event where the beam
-     * center terminates on world geometry, so NPCs next to that bright patch investigate it. A no-op when the
-     * lit-spot path is disabled or its sound level is zeroed, or when the beam ends in open air (nothing to
-     * notice).
+     * center terminates on world geometry, so an NPC next to that bright patch investigates it. A no-op when
+     * the lit-spot path is disabled or its sound level is zeroed, when the beam ends in open air (nothing to
+     * notice), or when nobody could have seen the patch.
+     *
+     * That last gate is the point of the path's shape: the event is a *sound*, which the engine broadcasts to
+     * every actor in range without a facing or line-of-sight test of its own, so posting one wherever the
+     * beam happens to land has a light on the floor pulling in NPCs behind walls and NPCs looking the other
+     * way. Requiring a witness first (findLitSpotWitness) makes the event mean "somebody saw your light" —
+     * their reaction can still alert others through the wall, which is the engine's own behavior and fine.
      */
-    void NpcDetectionHandler::runLitSpotDetection(const BeamCone& cone)
+    void NpcDetectionHandler::runLitSpotDetection(const BeamCone& cone, const std::vector<Candidate>& candidates)
     {
         if (!g_config.npcDetectionLitSpotEnabled || g_config.npcDetectionLitSpotSoundLevel <= 0) {
             _debug.addReason("lit-spot off");
+            return;
+        }
+        // no one within reach of wherever the beam lands: skip the termination raycast too, since no spot
+        // could produce a witness anyway (the common case of walking a lit corridor alone)
+        if (candidates.empty()) {
+            _debug.addReason("lit spot: nobody nearby");
             return;
         }
 
@@ -231,10 +326,69 @@ namespace ImFl
             return;
         }
 
+        const auto witness = findLitSpotWitness(spot, candidates);
+        if (!witness) {
+            _debug.recordNoLitSpotWitness();
+            return;
+        }
+
         const float spotDist = MatrixUtils::vec3Len(spot - cone.origin);
         const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionLitSpotSoundLevel, spotDist);
+        logger::sampleDebug(3000, "NpcDetector: lit spot seen by NPC {:08X}, event at beam-dist {:.0f}", witness->formID, spotDist);
         postDetectionEvent(spot, soundLevel);
-        _debug.recordLitSpotEvent(spot, soundLevel);
+        _debug.recordLitSpotEvent(spot, soundLevel, witness);
+    }
+
+    /**
+     * The nearest NPC that could actually have noticed the lit patch, or null: standing within
+     * litSpotWitnessRange() of the spot, facing it (SPOTTED_FACING_DEGREES — the same "looking at it"
+     * half-angle the instant-spot escalation uses on the player), reacting to the beam at all
+     * (isBeamReactingNpc), and with clear line of sight to it. Nearest first, at most
+     * MAX_LIT_SPOT_LOS_CHECKS_PER_TICK raycasts, mirroring the direct path's budget.
+     *
+     * The ray runs spot -> NPC rather than the other way so it starts on the lit surface instead of inside
+     * the NPC's own collision capsule (which it would hit immediately), which also means the target point is
+     * inside that capsule exactly as the direct path's rays expect — so isLineOfSightClear's capsule margin
+     * reads the same here. It starts LIT_SPOT_LOS_LIFT above that surface so the ground the beam is painting
+     * doesn't shadow its own ray.
+     */
+    RE::Actor* NpcDetectionHandler::findLitSpotWitness(const RE::NiPoint3& spot, const std::vector<Candidate>& candidates)
+    {
+        const float range = litSpotWitnessRange();
+
+        std::vector<std::pair<float, RE::Actor*>> looking;
+        for (const auto& candidate : candidates) {
+            const auto target = candidate.actor->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET);
+            const float dist = MatrixUtils::vec3Len(target - spot);
+            if (dist > range) {
+                continue;
+            }
+            if (!f4vr::isActorFacing(candidate.actor.get(), spot, SPOTTED_FACING_DEGREES)) {
+                continue;
+            }
+            // the only engine call in the filter, so it runs last (see isBeamReactingNpc)
+            if (!isBeamReactingNpc(candidate.actor.get())) {
+                continue;
+            }
+            looking.emplace_back(dist, candidate.actor.get());
+        }
+        _debug.litSpotLookingCount = static_cast<int>(looking.size());
+
+        // Physics raycasts per tick spent finding an NPC that can see the lit spot (nearest first).
+        constexpr int MAX_LIT_SPOT_LOS_CHECKS_PER_TICK = 2;
+
+        const auto rayFrom = spot + RE::NiPoint3(0, 0, LIT_SPOT_LOS_LIFT);
+        std::ranges::sort(looking, {}, &std::pair<float, RE::Actor*>::first);
+        int losChecks = 0;
+        for (const auto& npc : looking | std::views::values) {
+            if (losChecks++ >= MAX_LIT_SPOT_LOS_CHECKS_PER_TICK) {
+                break;
+            }
+            if (isLineOfSightClear(rayFrom, npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), DebugState::losLabel(npc, "spot los"))) {
+                return npc;
+            }
+        }
+        return nullptr;
     }
 
     /**
@@ -274,49 +428,32 @@ namespace ImFl
     }
 
     /**
-     * The nearest loaded NPC inside the beam cone with clear line of sight from the beam origin, or null.
-     * Candidates come from the engine's own radius query; the in-cone test is a dot product against the
-     * cone's cosine at chest height; at most MAX_LOS_CHECKS_PER_TICK candidates are raycast, nearest first.
-     * Teammates are always skipped, and non-hostile actors too when bNpcDetectionOnlyHostileNpcs is on, so
-     * the raycast budget isn't spent on a crowd that wouldn't act on the beam anyway.
+     * The nearest NPC inside the beam cone with clear line of sight from the beam origin, or null. The
+     * in-cone split is already made by gatherCandidates (a dot product against the cone's cosine at chest
+     * height); at most MAX_LOS_CHECKS_PER_TICK of them are raycast, nearest first. Non-hostile actors are
+     * dropped here when bNpcDetectionOnlyHostileNpcs is on, so the raycast budget isn't spent on a crowd
+     * that wouldn't act on the beam anyway.
      */
-    RE::Actor* NpcDetectionHandler::findNearestLitNpc(const BeamCone& cone)
+    RE::Actor* NpcDetectionHandler::findNearestLitNpc(const BeamCone& cone, const std::vector<Candidate>& candidates)
     {
         const auto player = f4vr::getPlayer();
         if (!player) {
             return nullptr;
         }
 
-        RE::BSScrapArray<RE::NiPointer<RE::Actor>> nearby;
-        f4vr::getActorsWithinRangeOfPoint(cone.origin, cone.range, nearby);
-
         std::vector<std::pair<float, RE::Actor*>> inCone;
-        for (const auto& handle : nearby) {
-            const auto npc = handle.get();
-            if (!npc || npc == player || npc->IsDead(true)) {
-                continue;
-            }
-            // Companions/teammates already know where the player is - no point investigating the beam.
-            if (RE::IsPlayerTeammate(*npc)) {
-                continue;
-            }
-            const auto target = npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET);
-            const auto toNpc = target - cone.origin;
-            const float dist = MatrixUtils::vec3Len(toNpc);
-            if (dist < 1.0f || dist > cone.range) {
-                continue;
-            }
-            if (MatrixUtils::vec3Dot(toNpc * (1.0f / dist), cone.direction) < cone.cosHalfAngle) {
+        for (const auto& candidate : candidates) {
+            if (!candidate.inCone) {
                 continue;
             }
             // The only engine call in the filter, so it runs last: just the handful of actors the beam
             // actually touches are worth asking about.
-            if (g_config.npcDetectionOnlyHostileNpcs && !npc->GetHostileToActor(player)) {
+            if (!isBeamReactingNpc(candidate.actor.get())) {
                 _debug.friendlyCount++;
                 continue;
             }
-            _debug.recordCandidate(npc, player);
-            inCone.emplace_back(dist, npc);
+            _debug.recordCandidate(candidate.actor.get(), player);
+            inCone.emplace_back(candidate.distToOrigin, candidate.actor.get());
         }
         _debug.coneCount = static_cast<int>(inCone.size());
 
@@ -462,11 +599,13 @@ namespace ImFl
 
     /**
      * The watch-table key / in-world label for an NPC's line-of-sight ray, empty when not recording (the
-     * label is threaded down into castRay purely so the probe can be identified in the overlay).
+     * label is threaded down into castRay purely so the probe can be identified in the overlay). `kind`
+     * separates the two rays that can be cast at the same NPC in a tick: the direct one from the beam
+     * origin, and the lit-spot one from the patch on the wall.
      */
-    std::string NpcDetectionHandler::DebugState::losLabel(const RE::Actor* npc)
+    std::string NpcDetectionHandler::DebugState::losLabel(const RE::Actor* npc, const std::string_view kind)
     {
-        return recording() ? std::format("los {:08X}", npc->formID) : std::string();
+        return recording() ? std::format("{} {:08X}", kind, npc->formID) : std::string();
     }
 
     /**
@@ -493,6 +632,7 @@ namespace ImFl
         reason.clear();
         coneCount = 0;
         friendlyCount = 0;
+        litSpotLookingCount = 0;
         detectionLevels.clear();
         probes.clear();
     }
@@ -537,6 +677,23 @@ namespace ImFl
     }
 
     /**
+     * Why the lit-spot path posted nothing despite the beam landing on geometry: whether anyone was near the
+     * patch and facing it separates "nobody could have seen it" from "somebody was looking, but through a
+     * wall".
+     */
+    void NpcDetectionHandler::DebugState::recordNoLitSpotWitness()
+    {
+        if (!recording()) {
+            return;
+        }
+        if (litSpotLookingCount > 0) {
+            addReason(std::format("lit spot: {} looking, no LOS", litSpotLookingCount));
+        } else {
+            addReason("lit spot: nobody looking at it");
+        }
+    }
+
+    /**
      * Note an NPC the beam is touching, with how well the engine itself thinks it can see the player. That
      * read is diagnostic only — the tick deliberately doesn't act on it (docs 3.0) — and the native behind it
      * creates actor-knowledge state, which a normal play session shouldn't be paying for a number nothing
@@ -571,15 +728,18 @@ namespace ImFl
     }
 
     /**
-     * The event just posted on the beam's lit patch of world geometry (no NPC was hit).
+     * The event just posted on the beam's lit patch of world geometry (no NPC was hit). The witness is kept
+     * alongside it because the patch alone doesn't explain the event — the overlay draws the line from the
+     * patch to the NPC that could see it, which is the whole reason it was posted.
      */
-    void NpcDetectionHandler::DebugState::recordLitSpotEvent(const RE::NiPoint3& spot, const int soundLevel)
+    void NpcDetectionHandler::DebugState::recordLitSpotEvent(const RE::NiPoint3& spot, const int soundLevel, const RE::Actor* witness)
     {
         if (!recording()) {
             return;
         }
-        event = Event{ .pos = spot, .soundLevel = soundLevel, .direct = false, .timeMs = nowMillis() };
-        reason = std::format("lit spot, lvl {}", soundLevel); // the miss reasons are moot once one is posted
+        event = Event{ .pos = spot, .npcPos = witness->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), .soundLevel = soundLevel, .direct = false, .timeMs = nowMillis() };
+        // the miss reasons are moot once one is posted
+        reason = std::format("lit spot seen by {:08X}, lvl {} ({} looking)", witness->formID, soundLevel, litSpotLookingCount);
     }
 
     /**
@@ -656,10 +816,10 @@ namespace ImFl
             // distance-scaled so the event marker stays visible however far the beam reaches
             dd.sphere(event.pos, 9.0f, true, eventColor);
             dd.label(std::format("lvl {}", event.soundLevel), event.pos, eventColor);
-            if (event.direct) {
-                dd.line(cone.origin, event.npcPos, debug::colors::Magenta);
-                dd.point(event.npcPos, 6.0f, true, debug::colors::Magenta);
-            }
+            // the line to the NPC the event is about: from the beam origin on a direct hit (the beam that lit
+            // them), from the lit patch on a lit-spot event (the sight line that made it worth posting)
+            dd.line(event.direct ? cone.origin : event.pos, event.npcPos, debug::colors::Magenta);
+            dd.point(event.npcPos, 6.0f, true, debug::colors::Magenta);
         }
     }
 
