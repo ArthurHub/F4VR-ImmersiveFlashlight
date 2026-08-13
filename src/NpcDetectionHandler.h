@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <format>
 #include <string>
 #include <vector>
 
@@ -37,18 +38,6 @@ namespace ImFl
         };
 
         /**
-         * Last posted detection event, kept only to feed the debug overlay between ticks.
-         */
-        struct DebugEventState
-        {
-            RE::NiPoint3 eventPos;
-            RE::NiPoint3 npcPos; // valid only when direct
-            int soundLevel = 0;
-            bool direct = false;
-            uint64_t timeMs = 0;
-        };
-
-        /**
          * One raycast and what stopped it. `what` is the whole point: a beam that dies in mid-air is only
          * explicable once you can read the hit's collision layer (it was `actorZone` — invisible AI trigger
          * volumes), and nothing about that is visible in-game.
@@ -62,6 +51,75 @@ namespace ImFl
             bool blocked = false;
             bool hitActor = false; // the ray stopped on a body rather than on cover
             std::string what; // "<node> [<layer>] at <dist>" when blocked, else why nothing stopped it
+            std::string through; // the pass-through volumes crossed on the way, folded into `what` at the end
+        };
+
+        /**
+         * Everything the debug overlay reads, and the only thing the detection path writes it through. It
+         * outlives the tick that wrote it because the tick is throttled (iNpcDetectionIntervalMs) while the
+         * overlay draws every frame, so the last tick's answers have to survive until the next one.
+         */
+        struct DebugState
+        {
+            /**
+             * Last posted detection event, kept so the overlay can keep drawing it for a few ticks.
+             */
+            struct Event
+            {
+                RE::NiPoint3 pos;
+                RE::NiPoint3 npcPos; // valid only when direct
+                int soundLevel = 0;
+                bool direct = false;
+                uint64_t timeMs = 0;
+            };
+
+            Event event;
+            std::string reason; // why the last tick did or didn't post an event
+            // how many NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS"), and how
+            // many of them the hostile-only filter dropped (to tell it from "in cone but not worth an event")
+            int coneCount = 0;
+            int friendlyCount = 0;
+            // the engine's own perception of the player per candidate NPC — diagnostic only: nothing in the
+            // tick reads it (docs 3.0) and the native behind it is called only while the overlay is on
+            std::string detectionLevels;
+            // degrees the last hit NPC was facing away from the player (0 = straight at them), the number
+            // behind the instant-spot facing gate
+            float facingAngle = 0;
+            std::vector<RayProbe> probes; // every raycast the last tick made (LOS checks + the lit-spot probe)
+
+            static bool recording();
+            static std::string losLabel(const RE::Actor* npc);
+            static std::string hitLabel(RE::bhkPickData& pickData, std::uint32_t hitFilter);
+
+            void onTickStart();
+            void setReason(std::string text);
+            void addReason(const std::string& text);
+            void recordNoNpcFound();
+            void recordCandidate(RE::Actor* npc, RE::Actor* player);
+            void recordDirectEvent(const RE::Actor* npc, const RE::NiPoint3& eventPos, int soundLevel, bool spotted);
+            void recordLitSpotEvent(const RE::NiPoint3& spot, int soundLevel);
+            void startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to) const;
+            void passedThrough(RayProbe& probe, const std::string& hit) const;
+            void draw();
+            void drawProbes() const;
+
+            /**
+             * Finish a raycast with what ended it and keep the probe for the overlay, returning whether the
+             * ray was blocked — so a cast can `return _debug.endProbe(probe, "...")` at every one of its exits
+             * and read as its own flow.
+             */
+            template <typename... Args>
+            bool endProbe(RayProbe& probe, const std::format_string<Args...> fmt, Args&&... args)
+            {
+                if (recording()) {
+                    probe.what = std::format(fmt, std::forward<Args>(args)...);
+                    if (!probe.through.empty()) {
+                        probe.what += std::format(" (through {})", probe.through);
+                    }
+                    probes.push_back(probe);
+                }
+                return probe.blocked;
+            }
         };
 
         static void runDetectionTick();
@@ -74,25 +132,8 @@ namespace ImFl
         static bool castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe);
         static bool getBeamTerminationSpot(const BeamCone& cone, RE::NiPoint3& spot);
         static void postDetectionEvent(const RE::NiPoint3& location, int soundLevel);
-        static void drawDebugOverlay();
-        static void drawProbesDebug();
 
         inline static uint64_t _lastTickTime = 0;
-        inline static DebugEventState _debugEvent;
-        // Debug-overlay diagnostics from the last tick: why the tick did or didn't post an event, how many
-        // NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS"), and how many were
-        // dropped by the hostile-only filter (to tell "nobody in cone" from "in cone but not worth an
-        // event"). The detection levels are diagnostic only — nothing in the tick reads them (docs 3.0) and
-        // the native behind them is called only while the overlay is on.
-        inline static std::string _debugReason;
-        inline static int _debugConeCount = 0;
-        inline static int _debugFriendlyCount = 0;
-        inline static std::string _debugDetectionLevels;
-        // Degrees the last hit NPC was facing away from the player (0 = straight at them), the number behind
-        // the instant-spot facing gate.
-        inline static float _debugFacingAngle = 0;
-        // Every raycast the last tick made (LOS checks + the lit-spot probe), kept because the tick is
-        // throttled while the overlay draws every frame.
-        inline static std::vector<RayProbe> _debugProbes;
+        inline static DebugState _debug;
     };
 }

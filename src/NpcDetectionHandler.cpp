@@ -108,9 +108,7 @@ namespace ImFl
             // disabled, config-UI beam preview, or sneak-gated off: nothing to alert
             return;
         }
-        if (g_config.debug.drawEnabled) {
-            drawDebugOverlay();
-        }
+        _debug.draw();
         if (!isNowTimePassed(_lastTickTime, g_config.npcDetectionIntervalMs)) {
             return;
         }
@@ -126,11 +124,10 @@ namespace ImFl
      */
     void NpcDetectionHandler::runDetectionTick()
     {
-        _debugReason.clear();
-        _debugProbes.clear();
+        _debug.onTickStart();
         BeamCone cone;
         if (!getBeamCone(cone)) {
-            _debugReason = "no beam cone";
+            _debug.setReason("no beam cone");
             return;
         }
 
@@ -150,19 +147,13 @@ namespace ImFl
     bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone)
     {
         if (!g_config.npcDetectionDirectEnabled) {
-            _debugReason = "direct off";
+            _debug.setReason("direct off");
             return false;
         }
 
         const auto npc = findNearestLitNpc(cone);
         if (!npc) {
-            if (_debugConeCount > 0) {
-                _debugReason = std::format("{} in cone, no LOS", _debugConeCount);
-            } else if (_debugFriendlyCount > 0) {
-                _debugReason = std::format("in cone but ignored: {} friendly", _debugFriendlyCount);
-            } else {
-                _debugReason = "no npc in cone";
-            }
+            _debug.recordNoNpcFound();
             return false;
         }
 
@@ -183,23 +174,14 @@ namespace ImFl
         const bool onPlayer = spotted || toPlayerDist <= DIRECT_EVENT_OFFSET_MIN;
         const float offset = std::clamp(DIRECT_EVENT_OFFSET_FRACTION * toPlayerDist, DIRECT_EVENT_OFFSET_MIN, DIRECT_EVENT_OFFSET_MAX);
         const auto eventPos = onPlayer ? player->data.location : npcPos + toPlayer * (offset / toPlayerDist);
+        // the event position itself is logged by postDetectionEvent below, so this only adds who and how far
         logger::sampleDebug(3000,
-            "NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event ({:.0f},{:.0f},{:.0f}) {}",
+            "NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event {}",
             npc->formID,
             beamDist,
-            eventPos.x,
-            eventPos.y,
-            eventPos.z,
             onPlayer ? (spotted ? "ON the player (spotted)" : "ON the player (point blank)") : std::format("offset {:.0f} toward player", offset));
         postDetectionEvent(eventPos, soundLevel);
-        _debugEvent =
-            DebugEventState{ .eventPos = eventPos, .npcPos = npcPos + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), .soundLevel = soundLevel, .direct = true, .timeMs = nowMillis() };
-        _debugReason = std::format("hit npc {:08X}, direct lvl {}{}, ({} in cone, {} friendly)",
-            npc->formID,
-            soundLevel,
-            spotted ? " -> SPOTTED (event on player)" : "",
-            _debugConeCount,
-            _debugFriendlyCount);
+        _debug.recordDirectEvent(npc, eventPos, soundLevel, spotted);
         return true;
     }
 
@@ -219,7 +201,7 @@ namespace ImFl
         // Measured first and unconditionally so the overlay can report it even on the ticks that don't
         // escalate - "how far off is it looking" is the number to read when tuning the facing gate.
         const float facingAngle = f4vr::getActorFacingAngleTo(npc, player->data.location);
-        _debugFacingAngle = facingAngle;
+        _debug.facingAngle = facingAngle;
         if (soundLevel < g_config.npcDetectionSpottedEventLevel) {
             return false;
         }
@@ -238,24 +220,21 @@ namespace ImFl
      */
     void NpcDetectionHandler::runLitSpotDetection(const BeamCone& cone)
     {
-        // preserve the direct-path miss reason (if any) and append the lit-spot outcome to it
-        const std::string directMiss = _debugReason.empty() ? "" : _debugReason + " - ";
         if (!g_config.npcDetectionLitSpotEnabled || g_config.npcDetectionLitSpotSoundLevel <= 0) {
-            _debugReason = directMiss + "lit-spot off";
+            _debug.addReason("lit-spot off");
             return;
         }
 
         RE::NiPoint3 spot;
         if (!getBeamTerminationSpot(cone, spot)) {
-            _debugReason = directMiss + "no beam termination spot found";
+            _debug.addReason("no beam termination spot found");
             return;
         }
 
         const float spotDist = MatrixUtils::vec3Len(spot - cone.origin);
         const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionLitSpotSoundLevel, spotDist);
         postDetectionEvent(spot, soundLevel);
-        _debugEvent = DebugEventState{ .eventPos = spot, .soundLevel = soundLevel, .direct = false, .timeMs = nowMillis() };
-        _debugReason = std::format("lit spot, lvl {}", soundLevel);
+        _debug.recordLitSpotEvent(spot, soundLevel);
     }
 
     /**
@@ -303,9 +282,6 @@ namespace ImFl
      */
     RE::Actor* NpcDetectionHandler::findNearestLitNpc(const BeamCone& cone)
     {
-        _debugConeCount = 0;
-        _debugFriendlyCount = 0;
-        _debugDetectionLevels.clear();
         const auto player = f4vr::getPlayer();
         if (!player) {
             return nullptr;
@@ -336,22 +312,13 @@ namespace ImFl
             // The only engine call in the filter, so it runs last: just the handful of actors the beam
             // actually touches are worth asking about.
             if (g_config.npcDetectionOnlyHostileNpcs && !npc->GetHostileToActor(player)) {
-                _debugFriendlyCount++;
+                _debug.friendlyCount++;
                 continue;
             }
-            if (g_config.debug.drawEnabled) {
-                // Diagnostic only - the beam deliberately does not act on how well the NPC already sees the
-                // player (docs 3.0). Read behind the overlay flag because the native creates actor-knowledge
-                // state, which a normal play session shouldn't be paying for a number nothing reads.
-                _debugDetectionLevels += std::format("{}{:08X} lvl {}{}",
-                    _debugDetectionLevels.empty() ? "" : ", ",
-                    npc->formID,
-                    f4vr::getDetectionLevel(npc, player),
-                    f4vr::isInActiveCombat(npc) ? " COMBAT" : "");
-            }
+            _debug.recordCandidate(npc, player);
             inCone.emplace_back(dist, npc);
         }
-        _debugConeCount = static_cast<int>(inCone.size());
+        _debug.coneCount = static_cast<int>(inCone.size());
 
         // Physics raycasts per tick spent finding a visible in-cone NPC (nearest first).
         constexpr int MAX_LOS_CHECKS_PER_TICK = 3;
@@ -362,8 +329,7 @@ namespace ImFl
             if (losChecks++ >= MAX_LOS_CHECKS_PER_TICK) {
                 break;
             }
-            const auto label = g_config.debug.drawEnabled ? std::format("los {:08X}", npc->formID) : std::string();
-            if (isLineOfSightClear(cone.origin, npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), label)) {
+            if (isLineOfSightClear(cone.origin, npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), DebugState::losLabel(npc))) {
                 return npc;
             }
         }
@@ -411,35 +377,19 @@ namespace ImFl
      */
     bool NpcDetectionHandler::castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe)
     {
-        // The probe feeds the debug overlay and nothing else, so with the overlay off none of its strings
-        // are formatted and nothing is retained — only probe.blocked / probe.hitPos, which the callers read.
-        const bool recording = g_config.debug.drawEnabled;
-        if (recording) {
-            probe.label = label;
-            probe.from = from;
-            probe.to = to;
-        }
-        std::string through; // what the ray went through on its way, reported alongside what stopped it
-        const auto record = [&]<typename... Args>(const std::format_string<Args...> fmt, Args&&... args) {
-            if (recording) {
-                probe.what = std::format(fmt, std::forward<Args>(args)...);
-                if (!through.empty()) {
-                    probe.what += std::format(" (through {})", through);
-                }
-                _debugProbes.push_back(probe);
-            }
-            return probe.blocked;
-        };
+        // Every exit reports what ended the ray as it returns whether the ray was blocked; the message is
+        // kept only while the overlay is on, and the callers read just the result / probe.hitPos.
+        _debug.startProbe(probe, label, from, to);
 
         const auto player = f4vr::getPlayer();
         const auto cell = player ? player->parentCell : nullptr;
         const auto world = cell ? cell->GetbhkWorld() : nullptr;
         if (!world) {
-            return record("no physics world");
+            return _debug.endProbe(probe, "no physics world");
         }
         const float rayLen = MatrixUtils::vec3Len(to - from);
         if (rayLen < 1.0f) {
-            return record("degenerate ray");
+            return _debug.endProbe(probe, "degenerate ray");
         }
         const auto direction = (to - from) * (1.0f / rayLen);
 
@@ -452,25 +402,22 @@ namespace ImFl
             pickData.collisionFilter.filter = g_config.npcDetectionLosCollisionFilter;
 
             if (!world->PickObject(pickData) || !pickData.HasHit()) {
-                return record("clear over {:.0f}", rayLen);
+                return _debug.endProbe(probe, "clear over {:.0f}", rayLen);
             }
 
             // hit distance along the ORIGINAL ray, so hitPos stays comparable across retries
             const float hitDist = MatrixUtils::vec3Len(start - from) + pickData.GetHitFraction() * MatrixUtils::vec3Len(to - start);
             const auto hitFilter = pickData.result.hitBodyInfo.m_shapeCollisionFilterInfo.storage;
-            const auto node = pickData.GetNiAVObject();
-            const auto hit = recording ? std::format("{} [{}]", node && !node->name.empty() ? node->name.c_str() : "?", f4vr::getCollisionLayerName(hitFilter)) : std::string();
+            const auto hit = DebugState::hitLabel(pickData, hitFilter);
 
             if (f4vr::isCollisionLayerInMask(hitFilter, PASS_THROUGH_LAYERS)) {
                 constexpr float PASS_THROUGH_STEP = 2.0f;
                 if (pass >= MAX_PASS_THROUGH_HITS) {
-                    return record("pass-through limit");
+                    return _debug.endProbe(probe, "pass-through limit");
                 }
-                if (recording) {
-                    through += (through.empty() ? "" : ", ") + hit;
-                }
+                _debug.passedThrough(probe, hit);
                 if (hitDist + PASS_THROUGH_STEP >= rayLen) {
-                    return record("nothing beyond"); // the volume sat at the very end of the ray
+                    return _debug.endProbe(probe, "nothing beyond"); // the volume sat at the very end of the ray
                 }
                 start = from + direction * (hitDist + PASS_THROUGH_STEP);
                 continue;
@@ -479,9 +426,9 @@ namespace ImFl
             probe.blocked = true;
             probe.hitActor = f4vr::isCollisionLayerInMask(hitFilter, ACTOR_LAYERS);
             probe.hitPos = from + direction * hitDist;
-            return record("{} at {:.0f}", hit, hitDist);
+            return _debug.endProbe(probe, "{} at {:.0f}", hit, hitDist);
         }
-        return record("pass-through limit");
+        return _debug.endProbe(probe, "pass-through limit");
     }
 
     /**
@@ -499,6 +446,164 @@ namespace ImFl
         logger::sampleDebug(3000, "NpcDetector: Posted flashlight detection event at ({:.0f},{:.0f},{:.0f}) level={}", location.x, location.y, location.z, soundLevel);
     }
 
+    // ------------------------------------------------------------------------------------------------
+    // Debug state and overlay. Nothing above this line does more than call into it, and nothing below it
+    // affects the detection outcome — see NpcDetectionHandler::DebugState.
+    // ------------------------------------------------------------------------------------------------
+
+    /**
+     * Whether the debug overlay is on, and with it this whole struct. Every method that formats a string or
+     * makes a diagnostic engine call checks it first: with the overlay off none of this is ever read.
+     */
+    bool NpcDetectionHandler::DebugState::recording()
+    {
+        return g_config.debug.drawEnabled;
+    }
+
+    /**
+     * The watch-table key / in-world label for an NPC's line-of-sight ray, empty when not recording (the
+     * label is threaded down into castRay purely so the probe can be identified in the overlay).
+     */
+    std::string NpcDetectionHandler::DebugState::losLabel(const RE::Actor* npc)
+    {
+        return recording() ? std::format("los {:08X}", npc->formID) : std::string();
+    }
+
+    /**
+     * "<node> [<layer>]" for what a raycast hit — the collision layer being the part that matters, since a
+     * beam dying in mid-air is only explicable once you can see it stopped on an invisible volume. The scene
+     * node lookup is an engine call, so it happens only while recording.
+     */
+    std::string NpcDetectionHandler::DebugState::hitLabel(RE::bhkPickData& pickData, const std::uint32_t hitFilter)
+    {
+        if (!recording()) {
+            return {};
+        }
+        const auto node = pickData.GetNiAVObject();
+        return std::format("{} [{}]", node && !node->name.empty() ? node->name.c_str() : "?", f4vr::getCollisionLayerName(hitFilter));
+    }
+
+    /**
+     * Drop the previous tick's answers, so a field left unwritten reads as "this tick didn't get that far"
+     * rather than as a stale answer from an older one. `facingAngle` is deliberately kept: it is the last
+     * measured value, and 0 would read as "looking straight at the player".
+     */
+    void NpcDetectionHandler::DebugState::onTickStart()
+    {
+        reason.clear();
+        coneCount = 0;
+        friendlyCount = 0;
+        detectionLevels.clear();
+        probes.clear();
+    }
+
+    /**
+     * Why this tick did what it did, replacing whatever an earlier stage of the tick had to say.
+     */
+    void NpcDetectionHandler::DebugState::setReason(std::string text)
+    {
+        if (recording()) {
+            reason = std::move(text);
+        }
+    }
+
+    /**
+     * Same, but keeping what an earlier stage already reported — the lit-spot path runs after the direct
+     * path missed, and "why no NPC" plus "why no lit spot" together are the answer to "why nothing happened".
+     */
+    void NpcDetectionHandler::DebugState::addReason(const std::string& text)
+    {
+        if (recording()) {
+            reason = reason.empty() ? text : reason + " - " + text;
+        }
+    }
+
+    /**
+     * Why the direct path found no NPC to light up: the counters separate "nobody was in the cone" from
+     * "somebody was, but behind cover" and from "somebody was, but the hostile-only filter dropped them".
+     */
+    void NpcDetectionHandler::DebugState::recordNoNpcFound()
+    {
+        if (!recording()) {
+            return;
+        }
+        if (coneCount > 0) {
+            setReason(std::format("{} in cone, no LOS", coneCount));
+        } else if (friendlyCount > 0) {
+            setReason(std::format("in cone but ignored: {} friendly", friendlyCount));
+        } else {
+            setReason("no npc in cone");
+        }
+    }
+
+    /**
+     * Note an NPC the beam is touching, with how well the engine itself thinks it can see the player. That
+     * read is diagnostic only — the tick deliberately doesn't act on it (docs 3.0) — and the native behind it
+     * creates actor-knowledge state, which a normal play session shouldn't be paying for a number nothing
+     * reads; hence recording-only.
+     */
+    void NpcDetectionHandler::DebugState::recordCandidate(RE::Actor* npc, RE::Actor* player)
+    {
+        if (!recording()) {
+            return;
+        }
+        detectionLevels +=
+            std::format("{}{:08X} lvl {}{}", detectionLevels.empty() ? "" : ", ", npc->formID, f4vr::getDetectionLevel(npc, player), f4vr::isInActiveCombat(npc) ? " COMBAT" : "");
+    }
+
+    /**
+     * The event just posted onto a lit NPC. The NPC's own position is kept alongside the event position
+     * because the two differ (the event is offset toward the player, or moved onto them when spotted) and
+     * the overlay draws the line between them.
+     */
+    void NpcDetectionHandler::DebugState::recordDirectEvent(const RE::Actor* npc, const RE::NiPoint3& eventPos, const int soundLevel, const bool spotted)
+    {
+        if (!recording()) {
+            return;
+        }
+        event = Event{ .pos = eventPos, .npcPos = npc->data.location + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), .soundLevel = soundLevel, .direct = true, .timeMs = nowMillis() };
+        setReason(std::format("hit npc {:08X}, direct lvl {}{}, ({} in cone, {} friendly)",
+            npc->formID,
+            soundLevel,
+            spotted ? " -> SPOTTED (event on player)" : "",
+            coneCount,
+            friendlyCount));
+    }
+
+    /**
+     * The event just posted on the beam's lit patch of world geometry (no NPC was hit).
+     */
+    void NpcDetectionHandler::DebugState::recordLitSpotEvent(const RE::NiPoint3& spot, const int soundLevel)
+    {
+        if (!recording()) {
+            return;
+        }
+        event = Event{ .pos = spot, .soundLevel = soundLevel, .direct = false, .timeMs = nowMillis() };
+        reason = std::format("lit spot, lvl {}", soundLevel); // the miss reasons are moot once one is posted
+    }
+
+    /**
+     * Start recording a raycast: the ray itself, which is all that can be known before it is cast.
+     */
+    void NpcDetectionHandler::DebugState::startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to) const
+    {
+        if (recording()) {
+            probe.label = label;
+            probe.from = from;
+            probe.to = to;
+        }
+    }
+
+    /**
+     * Note a volume the ray crossed without stopping, reported alongside whatever ends up stopping it.
+     */
+    void NpcDetectionHandler::DebugState::passedThrough(RayProbe& probe, const std::string& hit) const
+    {
+        if (recording()) {
+            probe.through += (probe.through.empty() ? "" : ", ") + hit;
+        }
+    }
+
     /**
      * Render the live detection state via the framework debug overlay (gated by its bDebugDrawEnabled),
      * called every frame the feature is active so the visuals track the beam and auto-vanish with it:
@@ -510,8 +615,11 @@ namespace ImFl
      * "NPC-DETECTION" channel so they can be silenced via sDebugDrawDisabledChannels without turning
      * the overlay off.
      */
-    void NpcDetectionHandler::drawDebugOverlay()
+    void NpcDetectionHandler::DebugState::draw()
     {
+        if (!recording()) {
+            return;
+        }
         auto& dd = debug::dd();
         const auto channel = dd.channelScope("NPC-DETECTION");
 
@@ -526,31 +634,31 @@ namespace ImFl
 
         // reason from the last throttled tick — the answer to "why didn't an NPC react" (shown every
         // frame; the tick only runs every iNpcDetectionIntervalMs)
-        dd.watch("NPC EVENT", _debugReason.empty() ? "no tick yet" : _debugReason);
+        dd.watch("NPC EVENT", reason.empty() ? "no tick yet" : reason);
         // the engine's own perception of the player, per candidate NPC — nothing acts on it, it is here to
         // read while debugging: below 0 they have no idea, 0-20 suspicious/investigating, 20+ actually
         // seeing the player, reaching 50-60 point blank (docs 3.0).
-        dd.watch("NPC DETECTION", _debugDetectionLevels.empty() ? "no npc in cone" : _debugDetectionLevels);
+        dd.watch("NPC DETECTION", detectionLevels.empty() ? "no npc in cone" : detectionLevels);
         // how far the last hit NPC was turned away from the player, against the instant-spot gate it feeds
-        dd.watch("NPC FACING", std::format("{:.0f} deg off (gate {:.0f})", _debugFacingAngle, SPOTTED_FACING_DEGREES));
-        drawProbesDebug();
+        dd.watch("NPC FACING", std::format("{:.0f} deg off (gate {:.0f})", facingAngle, SPOTTED_FACING_DEGREES));
+        drawProbes();
 
-        if (_debugEvent.timeMs == 0) {
+        if (event.timeMs == 0) {
             dd.watch("LAST NPC EVENT", "none");
             return;
         }
 
         // keep showing the last event for a few ticks so short flashes are inspectable
-        const float ageSec = static_cast<float>(nowMillis() - _debugEvent.timeMs) / 1000.0f;
-        dd.watch("LAST NPC EVENT", std::format("{} lvl {} {:.1f} sec ago", _debugEvent.direct ? "direct" : "lit-spot", _debugEvent.soundLevel, ageSec));
+        const float ageSec = static_cast<float>(nowMillis() - event.timeMs) / 1000.0f;
+        dd.watch("LAST NPC EVENT", std::format("{} lvl {} {:.1f} sec ago", event.direct ? "direct" : "lit-spot", event.soundLevel, ageSec));
         if (ageSec <= static_cast<float>(g_config.npcDetectionIntervalMs) / 1000.0f * 4.0f) {
-            const auto& eventColor = _debugEvent.direct ? debug::colors::Red : debug::colors::Orange;
+            const auto& eventColor = event.direct ? debug::colors::Red : debug::colors::Orange;
             // distance-scaled so the event marker stays visible however far the beam reaches
-            dd.sphere(_debugEvent.eventPos, 9.0f, true, eventColor);
-            dd.label(std::format("lvl {}", _debugEvent.soundLevel), _debugEvent.eventPos, eventColor);
-            if (_debugEvent.direct) {
-                dd.line(cone.origin, _debugEvent.npcPos, debug::colors::Magenta);
-                dd.point(_debugEvent.npcPos, 6.0f, true, debug::colors::Magenta);
+            dd.sphere(event.pos, 9.0f, true, eventColor);
+            dd.label(std::format("lvl {}", event.soundLevel), event.pos, eventColor);
+            if (event.direct) {
+                dd.line(cone.origin, event.npcPos, debug::colors::Magenta);
+                dd.point(event.npcPos, 6.0f, true, debug::colors::Magenta);
             }
         }
     }
@@ -560,15 +668,15 @@ namespace ImFl
      * actor), red on cover, green when nothing stopped them — each labelled in-world and in the watch table
      * with what it hit: the scene node and, decisively, its collision layer.
      */
-    void NpcDetectionHandler::drawProbesDebug()
+    void NpcDetectionHandler::DebugState::drawProbes() const
     {
         auto& dd = debug::dd();
         dd.watch("LOS FILTER", std::format("{:08X}/{}", g_config.npcDetectionLosCollisionFilter, f4vr::getCollisionLayerName(g_config.npcDetectionLosCollisionFilter)));
-        if (_debugProbes.empty()) {
+        if (probes.empty()) {
             dd.watch("LOS RAYS", "none cast last tick");
             return;
         }
-        for (const auto& probe : _debugProbes) {
+        for (const auto& probe : probes) {
             const auto& color = !probe.blocked ? debug::colors::Green : probe.hitActor ? debug::colors::Cyan : debug::colors::Red;
             dd.line(probe.from, probe.blocked ? probe.hitPos : probe.to, color);
             if (probe.blocked) {
