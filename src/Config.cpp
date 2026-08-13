@@ -510,6 +510,7 @@ namespace ImFl
         npcDetectionLitSpotSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionLitSpotSoundLevel", 40)), 0, 500);
         npcDetectionMaxRange = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionMaxRange", 2000.0));
         npcDetectionFovMult = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionFovMult", 0.75));
+        npcDetectionSpottedEventLevel = static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionSpottedEventLevel", 100));
         npcDetectionLosCollisionFilter = parseCollisionFilter(ini.GetValue(SECTION_NPC_DETECTION, "sNpcDetectionLosCollisionFilter", ""), DEFAULT_LOS_COLLISION_FILTER);
     }
 }

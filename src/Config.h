@@ -302,6 +302,12 @@ namespace ImFl
         float npcDetectionMaxRange = 2000.0f;
         // Fraction of the visual beam FOV used as the detection cone — the dim outer edge shouldn't alert.
         float npcDetectionFovMult = 0.75f;
+        // Instant-spot escalation: a hostile NPC lit this hard while facing the player has *seen* the player,
+        // so the detection event is placed on the player's own position instead of offset near the NPC — it
+        // comes straight at you rather than investigating a spot nearby. Because the level scales with beam
+        // strength at the target, this is effectively a "bright and close" threshold; set it above the highest
+        // reachable level (iNpcDetectionDirectSoundLevel * 1.5) to never escalate.
+        int npcDetectionSpottedEventLevel = 100;
         // The game's own item-picker collision filter: what other VR physics mods use to clip a ray against
         // world geometry, and unlike the player's own collision filter it doesn't collide with the invisible
         // actor-zone volumes that exist to catch character controllers.

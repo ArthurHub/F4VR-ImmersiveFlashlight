@@ -68,6 +68,7 @@ namespace ImFl
         static bool runNpcDirectDetection(const BeamCone& cone);
         static void runLitSpotDetection(const BeamCone& cone);
         static bool getBeamCone(BeamCone& cone);
+        static bool tryEscalateToSpotted(RE::Actor* npc, int soundLevel);
         static RE::Actor* findNearestLitNpc(const BeamCone& cone);
         static bool isLineOfSightClear(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label);
         static bool castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe);
@@ -79,11 +80,17 @@ namespace ImFl
         inline static uint64_t _lastTickTime = 0;
         inline static DebugEventState _debugEvent;
         // Debug-overlay diagnostics from the last tick: why the tick did or didn't post an event, how many
-        // NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS"), and how many the
-        // hostile-only filter dropped (to tell "nobody in cone" from "only friendlies in cone").
+        // NPCs were inside the cone (to tell "nobody in cone" from "in cone but no LOS"), and how many were
+        // dropped by the hostile-only filter (to tell "nobody in cone" from "in cone but not worth an
+        // event"). The detection levels are diagnostic only — nothing in the tick reads them (docs 3.0) and
+        // the native behind them is called only while the overlay is on.
         inline static std::string _debugReason;
         inline static int _debugConeCount = 0;
         inline static int _debugFriendlyCount = 0;
+        inline static std::string _debugDetectionLevels;
+        // Degrees the last hit NPC was facing away from the player (0 = straight at them), the number behind
+        // the instant-spot facing gate.
+        inline static float _debugFacingAngle = 0;
         // Every raycast the last tick made (LOS checks + the lit-spot probe), kept because the tick is
         // throttled while the overlay draws every frame.
         inline static std::vector<RayProbe> _debugProbes;

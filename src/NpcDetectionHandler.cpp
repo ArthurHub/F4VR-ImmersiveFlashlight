@@ -28,6 +28,11 @@ namespace
     // hit just short of it; only a hit more than capsule-radius-plus-margin short counts as blocking.
     constexpr float LOS_TARGET_CAPSULE_MARGIN = 60.0f;
 
+    // Half-angle off the NPC's own heading within which the player counts as being in front of it, for the
+    // instant-spot escalation — 90 is the whole forward hemisphere, which is as loose as "looking at you"
+    // can be without becoming "facing away from you".
+    constexpr float SPOTTED_FACING_DEGREES = 90.0f;
+
     // The posted sound level scales with the beam's strength at the target — distance falloff over the
     // FULL visual radius (not the fNpcDetectionMaxRange eligibility cap) times the beam intensity (fade) —
     // so a strong long-throw hand torch is more alarming at the same distance than a dim short head lamp.
@@ -137,13 +142,10 @@ namespace ImFl
     }
 
     /**
-     * Direct path: if enabled and an NPC is lit in the cone (with line of sight), post a detection event
-     * pulled off that NPC toward the player and return true; otherwise return false so the caller falls back
-     * to the lit-spot path. The event is pulled toward the player by a fraction of the NPC->player distance
-     * (so distant NPCs still get a meaningful nudge toward you, not a token fixed shift), clamped to
-     * [DIRECT_EVENT_OFFSET_MIN, DIRECT_EVENT_OFFSET_MAX] and never past the player — so the engine's
-     * investigate-the-event-location behavior turns the NPC toward the light source instead of making it
-     * search its own feet.
+     * Direct path: when enabled and an NPC is lit in the cone (with line of sight), post a detection event and
+     * return true; otherwise false, so the caller falls back to the lit-spot path. The event sits between the
+     * NPC and the player — the engine's investigate-the-location behavior then turns them toward the light
+     * instead of their own feet — or on the player at point blank / on a hit counting as being seen.
      */
     bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone)
     {
@@ -157,37 +159,74 @@ namespace ImFl
             if (_debugConeCount > 0) {
                 _debugReason = std::format("{} in cone, no LOS", _debugConeCount);
             } else if (_debugFriendlyCount > 0) {
-                _debugReason = std::format("{} friendly in cone, ignored", _debugFriendlyCount);
+                _debugReason = std::format("in cone but ignored: {} friendly", _debugFriendlyCount);
             } else {
                 _debugReason = "no npc in cone";
             }
             return false;
         }
 
-        constexpr float DIRECT_EVENT_OFFSET_FRACTION = 0.25f;
-        constexpr float DIRECT_EVENT_OFFSET_MIN = 150.0f;
+        constexpr float DIRECT_EVENT_OFFSET_FRACTION = 0.3f;
+        constexpr float DIRECT_EVENT_OFFSET_MIN = 200.0f;
         constexpr float DIRECT_EVENT_OFFSET_MAX = 1000.0f;
 
         const auto player = f4vr::getPlayer();
         const RE::NiPoint3 npcPos = npc->data.location;
         const RE::NiPoint3 toPlayer = player->data.location - npcPos;
         const float toPlayerDist = MatrixUtils::vec3Len(toPlayer);
-        const float offset = (std::min)(toPlayerDist, std::clamp(DIRECT_EVENT_OFFSET_FRACTION * toPlayerDist, DIRECT_EVENT_OFFSET_MIN, DIRECT_EVENT_OFFSET_MAX));
-        const auto eventPos = toPlayerDist > 1.0f ? npcPos + toPlayer * (offset / toPlayerDist) : npcPos;
         const float beamDist = MatrixUtils::vec3Len(npcPos - cone.origin);
+        const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionDirectSoundLevel, beamDist);
+
+        // The event goes on the PLAYER rather than near the NPC when the beam counts as having been seen, or at
+        // point blank - inside DIRECT_EVENT_OFFSET_MIN the offset below would reach the player anyway.
+        const bool spotted = tryEscalateToSpotted(npc, soundLevel);
+        const bool onPlayer = spotted || toPlayerDist <= DIRECT_EVENT_OFFSET_MIN;
+        const float offset = std::clamp(DIRECT_EVENT_OFFSET_FRACTION * toPlayerDist, DIRECT_EVENT_OFFSET_MIN, DIRECT_EVENT_OFFSET_MAX);
+        const auto eventPos = onPlayer ? player->data.location : npcPos + toPlayer * (offset / toPlayerDist);
         logger::sampleDebug(3000,
-            "NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event ({:.0f},{:.0f},{:.0f}) offset {:.0f} toward player",
+            "NpcDetector: NPC {:08X} lit at beam-dist {:.0f}, event ({:.0f},{:.0f},{:.0f}) {}",
             npc->formID,
             beamDist,
             eventPos.x,
             eventPos.y,
             eventPos.z,
-            offset);
-        const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionDirectSoundLevel, beamDist);
+            onPlayer ? (spotted ? "ON the player (spotted)" : "ON the player (point blank)") : std::format("offset {:.0f} toward player", offset));
         postDetectionEvent(eventPos, soundLevel);
         _debugEvent =
             DebugEventState{ .eventPos = eventPos, .npcPos = npcPos + RE::NiPoint3(0, 0, TARGET_HEIGHT_OFFSET), .soundLevel = soundLevel, .direct = true, .timeMs = nowMillis() };
-        _debugReason = std::format("hit npc {:08X}, direct lvl {}, ({} npc in cone)", npc->formID, soundLevel, _debugConeCount);
+        _debugReason = std::format("hit npc {:08X}, direct lvl {}{}, ({} in cone, {} friendly)",
+            npc->formID,
+            soundLevel,
+            spotted ? " -> SPOTTED (event on player)" : "",
+            _debugConeCount,
+            _debugFriendlyCount);
+        return true;
+    }
+
+    /**
+     * Whether this direct hit counts as the NPC having been *spotted* by the beam rather than merely alerted:
+     * the scaled sound level reached iNpcDetectionSpottedEventLevel (which, since the level scales with beam
+     * strength at the target, means a bright beam at close range), the NPC is hostile, and it is facing the
+     * player. A light in the face from a few meters away is seen, and the caller answers that by putting the
+     * detection event on the player instead of off to one side.
+     */
+    bool NpcDetectionHandler::tryEscalateToSpotted(RE::Actor* npc, const int soundLevel)
+    {
+        const auto player = f4vr::getPlayer();
+        if (!player) {
+            return false;
+        }
+        // Measured first and unconditionally so the overlay can report it even on the ticks that don't
+        // escalate - "how far off is it looking" is the number to read when tuning the facing gate.
+        const float facingAngle = f4vr::getActorFacingAngleTo(npc, player->data.location);
+        _debugFacingAngle = facingAngle;
+        if (soundLevel < g_config.npcDetectionSpottedEventLevel) {
+            return false;
+        }
+        if (std::abs(facingAngle) > SPOTTED_FACING_DEGREES || !npc->GetHostileToActor(player)) {
+            return false;
+        }
+        logger::sampleDebug(3000, "NpcDetector: NPC {:08X} spotted the player at level {}, facing {:.0f} deg off", npc->formID, soundLevel, facingAngle);
         return true;
     }
 
@@ -266,6 +305,7 @@ namespace ImFl
     {
         _debugConeCount = 0;
         _debugFriendlyCount = 0;
+        _debugDetectionLevels.clear();
         const auto player = f4vr::getPlayer();
         if (!player) {
             return nullptr;
@@ -293,10 +333,21 @@ namespace ImFl
             if (MatrixUtils::vec3Dot(toNpc * (1.0f / dist), cone.direction) < cone.cosHalfAngle) {
                 continue;
             }
-            // Last, because it's a native call: only actors the beam actually touches are worth asking about.
+            // The only engine call in the filter, so it runs last: just the handful of actors the beam
+            // actually touches are worth asking about.
             if (g_config.npcDetectionOnlyHostileNpcs && !npc->GetHostileToActor(player)) {
                 _debugFriendlyCount++;
                 continue;
+            }
+            if (g_config.debug.drawEnabled) {
+                // Diagnostic only - the beam deliberately does not act on how well the NPC already sees the
+                // player (docs 3.0). Read behind the overlay flag because the native creates actor-knowledge
+                // state, which a normal play session shouldn't be paying for a number nothing reads.
+                _debugDetectionLevels += std::format("{}{:08X} lvl {}{}",
+                    _debugDetectionLevels.empty() ? "" : ", ",
+                    npc->formID,
+                    f4vr::getDetectionLevel(npc, player),
+                    f4vr::isInActiveCombat(npc) ? " COMBAT" : "");
             }
             inCone.emplace_back(dist, npc);
         }
@@ -476,6 +527,12 @@ namespace ImFl
         // reason from the last throttled tick — the answer to "why didn't an NPC react" (shown every
         // frame; the tick only runs every iNpcDetectionIntervalMs)
         dd.watch("NPC EVENT", _debugReason.empty() ? "no tick yet" : _debugReason);
+        // the engine's own perception of the player, per candidate NPC — nothing acts on it, it is here to
+        // read while debugging: below 0 they have no idea, 0-20 suspicious/investigating, 20+ actually
+        // seeing the player, reaching 50-60 point blank (docs 3.0).
+        dd.watch("NPC DETECTION", _debugDetectionLevels.empty() ? "no npc in cone" : _debugDetectionLevels);
+        // how far the last hit NPC was turned away from the player, against the instant-spot gate it feeds
+        dd.watch("NPC FACING", std::format("{:.0f} deg off (gate {:.0f})", _debugFacingAngle, SPOTTED_FACING_DEGREES));
         drawProbesDebug();
 
         if (_debugEvent.timeMs == 0) {
