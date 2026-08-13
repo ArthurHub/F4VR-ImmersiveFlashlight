@@ -34,11 +34,20 @@ namespace ImFl
 
         virtual void setInteractionHandPointing(const bool primaryHand, const bool toPoint) override
         {
+            constexpr const char* CONFIG_HAND_POSE_TAG = "InFl_Config";
             const auto hand = primaryHand ? FRIKApi::Hand::Primary : FRIKApi::Hand::Offhand;
-            if (toPoint) {
-                FRIKApi::inst->setHandPoseCustomFingerPositions("InFl_Config", hand, 0, 1, 0, 0, 0);
+            if (!toPoint) {
+                FRIKApi::inst->clearHandPose(CONFIG_HAND_POSE_TAG, hand);
+                return;
+            }
+            if (FRIKApiV2::inst) {
+                FRIKApiV2::inst->setHandPose(CONFIG_HAND_POSE_TAG,
+                    static_cast<FRIKApiV2::Hand>(hand),
+                    FRIKApiV2::HandPoseKind::Pointing,
+                    FRIKApiV2::HAND_POSE_PRIORITY_DEFAULT + 10);
             } else {
-                FRIKApi::inst->clearHandPose("InFl_Config", hand);
+                // v1 has no priority, so the hold pose can win the tie; only reachable without FRIK API v2, where there is no hold pose either.
+                FRIKApi::inst->setHandPoseCustomFingerPositions(CONFIG_HAND_POSE_TAG, hand, 0, 1, 0, 0, 0);
             }
         }
     };

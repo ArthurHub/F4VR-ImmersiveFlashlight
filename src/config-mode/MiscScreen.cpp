@@ -178,8 +178,9 @@ namespace ImFl::config
         showOnBodyTglBtn->setToggleState(g_config.showFlashlightOnBody);
         showOnBodyTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleShowOnBody(enabled); });
 
+        // the button is the vanilla binding itself, so it is ON when the disable config flag is OFF
         const auto disableVanillaTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-disable-global-toggle.nif");
-        disableVanillaTglBtn->setToggleState(g_config.disableVanillaFlashlightToggle);
+        disableVanillaTglBtn->setToggleState(!g_config.disableVanillaFlashlightToggle);
         disableVanillaTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleDisableVanillaToggle(enabled); });
 
         const auto row1 = std::make_shared<UIContainer>("MiscRow1", UIContainerLayout::HorizontalCenter, 0.3f);
