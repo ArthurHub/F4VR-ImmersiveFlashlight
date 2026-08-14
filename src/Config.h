@@ -97,6 +97,7 @@ namespace ImFl
         void setFlashlightHeadgearRequirement(FlashlightHeadgearRequirement requirement);
         void setWeaponFlashlightMeshRequirement(FlashlightWeaponMeshRequirement requirement);
         void setDisableVanillaFlashlightToggle(bool disabled);
+        void setNpcDetectionEnabled(bool enabled);
         void saveFlashlightValues(FlashlightLocation location);
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 

@@ -164,6 +164,15 @@ namespace ImFl
     }
 
     /**
+     * Persist the NPC light-detection master toggle. Read live by NpcDetectionHandler on each tick.
+     */
+    void Config::setNpcDetectionEnabled(const bool enabled)
+    {
+        npcDetectionEnabled = enabled;
+        saveIniConfigValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", enabled);
+    }
+
+    /**
      * Resolve the in-hand light-node transform for the given hand and grip style.
      */
     const RE::NiTransform& Config::getFlashlightInHandLightTransform(const bool isOffhand, const FlashlightGripStyle grip) const

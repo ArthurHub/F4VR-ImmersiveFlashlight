@@ -8,6 +8,7 @@ Source PNGs for the in-game VR configuration UI. Each image is one sprite in the
 - **Beam controls** (`btn-beam-tuning`, `btn-switch-gobo`, `btn-switch-color`) — tune
   intensity/radius/FOV, cycle gobo and color presets.
 - **Shadows toggle** (`btn-flashlight-shadows`) — now on the misc screen, not the beam screen.
+- **NPC light detection toggle** (`btn-npc-detection`) — misc screen; whether NPCs notice the beam.
 - **Messages** (`msg-main`, `msg-beam-tuning`) — the help panels shown below the buttons.
 - **Title** (`title`) — the config panel header (shared by all screens).
 - **Flashlight icon** (`btn-flashlight`) — both the button registered in FRIK's main config menu to open

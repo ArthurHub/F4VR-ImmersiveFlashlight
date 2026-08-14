@@ -137,6 +137,17 @@ namespace ImFl::config
     }
 
     /**
+     * Toggle the NPC light-detection feature (NPCs noticing the beam). Read live by NpcDetectionHandler
+     * on each detection tick, so it takes effect immediately.
+     */
+    void MiscScreen::toggleNpcDetection(const bool enabled)
+    {
+        g_config.setNpcDetectionEnabled(enabled);
+        f4vr::showNotification(enabled ? "NPCs notice the flashlight beam\nShining the light on someone can give away your position"
+                                       : "NPCs ignore the flashlight beam\nVanilla behavior, the light never gives you away");
+    }
+
+    /**
      * Toggle disabling the vanilla global flashlight toggle, applying/restoring the game setting live.
      */
     void MiscScreen::toggleDisableVanillaToggle(const bool enabled)
@@ -174,6 +185,10 @@ namespace ImFl::config
         weaponReqBtn->setOnStateChangedHandler(
             [](UIMultiStateToggleButton<FlashlightWeaponMeshRequirement>*, const FlashlightWeaponMeshRequirement state) { onWeaponMeshRequirementChanged(state); });
 
+        const auto npcDetectionTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-npc-detection.nif");
+        npcDetectionTglBtn->setToggleState(g_config.npcDetectionEnabled);
+        npcDetectionTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleNpcDetection(enabled); });
+
         const auto showOnBodyTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-mesh-on-body.nif");
         showOnBodyTglBtn->setToggleState(g_config.showFlashlightOnBody);
         showOnBodyTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleShowOnBody(enabled); });
@@ -186,6 +201,7 @@ namespace ImFl::config
         const auto row1 = std::make_shared<UIContainer>("MiscRow1", UIContainerLayout::HorizontalCenter, 0.3f);
         row1->addElement(headgearReqBtn);
         row1->addElement(weaponReqBtn);
+        row1->addElement(npcDetectionTglBtn);
         row1->addElement(showOnBodyTglBtn);
         row1->addElement(disableVanillaTglBtn);
 

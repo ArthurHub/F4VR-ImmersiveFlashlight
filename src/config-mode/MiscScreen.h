@@ -11,9 +11,9 @@ namespace ImFl::config
 {
     /**
      * Misc config screen: a collection of global toggle settings (beam shadows, debug spheres, stowed
-     * body model, headgear requirement, weapon-flashlight requirement, vanilla-toggle disable, more to
-     * come). Reached from the main config screen; a Back button returns to it. Each toggle persists to the
-     * INI immediately and applies live.
+     * body model, headgear requirement, weapon-flashlight requirement, NPC light detection,
+     * vanilla-toggle disable, more to come). Reached from the main config screen; a Back button returns to
+     * it. Each toggle persists to the INI immediately and applies live.
      */
     class MiscScreen
     {
@@ -32,6 +32,7 @@ namespace ImFl::config
         static void toggleShowOnBody(bool enabled);
         static void onHeadgearRequirementChanged(FlashlightHeadgearRequirement requirement);
         static void onWeaponMeshRequirementChanged(FlashlightWeaponMeshRequirement requirement);
+        static void toggleNpcDetection(bool enabled);
         static void toggleDisableVanillaToggle(bool enabled);
 
         std::shared_ptr<vrui::UIContainer> _ui;
