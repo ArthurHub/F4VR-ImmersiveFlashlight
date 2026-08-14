@@ -101,16 +101,16 @@ If you like my work, consider helping out.
 
 [![become a patron](https://theartofdev.wordpress.com/wp-content/uploads/2025/06/become_a_patron_button.png)](https://patreon.com/theartofdev)
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G61G72WH)
-
 ## Acknowledgements
 
 This mod is built on the work of the Fallout VR modding community and public code.
 
-- Ryan, rsm, McKenzie, alandtse, and the other [CommonLibVR](https://github.com/alandtse/CommonLibVR/tree/vr) contributors.
+- Ryan, rsm, McKenzie, alandtse, devartificial, and the other [CommonLibVR](https://github.com/alandtse/CommonLibVR/tree/vr) contributors.
 - RollingRock, alandtse, shizof, and CylonSurfer for open-source mods such as FRIK and Virtual Holsters.
-- CylonSurfer for the original flashlight head/hand switching implementation in FRIK, which served as inspiration.
-- Existing flashlight mods, including [Pip-Boy Flashlight](https://www.nexusmods.com/fallout4/mods/10840), for design inspiration.
+- CylonSurfer for the original flashlight inspiration in FRIK, and help with Blender.
+- Existing flashlight mods, including [Pip-Boy Flashlight](https://www.nexusmods.com/fallout4/mods/10840), for design inspiration and flashlight asset.
+- [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) for inspiration on handling NPCs detection.
+- DevArtificial for ray tracing RE and many features adopted from [ROCK](https://github.com/brunocatani/ROCK).
 
 ## License
 

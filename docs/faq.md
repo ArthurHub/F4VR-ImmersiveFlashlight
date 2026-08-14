@@ -22,6 +22,22 @@ That's intentional — a drawn melee or unarmed weapon occupies your primary han
 
 The **weapon-flashlight requirement** ships set to **AutoDetect**: when a supported weapon mod (e.g. Tactical Weapon Mods) is installed, the weapon light only mounts on guns that actually carry a modeled flashlight. Equip a weapon with a flashlight attachment, or set `iWeaponFlashlightMeshRequired` to **Disabled** on the misc config screen so the weapon light always applies. See [Restrictions](README.md#restrictions).
 
+## Enemies notice me as soon as I turn the flashlight on
+
+That's NPC light detection. Vanilla ignores flashlights for stealth completely — you can put a beam on a raider's chest from the dark and they won't react — and this mod makes the beam count. Carrying a lit flashlight makes you somewhat visible on its own, and putting the beam on someone makes you a lot more visible; catch a hostile full in the face at close range and they've simply seen you. Everything about it is tunable, and `bNpcDetectionEnabled = false` in the INI turns it off entirely. See [NPC Light Detection](npc-detection.md).
+
+## Enemies find me even when the beam isn't pointing at them
+
+Three things can cause that. Simply having the light on makes you visible by a fixed amount (`fNpcDetectionLightLevelBaseline`) — you're carrying a light source. While the beam *is* on somebody, that extra visibility is your own illumination, so every NPC who can see you benefits from it, not only the one being lit. And the bright patch your beam paints on a wall or floor can be noticed by anyone standing near it who can actually see it (set `iNpcDetectionLitSpotSoundLevel = 0` to stop that). See [NPC Light Detection](npc-detection.md).
+
+## The flashlight makes stealth too hard
+
+Tune it rather than turning it off. `fNpcDetectionLightLevelCurve` up keeps you dim until the beam is genuinely close; `fNpcDetectionMaxRange` down shortens how far the beam can give you away; `fNpcDetectionLightLevelBaseline` down reduces the cost of merely carrying the light; and `bNpcDetectionOnlyWhenSneaking = true` limits the alerts to when you're actually sneaking. The full list is in [NPC Light Detection](npc-detection.md#configuration).
+
+## Do I still need Flashlight Stealth Fix?
+
+No, and you shouldn't run both — [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) solves the same vanilla problem, so the two stack into roughly double the penalty. This mod's version is directional (pointing the beam away from someone costs you far less than pointing it at them) and checks line of sight, neither of which the Papyrus version can do; on the other hand it only applies to this mod's flashlight. Either uninstall Flashlight Stealth Fix or set `bNpcDetectionEnabled = false` here. See the [comparison](npc-detection.md#compared-to-flashlight-stealth-fix).
+
 ## The flashlight shadows look bad or blocky
 
 The mod adds shadows for immersion, but they only render well when the game's **Shadow Quality** is set to **HIGH** — anything lower looks broken. Some performance mods, like [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961), lower shadow quality while the game is running and break the look. If you prefer no flashlight shadows, disable them on the misc config screen.

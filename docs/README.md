@@ -16,6 +16,7 @@ For installation, requirements, and credits see the [main README](../README.md).
 - [In-Game Configuration](#in-game-configuration)
 - [Beam Settings](#beam-settings)
 - [Restrictions](#restrictions)
+- [NPC Light Detection](#npc-light-detection)
 - [Vanilla Flashlight Toggle](#vanilla-flashlight-toggle)
 - [Advanced Configuration](#advanced-configuration)
 - [Mod Recommendations](#mod-recommendations)
@@ -149,6 +150,12 @@ Optional gameplay gates, configured on the misc screen or in the INI. When a req
 - `2` **AutoDetect** — require it only when a supported weapon mod (e.g. Tactical Weapon Mods) is in your load order.
 
 When a lamp is detected, the beam roots at it (`bWeaponFlashlightMountBeamToMesh`) and the move-to-weapon gesture's zone anchors to it (`bWeaponFlashlightAnchorPrimaryHandSphereToMesh`).
+
+## NPC Light Detection
+
+Vanilla ignores flashlights for stealth entirely — the beam points away from you, so the game never counts it against you. This mod makes it count, and makes it **directional**: carrying a lit flashlight makes you somewhat visible, putting the beam on someone makes you much more so, and a bright beam in a hostile's face at close range means they've seen you. Line of sight is checked, so nothing is alerted through a wall.
+
+It's on by default and configured in the INI (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
 
 ## Vanilla Flashlight Toggle
 
