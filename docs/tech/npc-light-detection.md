@@ -311,16 +311,173 @@ direct path's line runs from the beam origin instead — there, the beam is what
 `spot los <formID>` probe ray in `LOS RAYS`, and an `NPC EVENT` reason that separates "nobody nearby",
 "nobody looking at it", and "N looking, no LOS".
 
+### 3.3 Reaching the visual channel — what was measured
+
+Everything above reaches NPCs through the **sound/event** channel: `SetActorsDetectionEvent` makes them
+_investigate a location_. It never touches the **visual** channel — the engine's own "how lit is the target"
+maths — which is the channel that is actually broken for spot lights (§1), and the one the Papyrus mod's perk
+goes after. Reviewing that mod turned up four engine surfaces that reach it, all mapped on VR 1.2.72:
+
+| Symbol                                                                                          | VR            | AddressLib        | Verdict                                                     |
+| ----------------------------------------------------------------------------------------------- | ------------- | ----------------- | ----------------------------------------------------------- |
+| `AiFormulas::CalculateDetectionFormula(Actor& observer, Actor& target, DetectionFormulaData&)` | `0x14064a890` | 1267425, status 4 | the per-pair update — **both** actors in scope; needs a hook |
+| `AiFormulas::CalculateDetectionEventFormula(DetectionFormulaData&)`                             | `0x14064a690` | 1467776, status 4 | scores the events this feature already posts                |
+| `AIProcess::SetDetectionModifier(float)`                                                        | `0x140e910d0` | none — raw offset | **tried, measured INERT — see below**                        |
+| `AIProcess::ModDetectionModifierTimer(void)`                                                   | `0x140e99a50` | none — raw offset | decays that modifier; moot                                   |
+
+#### `SetDetectionModifier` is inert on VR
+
+It looked like the prize: a plain native, no hook, callable exactly the way the tick already calls
+`SetActorsDetectionEvent`. It was implemented behind a debug probe, called in-game with the beam on a
+hostile — and moved `f4vr::getDetectionLevel(npc, player)` not at all. That null result is **structural**, not
+a tuning failure, established by disassembling the VR binary rather than by guessing:
+
+- The function is exactly what its name says. Its body reads `mov rax,[rcx+0x10]` (`AIProcess::high`), writes
+  a constant to `+0x48C` (arming the timer) and the float argument to `+0x488`, and returns. So the address is
+  right, the call works, and the value lands.
+- An xref over the whole `.text` finds **three** instructions touching `+0x488`: that write, a read in the
+  getter at `0x140e91100`, and a read in `AIProcess::SaveGame`. Nothing else.
+- And that getter has **zero callers anywhere in the binary** — the check that matters, because a field read
+  through an accessor is invisible to a field-only scan.
+
+So `detectionModifier` is written, persisted into the save, and never consulted by the detection code. The
+probe and its wrapper were removed again; this section is what remains of them.
+
+#### The VR struct offsets, now confirmed
+
+Read straight out of the instruction stream, which retires the "no VR-verified `HighProcessData` layout
+exists" caveat this section used to carry — they match flat-FO4 (`libxse-commonlibf4`) exactly:
+
+| Field                            | Offset  |
+| -------------------------------- | ------- |
+| `AIProcess::high`                | `+0x10` |
+| `HighProcessData::detectionModifier`      | `+0x488` |
+| `HighProcessData::detectionModifierTimer` | `+0x48C` |
+| `HighProcessData::lightLevel`             | `+0x490` |
+
+#### `lightLevel` is the live input
+
+The neighbouring field is the interesting one — the actor's cached illumination, i.e. the exact quantity §1
+says a spot light fails to raise. Unlike `detectionModifier` it is genuinely wired in: its getter
+(`0x140e9a3a0`) is called from
+
+- **`GatherDetectionFormulaData`** (`0x140e1c820`, addrlib 421115) — the function that fills the
+  `DetectionFormulaData` handed to `CalculateDetectionFormula`,
+- `Actor::CalculateNormalizedLightLevel`, and `Actor::CalculateDarkEnoughForTorch` (the NPC "it's dark, equip
+  a torch" check),
+
+and it has a setter at `0x140e9a3c0` whose only caller is the engine's own lighting refresh (which also stamps
+`lightLevelTimeStamp` at `+0x49C`).
+
+That makes writing the **player's** `lightLevel` the hookless route into the visual channel: the engine's own
+detection maths would then see a lit player, with sneak, perks and difficulty all interacting normally —
+which is what the Papyrus mod buys with its 1500x perk, except this mod can switch it on only while the beam
+is actually on someone. Two caveats: the lighting refresh **overwrites** the field on its own schedule, so the
+write has to be re-applied (per frame, not per tick), and the value is the player's own — so like the perk it
+is **not per-observer**, which the event path already is. Genuinely per-observer visual detection still means
+hooking `CalculateDetectionFormula`.
+
+#### Measured, then shipped
+
+The route works, confirmed in-game before it was built on:
+
+- With the probe reading only, the player's light level sits at **20-40** in an ordinary dim interior and
+  climbs to **~150** standing under a street light — so §1's premise holds (a spot light does not raise its
+  wearer's illumination) and the field is on an absolute, physically meaningful scale.
+- Forcing **200** read back 200 every frame: the write holds, the lighting refresh does not immediately
+  reclaim it. At that value enemies located the player from over **1500 units** away — far too much, and the
+  reason the shipped ceiling is well below it.
+
+So the beam now feeds the **visual** channel as well, gated by `bNpcDetectionLightLevelEnabled` (default on)
+and driven off the direct path only — the same hit that posts the direct event.
+
+**The value.** A flat baseline for merely having the light on, with the beam's own contribution riding on
+top of it:
+
+```
+strength01 = clamp((beamStrength - STRENGTH_FLOOR) / (STRENGTH_CAP - STRENGTH_FLOOR), 0, 1)
+beam       = lerp(fNpcDetectionLightLevelMin, fNpcDetectionLightLevelMax, pow(strength01, fNpcDetectionLightLevelCurve))
+applied    = max(fNpcDetectionLightLevelBaseline, beam-after-hold-and-decay)
+```
+
+The **baseline** (default 50) applies whenever the light is on, beam on somebody or not — carrying a light
+source gives you away by itself, and it sits above the vanilla-dim band (20-40) so it actually clears the
+"must exceed the engine's own value" test in a dark interior while doing nothing in an already-lit room. It
+should stay under `Min`, or the weak end of the beam ramp becomes indistinguishable from just holding the
+flashlight.
+
+It is applied **above** the `bNpcDetectionOnlyWhenSneaking` gate, unlike everything else here: that option
+is about whether the beam _posts events_, whereas being lit is a property of holding the light at all, and
+suppressing it while standing would mean the flashlight is free to carry as long as you never crouch. With
+ticks gated off the beam's own contribution just decays away and the flat baseline remains.
+
+The **beam ramp** is 80 → 250 by default (curve 1.0), tuned in play so that catching someone in the beam
+gets them onto you quickly rather than merely making you gradually more noticeable.
+
+The first version normalized against `iNpcDetectionSpottedEventLevel` instead, so that the ceiling was reached
+exactly when a hit counted as *spotting* (§3.1). That reads well and played badly. Since the scaled sound
+level is `iNpcDetectionDirectSoundLevel × strength` and the spotted threshold defaults to the same 100, the
+whole expression collapsed to `clamp(strength, 0, 1)` — and strength reaches 1.0 whenever
+`falloff × fade >= 1`, which for the in-hand beam (radius 7000, fade 1.4) is **2000 units out**. Everything
+nearer than that pinned to max, and at a 4000-unit `fNpcDetectionMaxRange` even the far edge still sat at 0.6.
+The player was near-maximally lit across the entire detection range.
+
+Normalizing over the full `[STRENGTH_FLOOR, STRENGTH_CAP]` band removes that saturation and restores a
+gradient across the whole range, which is what made the min/max pair meaningful enough to tune by feel. The
+curve exponent then shapes it: 1.0 is a straight line, higher pulls the bright end in toward the player.
+Note the floor lifts the whole curve, so raising `Min` trades long-range consequence against how close the
+beam has to be before the player is brightly lit.
+
+**Hold, then decay.** Hits only arrive on the throttled tick, so the peak is held at full for one
+`iNpcDetectionIntervalMs` and only then fades linearly over `fNpcDetectionLightLevelDecayMs` (default 750).
+Without the hold the value would decay to zero and snap back every tick — a sawtooth that reads in-game as
+the beam flickering in and out of effectiveness. Rises are immediate; only leaving fades.
+
+**Two rules that keep the write honest**, both non-obvious enough to be worth stating:
+
+1. **Never write below what the engine reports.** A weak beam computing 60 while the player stands under a
+   street light at 150 would, written naively, make them _harder_ to see than doing nothing — the feature
+   would silently protect the player in exactly the moments they are most exposed. So a write happens only
+   when it exceeds the engine's own value.
+2. **The engine's value is only observable through disagreement.** While writing every frame, reading the
+   field just returns our own number — a skipped "sample frame" does not help, because nothing reclaims the
+   field in that frame either. The reliable signal is a reading that _differs_ from what we last wrote: that
+   is the engine having refreshed, and therefore the only genuine sample of the player's true illumination.
+   Writing in bursts (only while the beam is actually on someone) is what keeps that sample fresh.
+
+**Handing it back.** Stopping the write is not enough — nothing guarantees the refresh reclaims the field
+promptly, and a player left holding a forced value with the flashlight off would stay lit indefinitely. So
+every exit (light off, feature disabled, config-UI preview, sneak gate, or the beam simply justifying less
+light than the engine already reports) restores the last engine-produced value explicitly.
+
+**What it is not.** The value is the *player's own* illumination, so once raised, **every** NPC sees a lit
+player — not only the one the beam is on. That is the same structural limit the Papyrus mod's perk has, and
+it is the reason the ceiling is tuned to "as exposed as standing under a lamp" rather than to what a beam in
+the face would physically justify. It is also why the lit-spot path deliberately does **not** contribute:
+lighting a wall should not blanket-expose the player to a room. Genuinely per-observer visual detection still
+means hooking `CalculateDetectionFormula`.
+
+**Debug.** The overlay's `PLAYER LIGHT` row shows the engine's last reading, what the beam is adding, and
+whether that is actually being written — which is also how the vanilla scale above was measured in the first
+place, by watching the engine's own value while walking under different lighting.
+
+
 ### What was deliberately not done
 
 - **`kModDetectionLight` perk / `HandleEntryPoint` hook** (the brief's "Strategy B"). A runtime perk
   needs an ESP or fragile runtime form construction; a function-entry detour on the variadic
   `BGSEntryPoint::HandleEntryPoint` (VR `0x54b7e0`) is the highest-risk pattern in the mod's
-  toolbox, and the hook still can't tell _which observer_ is asking — making it directional requires
-  hooking the per-pair detection update, which has no published VR address. The detection-event
-  plane achieves the directional behavior with zero hooks. If a future version wants the _visual_
-  detection channel (stealth-meter pressure without the investigate behavior), that hook is the
-  entry point to research.
+  toolbox, and the hook still can't tell _which observer_ is asking. The detection-event plane
+  achieves the directional behavior with zero hooks.
+
+  ~~Making it directional requires hooking the per-pair detection update, which has no published VR
+  address.~~ **Corrected:** it does have one —
+  `AiFormulas::CalculateDetectionFormula(Actor& observer, Actor& target, DetectionFormulaData&)`,
+  AddressLib 1267425 → VR `0x14064a890`, **status 4**, with *both* actors in scope. That removes the
+  specific objection above: a detour there needs no cone-set cache and no guess at who is asking, and
+  it is a plain non-variadic signature. It remains a hook, so it stays unbuilt — but if a future
+  version wants the _visual_ detection channel (stealth-meter pressure without the investigate
+  behavior), that is now the entry point, and §3.3 covers the cheaper hookless candidate to try first.
 - **NPC facing test.** The engine treats detection events as noise, so a beam on an NPC's back
   alerts them. That's accepted as realistic-enough (light on your back scatters onto surfaces in
   front of you) and much cheaper than a facing + peripheral-vision model.
@@ -423,6 +580,9 @@ query is debug-only (§3.0) and costs nothing with the overlay off.
 | Softer / harder direct alert  | `iNpcDetectionDirectSoundLevel` (0 disables direct)  |
 | No "they saw the light patch" | `iNpcDetectionLitSpotSoundLevel = 0`                 |
 | Lit patch noticed from afar   | `LIT_SPOT_WITNESS_RANGE_MULT` (code, §3.2)           |
+| Beam makes you visible too soon | `fNpcDetectionLightLevelCurve` up (§3.3)              |
+| Not visible enough up close   | `fNpcDetectionLightLevelMax` up (§3.3)               |
+| Light on at all should cost more | `fNpcDetectionLightLevelBaseline` up (§3.3)       |
 | LOS wrong (walls / open air)  | `bDebugDrawEnabled = true`, then read §4             |
 | Beam stops on thin air        | add its layer to `PASS_THROUGH_LAYERS` (code)        |
 | Beam passes through walls     | `sNpcDetectionLosCollisionFilter` (another layer)    |

@@ -97,20 +97,37 @@ namespace
     });
 
     /**
-     * Sound level scaled by the active beam's strength at the given distance: linear falloff over the
-     * beam's full visual radius times its fade (intensity), clamped to [STRENGTH_FLOOR, STRENGTH_CAP].
-     * Uses the per-location beam config, so the head lamp / hand torch / weapon lamp differ in
-     * detectability even though the eligibility range is capped the same for all of them.
+     * The active beam's strength at the given distance: linear falloff over the beam's full visual radius
+     * times its fade (intensity), clamped to [STRENGTH_FLOOR, STRENGTH_CAP]. Per-location, so the head lamp /
+     * hand torch / weapon lamp differ even though the eligibility range is capped the same for all of them.
      */
-    int scaleSoundLevelByBeamStrength(const int baseLevel, const float distance)
+    float beamStrengthAt(const float distance)
     {
         if (!ImFl::FlashlightState::flashlightRadius || !ImFl::FlashlightState::flashlightFade) {
-            return baseLevel;
+            return 1.0f;
         }
         const auto visualRadius = static_cast<float>(*ImFl::FlashlightState::flashlightRadius);
         const float falloff = visualRadius > 0 ? (std::max)(0.0f, 1.0f - distance / visualRadius) : 0.0f;
-        const float strength = std::clamp(falloff * *ImFl::FlashlightState::flashlightFade, STRENGTH_FLOOR, STRENGTH_CAP);
-        return static_cast<int>(static_cast<float>(baseLevel) * strength);
+        return std::clamp(falloff * *ImFl::FlashlightState::flashlightFade, STRENGTH_FLOOR, STRENGTH_CAP);
+    }
+
+    /**
+     * Where the beam's strength sits within its own [STRENGTH_FLOOR, STRENGTH_CAP] band, as 0-1.
+     * Note this is NOT the sound level's normalization: that one saturates as soon as strength reaches 1,
+     * which over a 7000-unit beam radius happens tens of metres out and leaves no gradient to shape.
+     */
+    float beamStrength01(const float distance)
+    {
+        return std::clamp((beamStrengthAt(distance) - STRENGTH_FLOOR) / (STRENGTH_CAP - STRENGTH_FLOOR), 0.0f, 1.0f);
+    }
+
+    /**
+     * Sound level scaled by the active beam's strength at the given distance, so the head lamp / hand torch /
+     * weapon lamp differ in how alarming the same hit is.
+     */
+    int scaleSoundLevelByBeamStrength(const int baseLevel, const float distance)
+    {
+        return static_cast<int>(static_cast<float>(baseLevel) * beamStrengthAt(distance));
     }
 }
 
@@ -120,16 +137,24 @@ namespace ImFl
      * Run one detection tick if due: while the light is on and detection is active (not a config-UI preview,
      * not sneak-gated off), find what the beam is touching and post a single player-owned detection event
      * there — near the nearest lit NPC (offset toward the player), or on the beam's lit spot on world geometry
-     * when it touches nobody.
+     * when it touches nobody. How lit the player looks is updated first, and is NOT sneak-gated.
      */
     void NpcDetectionHandler::onFrameUpdate()
     {
-        if (!g_config.npcDetectionEnabled || !Utils::isFlashlightOn() || FlashlightState::isRuntimeLocationOverrideActive() ||
-            (g_config.npcDetectionOnlyWhenSneaking && !f4vr::isPlayerSneaking())) {
-            // disabled, config-UI beam preview, or sneak-gated off: nothing to alert
+        if (!g_config.npcDetectionEnabled || !Utils::isFlashlightOn() || FlashlightState::isRuntimeLocationOverrideActive()) {
+            // disabled, light off, or config-UI beam preview: nothing to alert. Hand the player's light level
+            // back if we were holding it — no frame below will run to do it.
+            releasePlayerLightLevel();
             return;
         }
+        // Per frame, or the engine's lighting refresh wins the race; above the sneak gate on purpose, since
+        // carrying a lit flashlight makes you visible whether or not you are sneaking.
+        updatePlayerLightLevel();
         _debug.draw();
+
+        if (g_config.npcDetectionOnlyWhenSneaking && !f4vr::isPlayerSneaking()) {
+            return;
+        }
         if (!isNowTimePassed(_lastTickTime, g_config.npcDetectionIntervalMs)) {
             return;
         }
@@ -264,8 +289,90 @@ namespace ImFl
             beamDist,
             onPlayer ? (spotted ? "ON the player (spotted)" : "ON the player (point blank)") : std::format("offset {:.0f} toward player", offset));
         postDetectionEvent(eventPos, soundLevel);
+        recordBeamLightLevel(beamDist);
         _debug.recordDirectEvent(npc, eventPos, soundLevel, spotted);
         return true;
+    }
+
+    /**
+     * Note how lit the beam should make the player look: min..max over the beam's strength at the target,
+     * shaped by fNpcDetectionLightLevelCurve so the top of the range needs a genuinely close, bright hit.
+     * Only the peak and its time are kept; the per-frame apply does the hold and decay.
+     */
+    void NpcDetectionHandler::recordBeamLightLevel(const float beamDist)
+    {
+        if (!g_config.npcDetectionLightLevelEnabled) {
+            return;
+        }
+        const float shaped = std::pow(beamStrength01(beamDist), (std::max)(0.01f, g_config.npcDetectionLightLevelCurve));
+        _lightLevelPeak = std::lerp(g_config.npcDetectionLightLevelMin, g_config.npcDetectionLightLevelMax, shaped);
+        _lightLevelPeakTime = nowMillis();
+    }
+
+    /**
+     * The light level the last direct hit still justifies: held at full for one detection tick, then faded
+     * over fNpcDetectionLightLevelDecayMs. Hits only arrive on the throttled tick, so without the hold the
+     * value would decay and snap back every tick — a sawtooth that reads as the beam flickering.
+     */
+    float NpcDetectionHandler::decayedBeamLightLevel()
+    {
+        if (_lightLevelPeak <= 0) {
+            return 0;
+        }
+        const auto elapsed = nowMillis() - _lightLevelPeakTime;
+        const auto hold = static_cast<uint64_t>((std::max)(0, g_config.npcDetectionIntervalMs));
+        if (elapsed <= hold) {
+            return _lightLevelPeak;
+        }
+        const float decayMs = (std::max)(1.0f, g_config.npcDetectionLightLevelDecayMs);
+        const float faded = 1.0f - static_cast<float>(elapsed - hold) / decayMs;
+        return faded > 0 ? _lightLevelPeak * faded : 0.0f;
+    }
+
+    /**
+     * Push the beam's contribution into the player's cached light level (docs 3.3) — the value the engine's
+     * own detection maths reads, so this is what makes NPCs *see* the player rather than investigate a noise.
+     * Never writes below the engine's own value, or a weak beam would make a player standing under a street
+     * light harder to see than doing nothing. That value is only observable when a reading disagrees with
+     * what we last wrote, since while we are writing the field just reads our own number back.
+     */
+    void NpcDetectionHandler::updatePlayerLightLevel()
+    {
+        const auto player = f4vr::getPlayer();
+        if (!player) {
+            return;
+        }
+
+        const float current = f4vr::getLightLevel(player);
+        if (!_lastWrittenLightLevel || fNotEqual(current, *_lastWrittenLightLevel)) {
+            _vanillaLightLevel = current;
+        }
+
+        // A lit flashlight gives you away even when its beam is on nobody — you are the one holding a light
+        // source. So the beam's contribution rides on top of a flat baseline rather than replacing it.
+        const float target = g_config.npcDetectionLightLevelEnabled ? (std::max)(g_config.npcDetectionLightLevelBaseline, decayedBeamLightLevel()) : 0.0f;
+        if (target > _vanillaLightLevel) {
+            f4vr::setLightLevel(player, target);
+            _lastWrittenLightLevel = target;
+        } else {
+            releasePlayerLightLevel();
+        }
+    }
+
+    /**
+     * Give the player's light level back to the engine, restoring the last value it produced itself. Not
+     * merely stopping the write: nothing guarantees the lighting refresh reclaims the field promptly, so a
+     * player left holding a forced value with the flashlight off would stay lit indefinitely.
+     */
+    void NpcDetectionHandler::releasePlayerLightLevel()
+    {
+        if (!_lastWrittenLightLevel) {
+            return;
+        }
+        if (const auto player = f4vr::getPlayer()) {
+            f4vr::setLightLevel(player, _vanillaLightLevel);
+        }
+        _lastWrittenLightLevel.reset();
     }
 
     /**
@@ -516,7 +623,7 @@ namespace ImFl
     {
         // Every exit reports what ended the ray as it returns whether the ray was blocked; the message is
         // kept only while the overlay is on, and the callers read just the result / probe.hitPos.
-        _debug.startProbe(probe, label, from, to);
+        DebugState::startProbe(probe, label, from, to);
 
         const auto player = f4vr::getPlayer();
         const auto cell = player ? player->parentCell : nullptr;
@@ -552,7 +659,7 @@ namespace ImFl
                 if (pass >= MAX_PASS_THROUGH_HITS) {
                     return _debug.endProbe(probe, "pass-through limit");
                 }
-                _debug.passedThrough(probe, hit);
+                DebugState::passedThrough(probe, hit);
                 if (hitDist + PASS_THROUGH_STEP >= rayLen) {
                     return _debug.endProbe(probe, "nothing beyond"); // the volume sat at the very end of the ray
                 }
@@ -745,7 +852,7 @@ namespace ImFl
     /**
      * Start recording a raycast: the ray itself, which is all that can be known before it is cast.
      */
-    void NpcDetectionHandler::DebugState::startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to) const
+    auto NpcDetectionHandler::DebugState::startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to) -> void
     {
         if (recording()) {
             probe.label = label;
@@ -757,7 +864,7 @@ namespace ImFl
     /**
      * Note a volume the ray crossed without stopping, reported alongside whatever ends up stopping it.
      */
-    void NpcDetectionHandler::DebugState::passedThrough(RayProbe& probe, const std::string& hit) const
+    void NpcDetectionHandler::DebugState::passedThrough(RayProbe& probe, const std::string& hit)
     {
         if (recording()) {
             probe.through += (probe.through.empty() ? "" : ", ") + hit;
@@ -801,6 +908,14 @@ namespace ImFl
         dd.watch("NPC DETECTION", detectionLevels.empty() ? "no npc in cone" : detectionLevels);
         // how far the last hit NPC was turned away from the player, against the instant-spot gate it feeds
         dd.watch("NPC FACING", std::format("{:.0f} deg off (gate {:.0f})", facingAngle, SPOTTED_FACING_DEGREES));
+        // The player's own illumination as the engine's detection maths sees it (docs 3.3). Nothing is
+        // written when the engine already reports more light than the beam justifies.
+        dd.watch("PLAYER LIGHT",
+            std::format("vanilla {:.1f}, base {:.1f}, beam {:.1f}{}",
+                _vanillaLightLevel,
+                g_config.npcDetectionLightLevelBaseline,
+                decayedBeamLightLevel(),
+                _lastWrittenLightLevel ? std::format(" -> FORCING {:.1f}", *_lastWrittenLightLevel) : ""));
         drawProbes();
 
         if (event.timeMs == 0) {

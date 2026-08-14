@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -118,8 +119,8 @@ namespace ImFl
             void recordCandidate(RE::Actor* npc, RE::Actor* player);
             void recordDirectEvent(const RE::Actor* npc, const RE::NiPoint3& eventPos, int soundLevel, bool spotted);
             void recordLitSpotEvent(const RE::NiPoint3& spot, int soundLevel, const RE::Actor* witness);
-            void startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to) const;
-            void passedThrough(RayProbe& probe, const std::string& hit) const;
+            static void startProbe(RayProbe& probe, const std::string& label, const RE::NiPoint3& from, const RE::NiPoint3& to);
+            static void passedThrough(RayProbe& probe, const std::string& hit);
             void draw();
             void drawProbes() const;
 
@@ -155,8 +156,25 @@ namespace ImFl
         static bool castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe);
         static bool getBeamTerminationSpot(const BeamCone& cone, RE::NiPoint3& spot);
         static void postDetectionEvent(const RE::NiPoint3& location, int soundLevel);
+        static void recordBeamLightLevel(float beamDist);
+        static float decayedBeamLightLevel();
+        static void updatePlayerLightLevel();
+        static void releasePlayerLightLevel();
 
         inline static uint64_t _lastTickTime = 0;
+
+        // Player light-level state (docs 3.3) — the visual-detection half of the feature, kept across frames
+        // because the beam's contribution is decided on the throttled tick but has to be applied every frame.
+        // what the last direct hit earned, before hold/decay; the flat baseline is applied under it
+        inline static float _lightLevelPeak = 0;
+        inline static uint64_t _lightLevelPeakTime = 0;
+        // The last reading the ENGINE produced, which is what a write must never go below. Only observable
+        // when it disagrees with what we wrote — see updatePlayerLightLevel.
+        inline static float _vanillaLightLevel = 0;
+        // What we last forced, or empty when the field is the engine's own. Doubles as "are we holding it",
+        // which is what release has to know.
+        inline static std::optional<float> _lastWrittenLightLevel;
+
         inline static DebugState _debug;
     };
 }
