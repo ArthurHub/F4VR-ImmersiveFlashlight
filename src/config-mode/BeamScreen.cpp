@@ -336,14 +336,14 @@ namespace ImFl::config
     }
 
     /**
-     * Switch to on-weapon config if NON melee weapon is equipped, otherwise show notification.
+     * Switch to on-weapon config regardless of what is in hand, the same way the PA head values can be tuned
+     * out of power armor. With no weapon in hand the beam is shown from the primary hand instead of the weapon
+     * (see Flashlight::adjustFlashlightTransformToHandOrHead), so the values can still be tuned.
      */
-    void BeamScreen::trySwitchingToOnWeaponConfig() const
+    void BeamScreen::switchingToOnWeaponConfig()
     {
-        if (!f4vr::isNodeVisible(f4vr::getWeaponNode()) || f4vr::isMeleeWeaponDrawn()) {
-            f4vr::showNotification("Equip a NON Melee weapon to tune on-weapon flashlight values");
-            setFlashlightButtonsToggleStateByLocation();
-            return;
+        if (!f4vr::isNodeVisible(f4vr::getWeaponNode())) {
+            f4vr::showNotification("No weapon in hand,\nshowing the on-weapon beam from the primary hand");
         }
         setConfigModeFlashlightLocation(FlashlightLocation::OnWeapon);
     }
@@ -386,7 +386,7 @@ namespace ImFl::config
         _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToInHandConfig(); });
 
         _onWeaponFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-on-weapon.nif");
-        _onWeaponFLBtn->setOnToggleHandler([this](UIWidget*, bool) { trySwitchingToOnWeaponConfig(); });
+        _onWeaponFLBtn->setOnToggleHandler([](UIWidget*, bool) { switchingToOnWeaponConfig(); });
 
         _row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
         _row1ToggleContainer->addElement(_onHeadFLBtn);

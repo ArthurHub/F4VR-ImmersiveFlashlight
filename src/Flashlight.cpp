@@ -29,6 +29,17 @@ namespace
         mirroredZone.translate = RE::NiPoint3(zone.translate.x, zone.translate.y, sign * zone.translate.z);
         return mirroredZone;
     }
+
+    /**
+     * Is there a weapon in hand for the light to mount on?
+     * The beam config preview can select the on-weapon location with no weapon in hand (the same way it previews
+     * the PA head out of power armor). The weapon bone is then hidden and its transform stale, so the preview
+     * beam is mounted on the primary hand instead. In gameplay the weapon bone is always used.
+     */
+    bool hasWeaponToMountLightOn()
+    {
+        return !ImFl::FlashlightState::isRuntimeLocationOverrideActive() || f4vr::isNodeVisible(f4vr::getWeaponNode());
+    }
 }
 
 namespace ImFl
@@ -379,7 +390,7 @@ namespace ImFl
             RE::NiAVObject* attachNode;
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
-            if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
+            if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && hasWeaponToMountLightOn()) {
                 if (auto* meshNode = RestrictionHandler::getOnWeaponFlashlightMeshNode().first) {
                     // Beam-to-mesh rooting on and a modeled flashlight found: root the beam at that mesh node
                     // with the configured mount offset instead of the generic tuned barrel guess.
@@ -392,6 +403,7 @@ namespace ImFl
                     positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
                 }
             } else {
+                // In-hand, or the on-weapon config preview with no weapon in hand (see hasWeaponToMountLightOn).
                 const bool isOffhand = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
                 const auto& handTransform = g_config.getFlashlightInHandLightTransform(isOffhand, FlashlightState::flashlightGripStyle);

@@ -36,7 +36,7 @@ namespace ImFl::config
         static void switchingToOnHeadConfig();
         static void switchingToOnPAHeadConfig();
         static void switchingToInHandConfig();
-        void trySwitchingToOnWeaponConfig() const;
+        static void switchingToOnWeaponConfig();
         void setFlashlightButtonsToggleStateByLocation() const;
         void createUI();
 
