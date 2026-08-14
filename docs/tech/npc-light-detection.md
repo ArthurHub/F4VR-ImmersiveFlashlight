@@ -400,18 +400,18 @@ beam       = lerp(fNpcDetectionLightLevelMin, fNpcDetectionLightLevelMax, pow(st
 applied    = max(fNpcDetectionLightLevelBaseline, beam-after-hold-and-decay)
 ```
 
-The **baseline** (default 50) applies whenever the light is on, beam on somebody or not — carrying a light
-source gives you away by itself, and it sits above the vanilla-dim band (20-40) so it actually clears the
-"must exceed the engine's own value" test in a dark interior while doing nothing in an already-lit room. It
-should stay under `Min`, or the weak end of the beam ramp becomes indistinguishable from just holding the
-flashlight.
+The **baseline** (default 40) applies whenever the light is on, beam on somebody or not — carrying a light
+source gives you away by itself. It sits at the top of the vanilla-dim band (20-40), so it clears the "must
+exceed the engine's own value" test in a genuinely dark interior while doing nothing in a room with any
+light of its own. It should stay under `Min`, or the weak end of the beam ramp becomes indistinguishable
+from just holding the flashlight.
 
 It is applied **above** the `bNpcDetectionOnlyWhenSneaking` gate, unlike everything else here: that option
 is about whether the beam _posts events_, whereas being lit is a property of holding the light at all, and
 suppressing it while standing would mean the flashlight is free to carry as long as you never crouch. With
 ticks gated off the beam's own contribution just decays away and the flat baseline remains.
 
-The **beam ramp** is 80 → 250 by default (curve 1.0), tuned in play so that catching someone in the beam
+The **beam ramp** is 70 → 220 by default (curve 1.0), tuned in play so that catching someone in the beam
 gets them onto you quickly rather than merely making you gradually more noticeable.
 
 The first version normalized against `iNpcDetectionSpottedEventLevel` instead, so that the ceiling was reached
@@ -429,7 +429,7 @@ Note the floor lifts the whole curve, so raising `Min` trades long-range consequ
 beam has to be before the player is brightly lit.
 
 **Hold, then decay.** Hits only arrive on the throttled tick, so the peak is held at full for one
-`iNpcDetectionIntervalMs` and only then fades linearly over `fNpcDetectionLightLevelDecayMs` (default 750).
+`iNpcDetectionIntervalMs` and only then fades linearly over `fNpcDetectionLightLevelDecayMs` (default 1000).
 Without the hold the value would decay to zero and snap back every tick — a sawtooth that reads in-game as
 the beam flickering in and out of effectiveness. Rises are immediate; only leaving fades.
 

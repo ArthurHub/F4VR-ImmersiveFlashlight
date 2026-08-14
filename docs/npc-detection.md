@@ -17,12 +17,12 @@ requirements see the [main README](../README.md). The engineering notes behind t
 ## Why this exists
 
 Vanilla Fallout 4 asks exactly one question about how visible you are: **"how lit is the player?"** A
-ceiling lamp above you raises that. A flashlight does not — the beam projects *away* from you, so the game
+ceiling lamp above you raises that. A flashlight does not — the beam projects _away_ from you, so the game
 considers you unlit no matter where you aim it.
 
 The result is a long-standing stealth hole: you can stand in the dark, put a beam squarely on a raider's
 chest from ten metres, and they will neither see the light nor react to it. Nothing in the engine ever asks
-whether an NPC is standing *in* somebody's beam.
+whether an NPC is standing _in_ somebody's beam.
 
 This feature closes that hole, and does it **directionally** — where you point the light is what matters.
 
@@ -43,20 +43,22 @@ Holding a light source makes you easier to see, so the game is told you are lit:
 - When the beam moves off, that extra visibility **fades out** over `fNpcDetectionLightLevelDecayMs` rather
   than vanishing instantly, so sweeping the light past someone doesn't flicker.
 
-This is *your* illumination, so while it's raised **every** NPC who can see you benefits from it, not only
+This is _your_ illumination, so while it's raised **every** NPC who can see you benefits from it, not only
 the one you're pointing at. That's why the ceiling is tuned to roughly "standing under a street light"
 rather than something blinding.
 
-It also never makes you *harder* to see than you really are: if you're already standing in a bright room,
+It also never makes you _harder_ to see than you really are: if you're already standing in a bright room,
 the beam adds nothing.
 
 ### 2. NPCs investigate what your beam touches
+
+![npc detection](assets/npc-detection.jpg)
 
 Several times a second, the mod looks at what the beam is actually hitting and reports it as something
 worth investigating:
 
 - **Beam on an NPC** — the nearest one standing in the beam with a clear line of sight is alerted, and the
-  alert is placed *between them and you*, so they turn and move toward the light source instead of
+  alert is placed _between them and you_, so they turn and move toward the light source instead of
   wandering around their own feet.
 - **Beam in their face** — if the beam lands hard enough on a hostile who is facing you (bright, and close),
   they don't investigate, they've **seen you**. The alert goes on your actual position and they come
@@ -79,16 +81,16 @@ A few rules keep this honest:
 same vanilla hole, and it's a good mod. It solves the problem differently, and the trade-offs are worth
 knowing.
 
-| | Flashlight Stealth Fix | This mod |
-| --- | --- | --- |
-| Approach | Papyrus + ESP + perk | Native code, no ESP |
-| Requires | BakaFramework, MCM, an ESP slot | nothing extra |
-| Aim matters? | **No** — you're equally exposed whichever way you point | **Yes** — only what the beam touches counts |
-| Through walls? | Yes — its alert ignores line of sight | Direct alerts are line-of-sight checked |
-| Alert strength | Flat | Scales with beam brightness and distance |
-| Alert position | Always your own position | Where the beam lands, so they investigate the light |
-| How often | Every 3 seconds | Several times a second |
-| Works with | Any flashlight, and flat Fallout 4 | This mod's flashlight, VR only |
+|                | Flashlight Stealth Fix                                  | This mod                                            |
+| -------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| Approach       | Papyrus + ESP + perk                                    | Native code, no ESP                                 |
+| Requires       | BakaFramework, MCM, an ESP slot                         | nothing extra                                       |
+| Aim matters?   | **No** — you're equally exposed whichever way you point | **Yes** — only what the beam touches counts         |
+| Through walls? | Yes — its alert ignores line of sight                   | Direct alerts are line-of-sight checked             |
+| Alert strength | Flat                                                    | Scales with beam brightness and distance            |
+| Alert position | Always your own position                                | Where the beam lands, so they investigate the light |
+| How often      | Every 3 seconds                                         | Several times a second                              |
+| Works with     | Any flashlight, and flat Fallout 4                      | This mod's flashlight, VR only                      |
 
 The practical difference is aim. Flashlight Stealth Fix applies a large fixed penalty the whole time your
 light is on and pings your position every three seconds regardless of direction, which is what produces the
@@ -100,7 +102,7 @@ light and other mods' lights, and it works in flat Fallout 4. This feature only 
 because knowing exactly where that beam is pointing every frame is what makes it directional in the first
 place.
 
-> **Don't run both.** They solve the same problem and stack — you'd get this mod's visibility *plus* the
+> **Don't run both.** They solve the same problem and stack — you'd get this mod's visibility _plus_ the
 > perk's fixed penalty, and two sets of alerts. Pick one: either uninstall Flashlight Stealth Fix, or set
 > `bNpcDetectionEnabled = false` here.
 
@@ -114,54 +116,54 @@ All keys live in the `[ImFl_NpcDetection]` section.
 
 ### Master switches
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `bNpcDetectionEnabled` | `true` | The whole feature. Off = vanilla behaviour, flashlights are free. |
+| Setting                         | Default | Meaning                                                                   |
+| ------------------------------- | ------- | ------------------------------------------------------------------------- |
+| `bNpcDetectionEnabled`          | `true`  | The whole feature. Off = vanilla behaviour, flashlights are free.         |
 | `bNpcDetectionOnlyWhenSneaking` | `false` | Only alert NPCs while sneaking. Your visibility still applies either way. |
-| `bNpcDetectionOnlyHostileNpcs` | `true` | Only enemies react. Off = settlers and guards notice your beam too. |
+| `bNpcDetectionOnlyHostileNpcs`  | `true`  | Only enemies react. Off = settlers and guards notice your beam too.       |
 
 ### How visible the light makes you
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `bNpcDetectionLightLevelEnabled` | `true` | Whether the beam makes you genuinely *visible* (as opposed to only alerting NPCs). |
-| `fNpcDetectionLightLevelBaseline` | `50` | Applied just for having the light on. Keep it below Min. |
-| `fNpcDetectionLightLevelMin` | `80` | Applied on a weak or distant hit. |
-| `fNpcDetectionLightLevelMax` | `250` | Applied point-blank. |
-| `fNpcDetectionLightLevelCurve` | `1.0` | `1` ramps evenly with distance; higher keeps you dim until the beam is close. |
-| `fNpcDetectionLightLevelDecayMs` | `1500` | How long that fades out over once the beam moves off. |
+| Setting                           | Default | Meaning                                                                            |
+| --------------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `bNpcDetectionLightLevelEnabled`  | `true`  | Whether the beam makes you genuinely _visible_ (as opposed to only alerting NPCs). |
+| `fNpcDetectionLightLevelBaseline` | `40`    | Applied just for having the light on. Keep it below Min.                           |
+| `fNpcDetectionLightLevelMin`      | `70`    | Applied on a weak or distant hit.                                                  |
+| `fNpcDetectionLightLevelMax`      | `220`   | Applied point-blank.                                                               |
+| `fNpcDetectionLightLevelCurve`    | `1.0`   | `1` ramps evenly with distance; higher keeps you dim until the beam is close.      |
+| `fNpcDetectionLightLevelDecayMs`  | `1000`  | How long that fades out over once the beam moves off.                              |
 
 For scale: an ordinary dim interior reads about 20–40, standing under a street light about 150, and bright
 indoor lighting can reach 400.
 
 ### What NPCs notice
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `bNpcDetectionDirectEnabled` | `true` | Alert an NPC standing in your beam. |
-| `iNpcDetectionDirectSoundLevel` | `100` | How alarming that is (0–500). `0` disables it. |
-| `bNpcDetectionLitSpotEnabled` | `true` | Alert on the bright patch your beam paints when it hits nobody. |
-| `iNpcDetectionLitSpotSoundLevel` | `40` | How alarming that patch is. `0` disables it. |
-| `iNpcDetectionSpottedEventLevel` | `100` | How hard the beam must land before they've *seen* you rather than investigating. Raise above 150 to never be spotted this way. |
+| Setting                          | Default | Meaning                                                                                                                        |
+| -------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `bNpcDetectionDirectEnabled`     | `true`  | Alert an NPC standing in your beam.                                                                                            |
+| `iNpcDetectionDirectSoundLevel`  | `100`   | How alarming that is (0–500). `0` disables it.                                                                                 |
+| `bNpcDetectionLitSpotEnabled`    | `true`  | Alert on the bright patch your beam paints when it hits nobody.                                                                |
+| `iNpcDetectionLitSpotSoundLevel` | `40`    | How alarming that patch is. `0` disables it.                                                                                   |
+| `iNpcDetectionSpottedEventLevel` | `100`   | How hard the beam must land before they've _seen_ you rather than investigating. Raise above 150 to never be spotted this way. |
 
 ### Reach and timing
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| `fNpcDetectionMaxRange` | `4000` | Furthest the beam can alert anyone, in game units (~100 per 1.4 m). |
-| `fNpcDetectionFovMult` | `0.5` | Fraction of the visible beam cone that counts. `1.0` alerts from the dim outer edge. |
-| `iNpcDetectionIntervalMs` | `1000` | How often the beam is checked. Lower = snappier reactions. |
+| Setting                           | Default    | Meaning                                                                                        |
+| --------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `fNpcDetectionMaxRange`           | `4000`     | Furthest the beam can alert anyone, in game units (~100 per 1.4 m).                            |
+| `fNpcDetectionFovMult`            | `0.5`      | Fraction of the visible beam cone that counts. `1.0` alerts from the dim outer edge.           |
+| `iNpcDetectionIntervalMs`         | `1000`     | How often the beam is checked. Lower = snappier reactions.                                     |
 | `sNpcDetectionLosCollisionFilter` | `02420028` | Advanced: which collision layers block the beam's line of sight. Leave alone unless debugging. |
 
 ### Common adjustments
 
-| Goal | Change |
-| --- | --- |
-| Turn the whole thing off | `bNpcDetectionEnabled = false` |
-| Keep alerts, drop the visibility | `bNpcDetectionLightLevelEnabled = false` |
-| Keep visibility, drop the alerts | `bNpcDetectionDirectEnabled` and `bNpcDetectionLitSpotEnabled` = `false` |
-| Only matters while sneaking | `bNpcDetectionOnlyWhenSneaking = true` |
-| Never get instantly spotted | `iNpcDetectionSpottedEventLevel` above `150` |
-| Carrying a light should cost more | `fNpcDetectionLightLevelBaseline` up |
-| Caught too easily at range | `fNpcDetectionLightLevelCurve` up, or `fNpcDetectionMaxRange` down |
-| Stop light patches giving you away | `iNpcDetectionLitSpotSoundLevel = 0` |
+| Goal                               | Change                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| Turn the whole thing off           | `bNpcDetectionEnabled = false`                                           |
+| Keep alerts, drop the visibility   | `bNpcDetectionLightLevelEnabled = false`                                 |
+| Keep visibility, drop the alerts   | `bNpcDetectionDirectEnabled` and `bNpcDetectionLitSpotEnabled` = `false` |
+| Only matters while sneaking        | `bNpcDetectionOnlyWhenSneaking = true`                                   |
+| Never get instantly spotted        | `iNpcDetectionSpottedEventLevel` above `150`                             |
+| Carrying a light should cost more  | `fNpcDetectionLightLevelBaseline` up                                     |
+| Caught too easily at range         | `fNpcDetectionLightLevelCurve` up, or `fNpcDetectionMaxRange` down       |
+| Stop light patches giving you away | `iNpcDetectionLitSpotSoundLevel = 0`                                     |

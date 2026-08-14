@@ -23,6 +23,8 @@ For installation, requirements, and credits see the [main README](../README.md).
 
 ## Flashlight Locations
 
+![locations](assets/flashlight-locations.jpg)
+
 The light can sit in one of several locations, each with its own beam settings:
 
 - **In hand** — held in your offhand or primary hand, pointed wherever you point the controller, like a handheld flashlight. A visible flashlight model appears in the hand.
@@ -42,6 +44,8 @@ When the light is set to a hand, the runtime adapts to what that hand is doing:
 - **Offhand, two-handed grip** → the offhand is on the foregrip, so the light routes onto the weapon. If the weapon-flashlight requirement is on and the weapon has no modeled lamp, it falls back to your head instead of being lost; releasing the grip returns it to the offhand.
 
 ## Moving the Light (Gestures)
+
+![activation zones](assets/activation-zones.jpg)
 
 Locations are changed physically, with haptic feedback when your hand enters an interaction zone. These gestures are the primary way to move and toggle the light — the in-game config UI is only for tuning. All bindings are configurable (see below); set any to `none` to disable that gesture.
 
@@ -80,19 +84,21 @@ When you grip a weapon **two-handed** your offhand is on the foregrip and can't 
 
 All bindings use the format `<hand> <type> <button> [duration] [suppress] [+modifier]` (e.g. `offhand tap trigger`, `primary longpress A`, `none`). The three proximity gestures are grouped into per-gesture INI **sections** (each with a `sPrimaryBinding` / `sSecondaryBinding` plus its zone and haptics); the full guide is in the [framework input-binding & activation-sphere docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
 
-| Gesture | INI section → key | Default |
-| --- | --- | --- |
-| Grab/stow with offhand | `[ImFl_BodyActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
-| Grab/stow with primary hand | `[ImFl_BodyActivationSphere]` → `sSecondaryBinding` | `primary tap trigger` |
-| Put light on head / toggle off | `[ImFl_HeadActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
-| Pull head light to offhand | `[ImFl_HeadActivationSphere]` → `sSecondaryBinding` | `offhand longpress trigger` |
-| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `sPrimaryBinding` | `offhand tap trigger` |
-| Pull weapon light to offhand | `[ImFl_PrimaryHandActivationSphere]` → `sSecondaryBinding` | `offhand longpress trigger` |
-| Toggle weapon light (two-handed) | `sToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger` |
+| Gesture                             | INI section → key                                                | Default                     |
+| ----------------------------------- | ---------------------------------------------------------------- | --------------------------- |
+| Grab/stow with offhand              | `[ImFl_BodyActivationSphere]` → `sPrimaryBinding`                | `offhand tap trigger`       |
+| Grab/stow with primary hand         | `[ImFl_BodyActivationSphere]` → `sSecondaryBinding`              | `primary tap trigger`       |
+| Put light on head / toggle off      | `[ImFl_HeadActivationSphere]` → `sPrimaryBinding`                | `offhand tap trigger`       |
+| Pull head light to offhand          | `[ImFl_HeadActivationSphere]` → `sSecondaryBinding`              | `offhand longpress trigger` |
+| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `sPrimaryBinding`         | `offhand tap trigger`       |
+| Pull weapon light to offhand        | `[ImFl_PrimaryHandActivationSphere]` → `sSecondaryBinding`       | `offhand longpress trigger` |
+| Toggle weapon light (two-handed)    | `[ImFl_WeaponMount]` → `sToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger`       |
 
 The same `offhand tap trigger` is shared by several gestures on purpose — they apply in mutually exclusive situations (near your head vs. near your hand vs. gripping two-handed), and only the relevant one fires while suppressing the button from the game.
 
 ## Grip Styles
+
+![hand grip style](assets/flashlight-hand-grip.jpg)
 
 Hand-held modes have two grips, each with its own light angle, model pose, and hand pose:
 
@@ -107,11 +113,13 @@ Power armor swaps the skeleton and poses the hands differently, so most spatial 
 
 ## In-Game Configuration
 
+![configuration](assets/config-mode.jpg)
+
 Open the FRIK configuration UI (hold both thumbsticks for ~2 seconds) and select Immersive Flashlight. The UI is split into three screens:
 
 - **Main menu** — opens the beam and misc screens, opens the INI file for advanced editing, opens the wiki, or exits.
 - **Beam screen** — location toggles, live beam tuning, gobo and color presets, and Save / Reset. Unsaved changes are discarded when you close it.
-- **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, and the vanilla-toggle disable. Each is saved immediately and applied live.
+- **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, NPC light detection, and the vanilla-toggle disable. Each is saved immediately and applied live.
 
 Everything is applied while you watch, so you can tune the beam against the actual scene.
 
@@ -119,13 +127,13 @@ Everything is applied while you watch, so you can tune the beam against the actu
 
 Each location stores its own beam profile:
 
-| Setting | Meaning |
-| --- | --- |
-| **Intensity** (`fade`) | Brightness of the beam. |
-| **Distance** (`radius`) | How far the light makes objects visible. |
-| **Spread** (`FOV`) | How wide or narrow the cone is. |
-| **Color** (RGB) | Beam color. |
-| **Gobo** | Beam texture / pattern projected by the light. |
+| Setting                 | Meaning                                        |
+| ----------------------- | ---------------------------------------------- |
+| **Intensity** (`fade`)  | Brightness of the beam.                        |
+| **Distance** (`radius`) | How far the light makes objects visible.       |
+| **Spread** (`FOV`)      | How wide or narrow the cone is.                |
+| **Color** (RGB)         | Beam color.                                    |
+| **Gobo**                | Beam texture / pattern projected by the light. |
 
 The defaults aim for a wide, soft head lamp for tight spaces; a far-reaching, tighter hand flashlight for walking in the dark; and a tighter, "tactical" weapon beam. Tune them per mode in the beam screen or the INI.
 
@@ -157,9 +165,11 @@ See **[Weapon Flashlight Requirement](weapon-mount-restriction.md)** for what de
 
 ## NPC Light Detection
 
+![npc detection](assets/npc-detection.jpg)
+
 Vanilla ignores flashlights for stealth entirely — the beam points away from you, so the game never counts it against you. This mod makes it count, and makes it **directional**: carrying a lit flashlight makes you somewhat visible, putting the beam on someone makes you much more so, and a bright beam in a hostile's face at close range means they've seen you. Line of sight is checked, so nothing is alerted through a wall.
 
-It's on by default and configured in the INI (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
+It's on by default and switched on the misc config screen; the tuning lives in the INI (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
 
 ## Vanilla Flashlight Toggle
 

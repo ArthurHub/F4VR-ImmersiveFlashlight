@@ -522,10 +522,10 @@ namespace ImFl
         npcDetectionSpottedEventLevel = static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionSpottedEventLevel", 100));
         npcDetectionLosCollisionFilter = parseCollisionFilter(ini.GetValue(SECTION_NPC_DETECTION, "sNpcDetectionLosCollisionFilter", ""), DEFAULT_LOS_COLLISION_FILTER);
         npcDetectionLightLevelEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionLightLevelEnabled", true);
-        npcDetectionLightLevelBaseline = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelBaseline", 50.0));
-        npcDetectionLightLevelMin = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMin", 80.0));
-        npcDetectionLightLevelMax = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMax", 250.0));
+        npcDetectionLightLevelBaseline = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelBaseline", 40.0));
+        npcDetectionLightLevelMin = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMin", 70.0));
+        npcDetectionLightLevelMax = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMax", 220.0));
         npcDetectionLightLevelCurve = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelCurve", 1.0));
-        npcDetectionLightLevelDecayMs = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelDecayMs", 750.0));
+        npcDetectionLightLevelDecayMs = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelDecayMs", 1000.0));
     }
 }

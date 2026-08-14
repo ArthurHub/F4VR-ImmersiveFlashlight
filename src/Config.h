@@ -322,18 +322,18 @@ namespace ImFl
         bool npcDetectionLightLevelEnabled = true;
         // Applied whenever the light is on — beam on someone or not, sneaking or not (carrying a light source
         // gives you away by itself). The ramp below rides on top; keep this under Min or weak hits vanish.
-        float npcDetectionLightLevelBaseline = 50.0f;
+        float npcDetectionLightLevelBaseline = 40.0f;
         // Applied at the weakest qualifying hit and at point blank, interpolated by beam strength. Engine
         // scale: ~20-40 dim, ~150 street light, ~400 bright indoors. It is the PLAYER's light, all NPCs see it.
-        float npcDetectionLightLevelMin = 80.0f;
-        float npcDetectionLightLevelMax = 250.0f;
+        float npcDetectionLightLevelMin = 70.0f;
+        float npcDetectionLightLevelMax = 220.0f;
         // Shapes the ramp: 1 is linear, higher needs a closer, brighter hit to reach the top. Beam strength
         // falls off slowly over the beam's own radius (7000 units in hand), so raising this pulls the bright
         // end in toward the player rather than spreading it across the whole range.
         float npcDetectionLightLevelCurve = 1.0f;
         // How long the level fades out over once the beam leaves, after a one-tick hold. The hold is what
         // stops the gap between throttled ticks from becoming a visible sawtooth.
-        float npcDetectionLightLevelDecayMs = 750.0f;
+        float npcDetectionLightLevelDecayMs = 1000.0f;
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
