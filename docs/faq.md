@@ -12,7 +12,11 @@ All location changes are physical VR gestures (grab from your body, offhand-to-h
 
 ## The light won't go on my head
 
-Out of power armor the head lamp is gated by a **headgear requirement**, which ships set to **Immersive** — you must be wearing a light-capable helmet or hard hat (not a soft hat). Either wear eligible headgear, or change `iFlashlightHeadgearRequirement` on the misc config screen to **Any headgear** or **None**. In power armor the helmet lamp always works regardless of this setting. See [Restrictions](README.md#restrictions).
+Out of power armor the head lamp is gated by a **headgear requirement**, which ships set to **Immersive** — you must be wearing a light-capable helmet or hard hat (not a soft hat). Either wear eligible headgear, or change `iFlashlightHeadgearRequirement` on the misc config screen to **Any headgear** or **None**. In power armor the helmet lamp always works regardless of this setting. See [Headgear Requirement](headgear-restriction.md).
+
+## My helmet should count as light-capable but doesn't
+
+The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `sDumpDataOnceNames = headgear` in the INI's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `sHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `sHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
 
 ## The hand light turns off when I draw a melee weapon
 
@@ -20,7 +24,19 @@ That's intentional — a drawn melee or unarmed weapon occupies your primary han
 
 ## The weapon-mounted light won't turn on
 
-The **weapon-flashlight requirement** ships set to **AutoDetect**: when a supported weapon mod (e.g. Tactical Weapon Mods) is installed, the weapon light only mounts on guns that actually carry a modeled flashlight. Equip a weapon with a flashlight attachment, or set `iWeaponFlashlightMeshRequired` to **Disabled** on the misc config screen so the weapon light always applies. See [Restrictions](README.md#restrictions).
+The **weapon-flashlight requirement** ships set to **AutoDetect**: when a supported weapon mod (e.g. Tactical Weapon Mods) is installed, the weapon light only mounts on guns that actually carry a modeled flashlight. Equip a weapon with a flashlight attachment, or set `iWeaponFlashlightMeshRequired` to **Disabled** on the misc config screen so the weapon light always applies. See [Weapon Flashlight Requirement](weapon-mount-restriction.md).
+
+## My gun has a flashlight attachment but the mod doesn't see it
+
+The weapon is scanned only when it changes, so **holster and re-draw** first — that's usually all it takes. If it still isn't recognised, the mod is looking for node names it doesn't know: open the weapon in NifSkope, find the node the lamp hangs from, and add its name to `sWeaponFlashlightMeshNodes`. The log records the scan result either way. See [Making it work with your weapon mods](weapon-mount-restriction.md#making-it-work-with-your-weapon-mods).
+
+## The beam on my weapon comes out of the wrong place
+
+When no modeled flashlight is detected the beam sits at a generic offset near the barrel — it's a guess that suits most guns. When a lamp *is* detected the beam roots at that lamp instead, and `tWeaponFlashlightMountTransform` tunes the offset from it live while you watch. See [What changes when a lamp is found](weapon-mount-restriction.md#what-changes-when-a-lamp-is-found).
+
+## The light jumps to my head when I grip my weapon two-handed
+
+A two-handed grip occupies your offhand, so a light held there has to go somewhere. Normally it moves onto the weapon; if the weapon-flashlight requirement is on and your gun has no lamp, it goes to your **head** instead of being lost — and if you're not wearing eligible headgear, the headgear requirement then turns it off. Releasing the grip brings it back to your offhand. See [When the weapon has no lamp](weapon-mount-restriction.md#when-the-weapon-has-no-lamp).
 
 ## Enemies notice me as soon as I turn the flashlight on
 

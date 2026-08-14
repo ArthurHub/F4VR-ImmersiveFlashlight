@@ -141,6 +141,8 @@ Optional gameplay gates, configured on the misc screen or in the INI. When a req
 - `1` **Any headgear** — any item worn in the head slot is enough.
 - `2` **Immersive** — only "light-capable" headgear (helmets / hard hats, not soft hats), decided by a keyword set plus allow/deny lists you can extend in the INI.
 
+See **[Headgear Requirement](headgear-restriction.md)** for the full rule, how to make your own helmets count, and the in-game dump that lists what qualifies.
+
 ### Weapon-flashlight requirement (weapon light)
 
 `iWeaponFlashlightMeshRequired` requires the equipped weapon to actually carry a modeled flashlight before the light may mount on it, and roots the beam at that lamp:
@@ -150,6 +152,8 @@ Optional gameplay gates, configured on the misc screen or in the INI. When a req
 - `2` **AutoDetect** — require it only when a supported weapon mod (e.g. Tactical Weapon Mods) is in your load order.
 
 When a lamp is detected, the beam roots at it (`bWeaponFlashlightMountBeamToMesh`) and the move-to-weapon gesture's zone anchors to it (`bWeaponFlashlightAnchorPrimaryHandSphereToMesh`).
+
+See **[Weapon Flashlight Requirement](weapon-mount-restriction.md)** for what detection looks for, what changes when a lamp is found, and how to support another weapon pack.
 
 ## NPC Light Detection
 
