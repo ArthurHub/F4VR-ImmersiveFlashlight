@@ -70,7 +70,7 @@ A beam-less flashlight model sits on your chest whenever the light is off, head-
   - Light on offhand + melee/unarmed → nothing happens (the hand is occupied).
   - Light **on weapon** → toggles **off**.
   - Light **on primary hand** → returns to the **offhand**.
-  - Light **off** → turns on at the primary hand (empty) or on the weapon (ranged weapon drawn).
+  - Light **off** → nothing happens. This gesture only moves a light that is already on; use the body grab or the head gesture to turn it on.
 - **Long-press** to pull an on-weapon light back to your offhand.
 - When the weapon-flashlight requirement has detected a modeled lamp, this zone anchors to the **gun's lamp**, so you reach it by bringing your offhand to the flashlight on the gun.
 

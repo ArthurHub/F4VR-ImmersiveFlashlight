@@ -256,11 +256,11 @@ namespace ImFl
 
     /**
      * Offhand-near-primary-hand activation: a zone on the primary-hand wand, tested against the offhand wand.
-     * The tap binding moves/toggles the light among the offhand, primary hand, and weapon, and turns it on at
-     * the weapon (regular weapon drawn) even from off or the head; the long-press binding, fed only while the
-     * light is on the weapon, pulls it back to the offhand. Each binding is fed only in states where it acts (a
-     * melee/unarmed weapon is inert), so the offhand button is suppressed (with a one-shot entry haptic) only
-     * then. Runs before the on/off early-return so the on-weapon turn-on works from off. May toggle the light.
+     * The tap binding moves/toggles a light that is already on among the offhand, primary hand, and weapon (and
+     * pulls a head-mounted light onto a drawn weapon); the long-press binding, fed only while the light is on
+     * the weapon, pulls it back to the offhand. Each binding is fed only in states where it acts (the light off
+     * or a melee/unarmed weapon is inert), so the offhand button is suppressed (with a one-shot entry haptic)
+     * only then. May toggle the light off, so the caller re-reads its state.
      */
     void Flashlight::checkPrimaryHandActivation()
     {
@@ -269,9 +269,12 @@ namespace ImFl
 
         const bool weaponDrawn = f4vr::isWeaponDrawn();
         const bool primaryHandUsable = !RestrictionHandler::isWeaponEquipped() || RestrictionHandler::isWeaponFlashlightAllowed();
-        const bool tapActive = primaryHandUsable &&
-            (location == FlashlightLocation::OnWeapon || (location == FlashlightLocation::InPrimaryHand && on) || (FlashlightState::isHeadMountedFlashlight() && weaponDrawn) ||
-                (location == FlashlightLocation::InOffhand && on) || (location == FlashlightLocation::InOffhand && !on && primaryHandUsable));
+
+        // Tap binding: only moves/toggles a light that is already on. With the light off the gesture is inert
+        // (the button passes through) — bringing the hands together never turns the light on.
+        const bool tapActive = on && primaryHandUsable &&
+            (location == FlashlightLocation::OnWeapon || location == FlashlightLocation::InPrimaryHand || location == FlashlightLocation::InOffhand ||
+                (FlashlightState::isHeadMountedFlashlight() && weaponDrawn));
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
@@ -311,22 +314,16 @@ namespace ImFl
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;
                 }
-                // Tap binding.
-                if (!Utils::isFlashlightOn()) {
-                    // Turn the light on at the primary hand (empty) or weapon (regular weapon drawn). Fed
-                    // only when the primary hand is usable, so a melee/unarmed weapon never reaches here.
-                    logger::info("Turning flashlight ON on weapon");
-                    Utils::turnFlashlightOn();
-                    FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
-                } else if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
+                // Tap binding: fed only while the light is on, so there is no turn-on path here.
+                if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
                     logger::info("Turning flashlight OFF on weapon");
                     Utils::turnFlashlightOff();
                 } else if (FlashlightState::flashlightLocation == FlashlightLocation::InPrimaryHand) {
                     logger::info("Switching flashlight from primary hand to offhand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                 } else {
-                    // On the offhand: move to the primary hand (empty) or the weapon (regular weapon drawn).
-                    logger::info("Switching flashlight from offhand to primary hand");
+                    // On the offhand or head: move to the primary hand (empty) or the weapon (weapon drawn).
+                    logger::info("Switching flashlight to primary hand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
                 }
                 return true;
