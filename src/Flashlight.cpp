@@ -257,10 +257,11 @@ namespace ImFl
     /**
      * Offhand-near-primary-hand activation: a zone on the primary-hand wand, tested against the offhand wand.
      * The tap binding moves/toggles a light that is already on among the offhand, primary hand, and weapon (and
-     * pulls a head-mounted light onto a drawn weapon); the long-press binding, fed only while the light is on
-     * the weapon, pulls it back to the offhand. Each binding is fed only in states where it acts (the light off
-     * or a melee/unarmed weapon is inert), so the offhand button is suppressed (with a one-shot entry haptic)
-     * only then. May toggle the light off, so the caller re-reads its state.
+     * pulls a head-mounted light onto a drawn weapon), and from off turns the light on at the weapon — only
+     * there, never into an empty hand; the long-press binding, fed only while the light is on the weapon, pulls
+     * it back to the offhand. Each binding is fed only in states where it acts (a melee/unarmed weapon, or the
+     * light off with no weapon to carry it, is inert), so the offhand button is suppressed (with a one-shot
+     * entry haptic) only then. Runs before the on/off early-return so the on-weapon turn-on works from off.
      */
     void Flashlight::checkPrimaryHandActivation()
     {
@@ -268,13 +269,18 @@ namespace ImFl
         const auto location = FlashlightState::flashlightLocation;
 
         const bool weaponDrawn = f4vr::isWeaponDrawn();
-        const bool primaryHandUsable = !RestrictionHandler::isWeaponEquipped() || RestrictionHandler::isWeaponFlashlightAllowed();
+        const bool weaponCanHoldLight = RestrictionHandler::isWeaponFlashlightAllowed();
+        const bool primaryHandUsable = !RestrictionHandler::isWeaponEquipped() || weaponCanHoldLight;
 
-        // Tap binding: only moves/toggles a light that is already on. With the light off the gesture is inert
-        // (the button passes through) — bringing the hands together never turns the light on.
-        const bool tapActive = on && primaryHandUsable &&
+        // Tap binding, in two halves: with the light on it moves/toggles it among the offhand, primary hand,
+        // and weapon (a head-mounted light needs a drawn weapon to move to); with the light off it only turns
+        // on at the weapon, so hands-together with no weapon to carry the light is inert (button passes
+        // through) and never lights an empty hand.
+        const bool tapMoveActive = on && primaryHandUsable &&
             (location == FlashlightLocation::OnWeapon || location == FlashlightLocation::InPrimaryHand || location == FlashlightLocation::InOffhand ||
                 (FlashlightState::isHeadMountedFlashlight() && weaponDrawn));
+        const bool tapTurnOnActive = !on && weaponCanHoldLight;
+        const bool tapActive = tapMoveActive || tapTurnOnActive;
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const bool weaponToOffhandActive = on && location == FlashlightLocation::OnWeapon;
@@ -314,8 +320,13 @@ namespace ImFl
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
                     return true;
                 }
-                // Tap binding: fed only while the light is on, so there is no turn-on path here.
-                if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
+                // Tap binding.
+                if (!Utils::isFlashlightOn()) {
+                    // Fed from off only with a weapon that can carry the light, so this always lands on it.
+                    logger::info("Turning flashlight ON on weapon");
+                    Utils::turnFlashlightOn();
+                    FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+                } else if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
                     logger::info("Turning flashlight OFF on weapon");
                     Utils::turnFlashlightOff();
                 } else if (FlashlightState::flashlightLocation == FlashlightLocation::InPrimaryHand) {

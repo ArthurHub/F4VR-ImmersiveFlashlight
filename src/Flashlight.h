@@ -29,9 +29,10 @@ namespace ImFl
      *
      * - Primary-hand activation (offhand wand near the primary-hand wand): a tap moves/toggles the on light
      *   among the offhand, primary hand, and weapon — offhand -> primary hand (empty) or -> weapon (regular
-     *   weapon drawn), primary hand -> offhand, head -> weapon (regular weapon drawn), weapon -> off. It never
-     *   turns the light on: with the light off, or with a melee/unarmed weapon, it is inert. A long-press pulls
-     *   an on-weapon light back to the offhand.
+     *   weapon drawn), primary hand -> offhand, head -> weapon (regular weapon drawn), weapon -> off. From off
+     *   it turns the light on only at the weapon (regular weapon drawn, regardless of stored location) — never
+     *   into an empty hand. A melee/unarmed weapon is inert. A long-press pulls an on-weapon light back to the
+     *   offhand.
      *
      * - Two-handed weapon toggle (zone-less offhand binding): while the offhand grips the weapon two-handed
      *   (so it can't reach the primary-hand sphere) and the light is / would be on the weapon, a press of the
