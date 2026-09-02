@@ -337,6 +337,7 @@ namespace ImFl
 
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
+        virtual void updateIniConfigToLatestVersionCustom(int currentVersion, int latestVersion, const CSimpleIniA& oldIni, CSimpleIniA& newIni) const override;
     };
 
     // Global singleton for easy access

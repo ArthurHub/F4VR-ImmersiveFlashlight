@@ -528,4 +528,27 @@ namespace ImFl
         npcDetectionLightLevelCurve = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelCurve", 1.0));
         npcDetectionLightLevelDecayMs = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelDecayMs", 1000.0));
     }
+
+    /**
+     * Custom migration for what the generic ConfigBase pass can't carry over correctly.
+     * Runs after the generic migration, so it can also correct what the generic pass copied.
+     *
+     * Everything here landed in v15, so a config already at v15 must be left alone by any later migration.
+     * Note the log pattern reset below reads the new config, so without this gate it would keep firing on
+     * every future version bump and undo a deliberate choice of the old pattern.
+     */
+    void Config::updateIniConfigToLatestVersionCustom(const int currentVersion, int, const CSimpleIniA&, CSimpleIniA& newIni) const
+    {
+        if (currentVersion >= 15) {
+            return;
+        }
+
+        // The log pattern gained the "%k" logging-class column, but the generic migration copies the old
+        // pattern over it. Reset it to the current default unless the player customized it.
+        const auto* logPattern = newIni.GetValue(INI_SECTION_DEBUG, "sLogPattern", nullptr);
+        if (logPattern && (logPattern == "%H:%M:%S.%e %l: %v"sv || logPattern == "%H:%M:%S.%e %L: %v"sv)) {
+            logger::info("Migrating {}.sLogPattern to the current default", INI_SECTION_DEBUG);
+            newIni.SetValue(INI_SECTION_DEBUG, "sLogPattern", "%H:%M:%S.%e %l [%-20!k] %v");
+        }
+    }
 }
