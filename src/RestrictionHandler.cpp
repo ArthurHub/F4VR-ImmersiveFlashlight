@@ -203,20 +203,19 @@ namespace ImFl
     }
 
     /**
-     * Refresh the weapon-flashlight detection cache; a no-op while the requirement is off. Equipped-weapon
-     * tracking (drawn weapon, melee flag, power-armor state) is delegated to EquippedWeaponHandler; when it
-     * reports a change, the recursive walk of the weapon 3D for a flashlight mesh re-runs, caching the found
-     * node (or nullptr when the weapon was holstered/unequipped). Returns whether the weapon changed.
+     * Refresh the equipped-weapon tracking and the weapon-flashlight detection cache. Tracking (drawn weapon,
+     * melee flag, power-armor state) is delegated to EquippedWeaponHandler and runs every frame regardless of
+     * the requirement, because isWeaponEquipped() / isWeaponFlashlightAllowed() also answer "is a weapon in
+     * the primary hand" for the location resolution, not just for the requirement. Only the recursive walk of
+     * the weapon 3D for a flashlight mesh is gated by the requirement; it re-runs on a weapon change, caching
+     * the found node (or nullptr when the weapon was holstered/unequipped). Returns whether the weapon changed.
      */
     bool RestrictionHandler::checkWeaponChangeForFlashlightOnWeaponDetection()
     {
-        if (!isWeaponFlashlightMeshRequired()) {
-            return false;
-        }
         if (!_weaponHandler.detectChange()) {
             return false;
         }
-        _weaponFlashlightNode = _weaponHandler.isDrawn() ? findWeaponFlashlightNode(f4vr::getWeaponNode()) : nullptr;
+        _weaponFlashlightNode = isWeaponFlashlightMeshRequired() && _weaponHandler.isDrawn() ? findWeaponFlashlightNode(f4vr::getWeaponNode()) : nullptr;
         return true;
     }
 

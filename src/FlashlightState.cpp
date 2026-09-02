@@ -264,11 +264,9 @@ namespace ImFl
             return FlashlightLocation::OnWeapon;
         }
 
-        if (configLocation == FlashlightConfigLocation::InPrimaryHand && f4vr::isUnarmedWeaponDrawn()) {
-            return FlashlightLocation::InPrimaryHand;
-        }
-
-        if (RestrictionHandler::isWeaponFlashlightMeshRequired() && !RestrictionHandler::isWeaponEquipped()) {
+        // config InPrimaryHand: an empty hand (nothing drawn) or bare fists holds the light itself; a drawn
+        // weapon occupies the hand, so the light mounts on the weapon instead.
+        if (!RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn()) {
             return FlashlightLocation::InPrimaryHand;
         }
 
