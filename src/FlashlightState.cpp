@@ -77,31 +77,30 @@ namespace ImFl
     {
         const auto newFlashlightLocation = getFlashlightLocation();
         if (flashlightLocation == newFlashlightLocation) {
-            if (_lightValuesRefreshRequired && Utils::isFlashlightOn()) {
-                toggleLightRefreshValues();
-            }
             return;
         }
 
         flashlightLocation = newFlashlightLocation;
         refreshConfigReferences();
 
-        // toggle the flashlight to reload the light values
+        // push the new location's values onto the light
         toggleLightRefreshValues();
     }
 
     /**
-     * Toggle flashlight off/on and reload the light values from config.
+     * Reload the light values from config onto the game light.
+     * The game reads the values when the light is turned on, so an off light only needs them written:
+     * toggling is what makes an already-on light pick them up, and doing it while off is the visible
+     * on-off-on flicker when the light is turned on into a location it wasn't last on in.
      */
     void FlashlightState::toggleLightRefreshValues()
     {
         const auto player = f4vr::getPlayer();
         if (!f4vr::isPipboyLightOn(player)) {
-            _lightValuesRefreshRequired = true;
+            setLightValues();
             return;
         }
         logger::debug("Toggle light refresh values...");
-        _lightValuesRefreshRequired = false;
         f4vr::togglePipboyLight(player);
         setLightValues();
         f4vr::togglePipboyLight(player);

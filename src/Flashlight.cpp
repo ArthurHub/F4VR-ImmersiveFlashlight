@@ -195,8 +195,8 @@ namespace ImFl
                     Utils::turnFlashlightOff();
                 } else {
                     logger::info("Grabbing flashlight from body into {} hand", Utils::getHandLabel(binding.hand));
-                    Utils::turnFlashlightOn();
                     FlashlightState::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
+                    Utils::turnFlashlightOn();
                 }
                 return true;
             });
@@ -241,8 +241,8 @@ namespace ImFl
                 // Tap binding (headActivation.primary).
                 if (!Utils::isFlashlightOn()) {
                     logger::info("Turning flashlight ON on head");
-                    Utils::turnFlashlightOn();
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
+                    Utils::turnFlashlightOn();
                 } else if (FlashlightState::isHeadMountedFlashlight()) {
                     logger::info("Turning flashlight OFF on head");
                     Utils::turnFlashlightOff();
@@ -324,8 +324,8 @@ namespace ImFl
                 if (!Utils::isFlashlightOn()) {
                     // Fed from off only with a weapon that can carry the light, so this always lands on it.
                     logger::info("Turning flashlight ON on weapon");
-                    Utils::turnFlashlightOn();
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
+                    Utils::turnFlashlightOn();
                 } else if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon) {
                     logger::info("Turning flashlight OFF on weapon");
                     Utils::turnFlashlightOff();
