@@ -76,6 +76,7 @@ Location:
 [list]
 [\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/README.md]Usage and Configuration Guide[/url]﻿ — full gesture reference, default bindings, beam settings, restrictions, and advanced INI configuration.[/size][*]
 [\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md]FAQ and Troubleshooting[/url]﻿[/size][*]
+[\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/changelog.md]Changelog[/url]﻿[/size][*]
 [/list]
 
 [b][size=4]Installation[/size][/b]

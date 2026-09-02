@@ -4,7 +4,7 @@ A VR-first replacement for the Pip-Boy flashlight supporting in-hand, head-mount
 
 Explore the wasteland at night with a powerful, long-range flashlight to see into the distance, then switch to a soft, wide head-mounted beam for close-quarters exploration and looting.
 
-For installation, requirements, and credits see the [main README](../README.md). For shadows, the VR FPS Stabilizer warning, and other troubleshooting see the [FAQ](faq.md).
+For installation, requirements, and credits see the [main README](../README.md). For shadows, the VR FPS Stabilizer warning, and other troubleshooting see the [FAQ](faq.md). For what changed in each release see the [Changelog](changelog.md).
 
 ## Contents
 

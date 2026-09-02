@@ -1,6 +1,6 @@
 # FAQ and Troubleshooting
 
-Common questions and fixes. For how the light works and the full list of settings, see the [Usage and Configuration Guide](README.md); for install and requirements see the [main README](../README.md).
+Common questions and fixes. For how the light works and the full list of settings, see the [Usage and Configuration Guide](README.md); for install and requirements see the [main README](../README.md); for what changed in each release see the [Changelog](changelog.md).
 
 ## The flashlight won't turn on, or my old flashlight button does nothing
 

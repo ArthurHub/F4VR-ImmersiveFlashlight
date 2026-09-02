@@ -58,6 +58,7 @@ See the **[Usage and Configuration Guide](docs/README.md)** for the full gesture
 
 - [Usage and Configuration Guide](docs/README.md)
 - [FAQ and Troubleshooting](docs/faq.md)
+- [Changelog](docs/changelog.md)
 - [Development](docs/development.md)
 
 ## Development
