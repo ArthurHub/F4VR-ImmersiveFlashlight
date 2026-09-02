@@ -50,7 +50,7 @@ Download from [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) and in
 
 ## Usage
 
-Move the light physically with VR gestures: reach to the flashlight stowed on your chest and grab it into a hand, bring your offhand near your head to mount it as a cap lamp, or near your primary hand to move it to the hand or the equipped weapon. Beam settings are tuned in-game through the FRIK configuration UI (hold both thumbsticks for ~2 seconds, then select Immersive Flashlight) and applied live, with advanced options in the INI. The vanilla Pip-Boy light toggle is disabled by default so only the mod's gestures control the light.
+Move the light physically with VR gestures: reach to the flashlight stowed on your chest and grab it into a hand, bring your offhand near your head to mount it as a cap lamp, or near your primary hand to move it to the hand or the equipped weapon. Beam settings are tuned in-game through the FRIK configuration UI (hold both thumbsticks for ~2 seconds, then select Immersive Flashlight) and applied live, with advanced options in the INI. The vanilla Pip-Boy light toggle keeps working alongside the gestures, and can be disabled so only the mod's gestures control the light.
 
 See the **[Usage and Configuration Guide](docs/README.md)** for the full gesture reference, default bindings, beam settings, restrictions, and advanced INI configuration.
 

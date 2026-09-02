@@ -273,7 +273,7 @@ namespace ImFl
         vrcf::InputBinding toggleWeaponFlashlightTwoHandedBinding;
 
         // Disable the vanilla game's global flashlight toggle so only this mod's gestures control the light.
-        bool disableVanillaFlashlightToggle = true;
+        bool disableVanillaFlashlightToggle = false;
 
         // NPC light detection: on a throttled tick while the light is on, NpcDetectionHandler posts a
         // player-owned detection event at what the beam touches — near the nearest lit NPC (with line of

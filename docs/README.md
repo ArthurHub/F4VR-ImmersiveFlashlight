@@ -174,7 +174,7 @@ It's on by default and switched on the misc config screen; the tuning lives in t
 
 ## Vanilla Flashlight Toggle
 
-`bDisableVanillaFlashlightToggle` (default **on**) disables the game's built-in global Pip-Boy light toggle so only this mod's gestures control the light. Turn it off if you want the vanilla long-press toggle back alongside the gestures.
+`bDisableVanillaFlashlightToggle` (default **off**) disables the game's built-in global Pip-Boy light toggle so only this mod's gestures control the light. Leave it off to keep the vanilla long-press toggle working alongside the gestures.
 
 ## Advanced Configuration
 

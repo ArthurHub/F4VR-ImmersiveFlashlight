@@ -506,7 +506,7 @@ namespace ImFl
             "sToggleWeaponFlashlightTwoHandedBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
-        disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", true);
+        disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", false);
 
         // NPC light detection (NpcDetectionHandler)
         npcDetectionEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", true);
