@@ -956,7 +956,7 @@ namespace ImFl
             dd.line(probe.from, probe.blocked ? probe.hitPos : probe.to, color);
             if (probe.blocked) {
                 dd.point(probe.hitPos, 7.0f, true, color);
-                dd.label(probe.label, probe.hitPos + RE::NiPoint3(0, 0, g_config.debug.flowFlag1), color);
+                dd.label(probe.label, probe.hitPos + RE::NiPoint3(0, 0, 25), color);
             }
             dd.watch(probe.label, probe.what);
         }

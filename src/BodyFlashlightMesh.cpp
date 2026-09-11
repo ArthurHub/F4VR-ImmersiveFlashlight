@@ -8,13 +8,15 @@
 
 namespace ImFl
 {
-    // The body bone the stowed model attaches to.
+    // The body bone the stowed model is placed at.
     constexpr const char* STOW_BONE_NAME = f4vr::SkellyBones::Chest.data();
 
     /**
-     * Attaches/detaches the stowed model to keep it in sync with the feature being enabled. Re-attaches
-     * when the stow bone or power-armor state changes, then re-applies the (mirrored / PA) model transform
-     * each frame so INI live-reload is reflected immediately.
+     * Attaches/detaches the stowed model to keep it in sync with the feature being enabled, then places it at
+     * the chest bone. The model hangs under the primary-hand UI attach node, so its local transform is
+     * re-derived every frame from the chest bone and the (mirrored / PA) model transform — which keeps it on
+     * the body as the hand moves and reflects INI live-reload immediately. The bone is looked up every frame
+     * because the skeleton is rebuilt (character creation, power armor).
      */
     void BodyFlashlightMesh::onFrameUpdate(const bool enabled)
     {
@@ -24,20 +26,28 @@ namespace ImFl
         }
 
         const auto root = f4vr::getRootNode();
-        const auto parent = root ? f4vr::findNode(root, STOW_BONE_NAME) : nullptr;
-        if (!parent) {
+        _stowBone = root ? f4vr::findNode(root, STOW_BONE_NAME) : nullptr;
+        const auto parent = f4vr::getPlayerNodes()->primaryUIAttachNode;
+        if (!_stowBone || !parent) {
             detach();
             return;
         }
 
-        const bool inPA = f4vr::isInPowerArmor();
-        if (_attachedTo && (parent != _attachedTo || _attachedInPA != inPA)) {
+        if (_attachedTo && parent != _attachedTo) {
             detach();
         }
 
         if (!_attachedTo) {
-            attach(parent, inPA);
+            attach(parent);
+            if (!_attachedTo) {
+                return;
+            }
         }
+
+        _inPA = f4vr::isInPowerArmor();
+        const auto stowTransform = mirrorTransform(g_config.getFlashlightBodyTransform(_inPA));
+        _meshNode->local = common::MatrixUtils::reparentTransform(_stowBone->world, stowTransform, _attachedTo->world);
+        f4vr::updateTransformsDown(_meshNode.get(), true);
     }
 
     /**
@@ -50,14 +60,18 @@ namespace ImFl
         }
     }
 
-    /** Forces the cached nodes to detach so they reattach to fresh skeleton nodes later. */
+    /**
+     * Forces the cached model to detach so it re-attaches to fresh nodes later.
+     */
     void BodyFlashlightMesh::invalidate()
     {
         detach();
     }
 
-    /** Clones the model on first use (hiding its beam + collision) and attaches it to the body bone. */
-    void BodyFlashlightMesh::attach(RE::NiNode* parentNode, const bool inPowerArmor)
+    /**
+     * Clones the model on first use (hiding its beam + collision) and attaches it to the parent node.
+     */
+    void BodyFlashlightMesh::attach(RE::NiNode* parentNode)
     {
         if (!_meshNode) {
             _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
@@ -75,13 +89,12 @@ namespace ImFl
 
         parentNode->AttachChild(_meshNode.get(), true);
         _attachedTo = parentNode;
-        _attachedInPA = inPowerArmor;
-
-        applyMirroredTransform(_meshNode.get(), g_config.getFlashlightBodyTransform(inPowerArmor));
-        logger::info("BodyFlashlightMesh: attached to '{}'{}", STOW_BONE_NAME, inPowerArmor ? " (PA)" : "");
+        logger::info("BodyFlashlightMesh: attached under '{}', placed at '{}'", parentNode->name.c_str(), STOW_BONE_NAME);
     }
 
-    /** Detaches the cached nodes from their bone while keeping the clones cached. */
+    /**
+     * Detaches the model from its parent while keeping the clone cached.
+     */
     void BodyFlashlightMesh::detach()
     {
         if (!_attachedTo) {
@@ -99,20 +112,22 @@ namespace ImFl
     }
 
     /**
-     * Sets node->local from a config transform authored for a right-handed player, mirroring the Z
-     * translate and heading/roll when the player is left-handed so one configured value reads correctly
-     * for both handedness modes.
+     * Returns a config transform authored for a right-handed player, mirroring the Z translate and
+     * heading/roll when the player is left-handed so one configured value reads correctly for both
+     * handedness modes.
      */
-    void BodyFlashlightMesh::applyMirroredTransform(RE::NiNode* node, const RE::NiTransform& transform)
+    RE::NiTransform BodyFlashlightMesh::mirrorTransform(const RE::NiTransform& transform)
     {
         const float sign = f4vr::isLeftHandedMode() ? -1.0f : 1.0f;
 
-        node->local.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
+        RE::NiTransform mirrored;
+        mirrored.translate = RE::NiPoint3(transform.translate.x, transform.translate.y, sign * transform.translate.z);
 
         float heading, roll, attitude;
         common::MatrixUtils::getEulerAnglesFromMatrixDegrees(transform.rotate, &heading, &roll, &attitude);
-        node->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * heading, sign * roll, attitude);
-        node->local.scale = transform.scale;
+        mirrored.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * heading, sign * roll, attitude);
+        mirrored.scale = transform.scale;
+        return mirrored;
     }
 
     /**
@@ -120,8 +135,8 @@ namespace ImFl
      */
     RE::NiTransform BodyFlashlightMesh::grabZoneTransform() const
     {
-        RE::NiTransform orb = g_config.bodyActivation.zoneFor(_attachedInPA);
-        orb.translate += g_config.getFlashlightBodyTransform(_attachedInPA).translate;
+        RE::NiTransform orb = g_config.bodyActivation.zoneFor(_inPA);
+        orb.translate += g_config.getFlashlightBodyTransform(_inPA).translate;
         return orb;
     }
 

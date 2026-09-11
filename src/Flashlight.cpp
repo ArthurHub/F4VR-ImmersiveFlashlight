@@ -136,7 +136,7 @@ namespace ImFl
     }
 
     /**
-     * Keeps the beam-less stowed model attached to the chest bone while the feature is enabled, runs the
+     * Keeps the beam-less stowed model placed at the chest bone while the feature is enabled, runs the
      * proximity-gated grab/return interaction, then shows the model except while the light is held in a hand
      * (offhand / primary hand) — the physical unit has left the body. An off, head-mounted, or weapon-mounted
      * light leaves the model stowed and visible (weapons carry their own flashlight mesh). A grab/return may
@@ -173,7 +173,7 @@ namespace ImFl
             (location == FlashlightLocation::InPrimaryHand || FlashlightState::isHeadMountedFlashlight() || (location == FlashlightLocation::InOffhand && !on));
 
         // The grab zone is anchored to the stowed model on the chest bone; mirror it for left-handed players.
-        const auto zoneNode = _bodyFlashlightMesh.attachedNode();
+        const auto zoneNode = _bodyFlashlightMesh.stowBoneNode();
         return _bodyGrabSphere.onFrameUpdate(
             {
                 .enabled = enabled && zoneNode != nullptr,
