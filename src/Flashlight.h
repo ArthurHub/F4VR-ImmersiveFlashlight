@@ -4,7 +4,6 @@
 #include "FlashlightMesh.h"
 #include "OnWeaponBeamMesh.h"
 #include "f4vr/WandActivationSphere.h"
-#include "vrcf/VRControllersManager.h"
 
 namespace ImFl
 {
@@ -58,6 +57,7 @@ namespace ImFl
         void checkPrimaryHandActivation();
         void checkWeaponFlashlightToggle() const;
         static void adjustFlashlightTransformToHandOrHead();
+        static void onWeaponTransformFinalized();
         void maybeShowFPSStabilizerModWarning();
 
         bool _wasInPowerArmor = false;

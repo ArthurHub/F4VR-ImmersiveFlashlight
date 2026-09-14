@@ -6,7 +6,7 @@
 #include "Config.h"
 #include "RestrictionHandler.h"
 #include "Utils.h"
-#include "api/FRIKApi.h"
+#include "WeaponGripHandler.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
 #include "f4vr/PlayerNodes.h"
@@ -40,19 +40,26 @@ namespace ImFl
 
     /**
      * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
+     * Switching to the primary hand while the offhand carries the weapon puts the light in the free hand for the
+     * rest of that carry, even when the config location is already the primary hand (which otherwise resolves to
+     * the weapon).
      */
     void FlashlightState::switchFlashlightConfigLocation(const FlashlightConfigLocation location)
     {
         const bool inPowerArmor = f4vr::isInPowerArmor();
         const auto currentLocation = getActiveFlashlightConfigLocation();
-        if (currentLocation == location) {
+        const bool heldInFreePrimaryHand = location == FlashlightConfigLocation::InPrimaryHand && WeaponGripHandler::isWeaponCarriedByOffhand();
+        if (currentLocation == location && heldInFreePrimaryHand == _heldInFreePrimaryHand) {
             return;
         }
-        logger::info("Switch flashlight location {} from {} to {}",
-            inPowerArmor ? "(in PA)" : "(out of PA)",
-            getFlashlightConfigLocationLabel(currentLocation),
-            getFlashlightConfigLocationLabel(location));
-        g_config.setFlashlightLocation(location, inPowerArmor);
+        _heldInFreePrimaryHand = heldInFreePrimaryHand;
+        if (currentLocation != location) {
+            logger::info("Switch flashlight location {} from {} to {}",
+                inPowerArmor ? "(in PA)" : "(out of PA)",
+                getFlashlightConfigLocationLabel(currentLocation),
+                getFlashlightConfigLocationLabel(location));
+            g_config.setFlashlightLocation(location, inPowerArmor);
+        }
         refreshFlashlightLocation();
     }
 
@@ -75,6 +82,10 @@ namespace ImFl
      */
     void FlashlightState::refreshFlashlightLocation()
     {
+        if (!WeaponGripHandler::isWeaponCarriedByOffhand()) {
+            _heldInFreePrimaryHand = false;
+        }
+
         const auto newFlashlightLocation = getFlashlightLocation();
         if (flashlightLocation == newFlashlightLocation) {
             return;
@@ -237,6 +248,9 @@ namespace ImFl
      * For config InOffhand, a two-handed grip occupies the offhand: the light mounts on the weapon, but when the
      * weapon-flashlight requirement is on and the weapon carries no modeled flashlight it falls back to the head
      * (rather than turning off) until the grip is released and it returns to the offhand.
+     * A weapon carried one-handed in the offhand leaves the primary hand free, so either hand config holds the
+     * light in the primary hand. A weapon carried by the offhand with the firing grip detached (can't be fired)
+     * keeps the light on the weapon like a two-handed hold, unless it was put in the free primary hand.
      */
     FlashlightLocation FlashlightState::getFlashlightLocation()
     {
@@ -250,8 +264,13 @@ namespace ImFl
             return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
         }
 
+        // The weapon rides one-handed in the offhand and the primary hand is free: hold the light there.
+        if (WeaponGripHandler::isWeaponOneHandedInOffhand()) {
+            return FlashlightLocation::InPrimaryHand;
+        }
+
         if (configLocation == FlashlightConfigLocation::InOffhand) {
-            if (!frik::api::FRIKApi::inst || !frik::api::FRIKApi::inst->isOffHandGrippingWeapon()) {
+            if (!WeaponGripHandler::isTwoHandedGripActive() && !WeaponGripHandler::isWeaponCarriedByOffhand()) {
                 return FlashlightLocation::InOffhand;
             }
             // The offhand grips a two-handed weapon and can't hold the light. Mount it on the weapon, unless the
@@ -264,8 +283,9 @@ namespace ImFl
         }
 
         // config InPrimaryHand: an empty hand (nothing drawn) or bare fists holds the light itself; a drawn
-        // weapon occupies the hand, so the light mounts on the weapon instead.
-        if (!RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn()) {
+        // weapon occupies the hand, so the light mounts on the weapon instead — unless the offhand carries the
+        // weapon and the light was put in the freed hand.
+        if (!RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn() || (_heldInFreePrimaryHand && WeaponGripHandler::isWeaponCarriedByOffhand())) {
             return FlashlightLocation::InPrimaryHand;
         }
 

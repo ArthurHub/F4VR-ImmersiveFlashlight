@@ -1,6 +1,7 @@
 #include "FlashlightMod.h"
 
 #include "RestrictionHandler.h"
+#include "WeaponGripHandler.h"
 #include "api/FRIKApi.h"
 #include "api/FRIKApiV2.h"
 #include "vrui/UIManager.h"
@@ -77,6 +78,7 @@ namespace ImFl
         addEmbeddedFlashlightKeyword();
 
         RestrictionHandler::invalidate();
+        WeaponGripHandler::initialize();
 
         _flashlight = std::make_unique<Flashlight>();
         _config = std::make_unique<config::MainScreen>();

@@ -50,5 +50,9 @@ namespace ImFl
         static void refreshConfigReferences();
 
         inline static std::optional<FlashlightLocation> _runtimeLocationOverride;
+
+        // The light was put in the free primary hand while the offhand carries the weapon, so config InPrimaryHand
+        // resolves to the hand instead of the weapon. Only meaningful during that carry; cleared when it ends.
+        inline static bool _heldInFreePrimaryHand = false;
     };
 }
