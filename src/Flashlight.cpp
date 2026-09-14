@@ -112,6 +112,10 @@ namespace ImFl
 
         WeaponGripHandler::onFrameUpdate();
 
+        // A game menu (workbench, container, dialogue, ...) takes the controller input, so the gestures stand down
+        // and a hand resting in a zone doesn't swallow its buttons. The light itself keeps tracking its location.
+        _gesturesBlockedByMenu = Utils::findOpenGestureBlockingMenu() != nullptr;
+
         updateBodyStow();
         checkHeadActivation();
         checkPrimaryHandActivation();
@@ -183,7 +187,7 @@ namespace ImFl
         _bodyFlashlightMesh.onFrameUpdate(enabled);
 
         // A grab/return may toggle the light, so set the model visibility from the resulting state.
-        checkBodyGrab(enabled);
+        checkBodyGrab(enabled && !_gesturesBlockedByMenu);
 
         if (enabled) {
             const bool heldInHand = Utils::isFlashlightOn() && FlashlightState::isHandHeldFlashlight();
@@ -270,6 +274,7 @@ namespace ImFl
 
         _headSphere.onFrameUpdate(
             {
+                .enabled = !_gesturesBlockedByMenu,
                 .node = f4vr::getPlayerNodes()->HmdNode,
                 .zone = g_config.headActivation.zone,
                 .bindings = {
@@ -356,6 +361,7 @@ namespace ImFl
 
         _primaryHandSphere.onFrameUpdate(
             {
+                .enabled = !_gesturesBlockedByMenu,
                 .node = sphereNode,
                 .zone = zone,
                 .bindings = {
@@ -405,7 +411,7 @@ namespace ImFl
      */
     void Flashlight::checkWeaponFlashlightToggle() const
     {
-        if (!WeaponGripHandler::isTwoHandedGripActive() || WeaponGripHandler::isWeaponInOffhand()) {
+        if (_gesturesBlockedByMenu || !WeaponGripHandler::isTwoHandedGripActive() || WeaponGripHandler::isWeaponInOffhand()) {
             return;
         }
 

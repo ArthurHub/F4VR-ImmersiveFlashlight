@@ -1,5 +1,8 @@
 #include "Utils.h"
 
+#include <algorithm>
+#include <format>
+
 #include "Config.h"
 #include "common/CommonUtils.h"
 #include "f4vr/F4VROffsets.h"
@@ -130,5 +133,52 @@ namespace ImFl
             setting->SetFloat(_originalPipboyLightDelay);
         }
         _vanillaFlashlightToggleDisabled = g_config.disableVanillaFlashlightToggle;
+    }
+
+    /**
+     * The name of the first open menu that blocks the flashlight gestures, or null when none does. A menu blocks
+     * when it is in GESTURE_BLOCKING_MENUS, or carries any GESTURE_BLOCKING_MENU_FLAGS and isn't in
+     * GESTURE_ALLOWED_MENUS — so menus added by other mods block too, without being named. The always-open HUD
+     * menus carry none of those flags.
+     * Every change to the set of open menus (or their blocking flags) is logged with each menu's flags, since the
+     * flag rule is the part that could misjudge a VR menu. The returned name lives in the game's string pool.
+     */
+    const char* Utils::findOpenGestureBlockingMenu()
+    {
+        const auto ui = RE::UI::GetSingleton();
+        if (!ui) {
+            return nullptr;
+        }
+
+        const auto matchesAny = [](const char* name, const auto& names) {
+            return std::ranges::any_of(names, [name](const char* candidate) { return _stricmp(name, candidate) == 0; });
+        };
+
+        RE::BSAutoReadLock lock{ RE::UI::GetMenuMapRWLock() };
+        const auto forEachOpenMenu = [ui](const auto& visit) {
+            for (const auto& [menuName, entry] : ui->menuMap) {
+                if (entry.menu && entry.menu->OnStack() && menuName.c_str()) {
+                    visit(menuName.c_str(), entry.menu->menuFlags.underlying());
+                }
+            }
+        };
+
+        const char* blockingMenu = nullptr;
+        std::size_t signature = 0;
+        forEachOpenMenu([&](const char* name, const std::uint32_t flags) {
+            const auto blockingFlags = flags & GESTURE_BLOCKING_MENU_FLAGS;
+            signature ^= std::hash<std::string_view>{}(name)*31 + blockingFlags;
+            if (!blockingMenu && (matchesAny(name, GESTURE_BLOCKING_MENUS) || (blockingFlags != 0 && !matchesAny(name, GESTURE_ALLOWED_MENUS)))) {
+                blockingMenu = name;
+            }
+        });
+
+        if (signature != _openMenusSignature) {
+            _openMenusSignature = signature;
+            std::string openMenus;
+            forEachOpenMenu([&](const char* name, const std::uint32_t flags) { openMenus += std::format(" {}[0x{:X}]", name, flags); });
+            logger::info("Open menus changed (gestures blocked by: {}):{}", blockingMenu ? blockingMenu : "none", openMenus);
+        }
+        return blockingMenu;
     }
 }

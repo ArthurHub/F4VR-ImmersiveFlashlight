@@ -38,6 +38,9 @@ namespace ImFl
      *   bound offhand button toggles the weapon light on/off from anywhere. Defers to the proximity gestures
      *   when the offhand is inside one of their zones (so a shared button isn't handled twice).
      *
+     * All gestures are inert while a gesture-blocking game menu is open (workbench, container, dialogue,
+     * terminal, ... — see Utils::findOpenGestureBlockingMenu(); the Pip-Boy is not one), so their buttons reach the menu.
+     *
      * Outside the gestures, entering/exiting power armor re-resolves the location (and restores a recently-on
      * light), and the in-game config UI can set the location directly.
      */
@@ -61,6 +64,8 @@ namespace ImFl
         void maybeShowFPSStabilizerModWarning();
 
         bool _wasInPowerArmor = false;
+        // A gesture-blocking game menu is open this frame (Utils::findOpenGestureBlockingMenu()): every gesture is inert.
+        bool _gesturesBlockedByMenu = false;
         int _flashlightOnRecentlyFrames = 0;
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
 
