@@ -116,6 +116,13 @@ namespace ImFl
         // and a hand resting in a zone doesn't swallow its buttons. The light itself keeps tracking its location.
         _gesturesBlockedByMenu = Utils::findOpenGestureBlockingMenu() != nullptr;
 
+        // Before the Pip-Boy is picked up there is no flashlight: the gestures stand down and the body model is hidden.
+        const bool flashlightUnavailable = !RestrictionHandler::isFlashlightAvailable();
+        if (flashlightUnavailable != _flashlightUnavailable) {
+            logger::info("Flashlight {}", flashlightUnavailable ? "unavailable: no Pip-Boy worn" : "available: Pip-Boy worn");
+            _flashlightUnavailable = flashlightUnavailable;
+        }
+
         updateBodyStow();
         checkHeadActivation();
         checkPrimaryHandActivation();
@@ -183,7 +190,7 @@ namespace ImFl
      */
     void Flashlight::updateBodyStow()
     {
-        const bool enabled = g_config.showFlashlightOnBody && f4vr::getRootNode() != nullptr;
+        const bool enabled = g_config.showFlashlightOnBody && !_flashlightUnavailable && f4vr::getRootNode() != nullptr;
         _bodyFlashlightMesh.onFrameUpdate(enabled);
 
         // A grab/return may toggle the light, so set the model visibility from the resulting state.
@@ -274,7 +281,7 @@ namespace ImFl
 
         _headSphere.onFrameUpdate(
             {
-                .enabled = !_gesturesBlockedByMenu,
+                .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
                 .node = f4vr::getPlayerNodes()->HmdNode,
                 .zone = g_config.headActivation.zone,
                 .bindings = {
@@ -361,7 +368,7 @@ namespace ImFl
 
         _primaryHandSphere.onFrameUpdate(
             {
-                .enabled = !_gesturesBlockedByMenu,
+                .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
                 .node = sphereNode,
                 .zone = zone,
                 .bindings = {
@@ -411,7 +418,7 @@ namespace ImFl
      */
     void Flashlight::checkWeaponFlashlightToggle() const
     {
-        if (_gesturesBlockedByMenu || !WeaponGripHandler::isTwoHandedGripActive() || WeaponGripHandler::isWeaponInOffhand()) {
+        if (_gesturesBlockedByMenu || _flashlightUnavailable || !WeaponGripHandler::isTwoHandedGripActive() || WeaponGripHandler::isWeaponInOffhand()) {
             return;
         }
 

@@ -66,6 +66,8 @@ namespace ImFl
         bool _wasInPowerArmor = false;
         // A gesture-blocking game menu is open this frame (Utils::findOpenGestureBlockingMenu()): every gesture is inert.
         bool _gesturesBlockedByMenu = false;
+        // The Pip-Boy isn't worn yet this frame (RestrictionHandler::isFlashlightAvailable()): no flashlight — every gesture is inert and the body model is hidden.
+        bool _flashlightUnavailable = false;
         int _flashlightOnRecentlyFrames = 0;
         uint64_t _lastVRFPSStabilizerWarningTime = 0;
 

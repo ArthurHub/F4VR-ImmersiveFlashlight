@@ -95,6 +95,43 @@ namespace ImFl
     }
 
     /**
+     * Whether the flashlight exists at all yet: the Pip-Boy is worn. The mod drives the game's headlamp light, which
+     * the engine only uses while a worn item carries the headlamp keyword — added to the Pip-Boy at load (see
+     * FlashlightMod::addEmbeddedFlashlightKeyword). Before the Pip-Boy is picked up (the Vault 111 tutorial) the
+     * engine falls back to the vanilla wrist glow under PipboyLightParentNode, which the mod can neither move nor tune,
+     * so there is no flashlight until then. Power armor is exempt: its helmet lamp doesn't depend on the Pip-Boy.
+     */
+    bool RestrictionHandler::isFlashlightAvailable()
+    {
+        return isPipboyWorn() || f4vr::isInPowerArmor();
+    }
+
+    /**
+     * Whether the Pip-Boy armor is among the player's worn biped objects. Scans every editor slot rather than
+     * assuming the Pip-Boy's slot. The Pip-Boy can't be unequipped, so once found it is cached until invalidate()
+     * (session load can go back to a save from before it was picked up); a miss is never cached.
+     */
+    bool RestrictionHandler::isPipboyWorn()
+    {
+        if (_pipboyWorn) {
+            return true;
+        }
+        const auto player = f4vr::getPlayer();
+        const auto biped = player ? player->biped.get() : nullptr;
+        if (!biped) {
+            return false;
+        }
+        for (int i = 0; i < std::to_underlying(RE::BIPED_OBJECT::kEditorCount); ++i) {
+            const auto* equippedForm = biped->object[i].parent.object;
+            if (equippedForm && equippedForm->formID == f4vr::PipboyArmor) {
+                _pipboyWorn = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * The armor worn in the head slot (slot 30 / biped index 0 = kHairTop, where hats/helmets always sit),
      * or nullptr if nothing armor-typed is worn there. Mirrors the biped-object read used by f4vr::isInPowerArmor().
      */
@@ -248,6 +285,7 @@ namespace ImFl
     {
         _weaponHandler.invalidate();
         _weaponFlashlightNode = nullptr;
+        _pipboyWorn = false;
         resolveForms();
     }
 
@@ -272,8 +310,9 @@ namespace ImFl
 
     /**
      * Enforce the active restrictions on the passive path. Skipped while a config-mode location override is
-     * active so beam tuning isn't interrupted, and a no-op while the light is off. Turns the light off when
-     * its current location is no longer permitted:
+     * active so beam tuning isn't interrupted, a no-op while the light is off, and before the Pip-Boy is worn
+     * (isFlashlightAvailable()), where the light is the vanilla wrist glow and stays under vanilla control.
+     * Turns the light off when its current location is no longer permitted:
      *  - Head: on the (non-PA) head with the headgear requirement unmet (a head runtime location already
      *    implies out of PA — PA maps to OnPAHead, always allowed).
      *  - Weapon: on the weapon with isWeaponFlashlightAllowed() false (no detected mesh, or a drawn
@@ -281,7 +320,7 @@ namespace ImFl
      */
     void RestrictionHandler::enforceRestrictions()
     {
-        if (FlashlightState::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn()) {
+        if (FlashlightState::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn() || !isFlashlightAvailable()) {
             return;
         }
 

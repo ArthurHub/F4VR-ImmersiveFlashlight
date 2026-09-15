@@ -10,7 +10,7 @@ namespace ImFl
     /**
      * Optional gameplay restrictions on where the flashlight may be active.
      *
-     * Gates the head-mounted light (out of power armor) behind worn headgear per
+     * Holds the flashlight back entirely until the Pip-Boy is worn (isFlashlightAvailable()). Gates the head-mounted light (out of power armor) behind worn headgear per
      * Config::flashlightHeadgearRequirement, and optionally requires a modeled flashlight on the equipped
      * weapon before the light may mount on it (Config::weaponFlashlightMeshRequirement). Static like Utils:
      * there is a single player / flashlight, and the resolved form sets + detection caches are global state.
@@ -18,6 +18,7 @@ namespace ImFl
     class RestrictionHandler
     {
     public:
+        static bool isFlashlightAvailable();
         static bool isHeadFlashlightAllowed();
         static bool isWeaponEquipped();
         static bool isWeaponFlashlightAllowed();
@@ -32,6 +33,7 @@ namespace ImFl
         static bool resolveWeaponFlashlightMeshRequired();
         static bool checkWeaponChangeForFlashlightOnWeaponDetection();
         static void enforceRestrictions();
+        static bool isPipboyWorn();
         static const RE::TESObjectARMO* getWornHeadgear();
         static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);
         static bool isLightCapableHeadgearWorn();
@@ -49,5 +51,8 @@ namespace ImFl
         // Weapon-flashlight detection state: the equipped-weapon tracker (drawn / melee / power-armor state)
         inline static f4vr::EquippedWeaponHandler _weaponHandler;
         inline static RE::NiAVObject* _weaponFlashlightNode = nullptr;
+
+        // The Pip-Boy was found worn (isPipboyWorn()); it can't be unequipped, so it's latched until invalidate().
+        inline static bool _pipboyWorn = false;
     };
 }
