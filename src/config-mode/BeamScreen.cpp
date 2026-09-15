@@ -6,8 +6,10 @@
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
-#include "vrui/UIButton.h"
+#include "vrui/UIButtonPanel.h"
 #include "vrui/UIManager.h"
+#include "vrui/UITextPanel.h"
+#include "vrui/UIToggleButtonPanel.h"
 #include "vrui/UIToggleGroupContainer.h"
 
 using namespace vrui;
@@ -180,8 +182,6 @@ namespace ImFl::config
         _inHandFLBtn.reset();
         _onWeaponFLBtn.reset();
         _row1ToggleContainer.reset();
-        _configMsg.reset();
-        _beamTuningMsg.reset();
     }
 
     /**
@@ -194,9 +194,6 @@ namespace ImFl::config
         }
 
         _ui->setPosition(0, 0, f4vr::isNodeVisible(f4vr::getWeaponNode()) ? 6.0f : 0.0f);
-
-        _configMsg->setVisibility(!_beamTuningTglBtn->isToggleOn());
-        _beamTuningMsg->setVisibility(_beamTuningTglBtn->isToggleOn());
 
         vrcf::VRControllersSuppress.setAllSuppressed(CONTROLLERS_SUPRESS_KEY, _beamTuningTglBtn->isToggleOn());
 
@@ -376,17 +373,29 @@ namespace ImFl::config
      */
     void BeamScreen::createUI()
     {
-        _onHeadFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-on-head.nif");
-        _onHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnHeadConfig(); });
+        _onHeadFLBtn = std::make_shared<UIToggleButtonPanel>("ImFl_OnHeadToggle");
+        _onHeadFLBtn->setTopText("FLASHLIGHT");
+        _onHeadFLBtn->setImage("vrui\\flashlight-on-head.DDS");
+        _onHeadFLBtn->setBottomText("ON HEAD");
+        _onHeadFLBtn->setOnToggleHandler([this](UIToggleButtonPanel*, bool) { switchingToOnHeadConfig(); });
 
-        _onPAHeadFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-on-pa-head.nif");
-        _onPAHeadFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToOnPAHeadConfig(); });
+        _onPAHeadFLBtn = std::make_shared<UIToggleButtonPanel>("ImFl_OnPAHeadToggle");
+        _onPAHeadFLBtn->setTopText("FLASHLIGHT");
+        _onPAHeadFLBtn->setImage("vrui\\flashlight-on-pa-head.DDS");
+        _onPAHeadFLBtn->setBottomText("ON PA HEAD");
+        _onPAHeadFLBtn->setOnToggleHandler([this](UIToggleButtonPanel*, bool) { switchingToOnPAHeadConfig(); });
 
-        _inHandFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-in-hand.nif");
-        _inHandFLBtn->setOnToggleHandler([this](UIWidget*, bool) { switchingToInHandConfig(); });
+        _inHandFLBtn = std::make_shared<UIToggleButtonPanel>("ImFl_InHandToggle");
+        _inHandFLBtn->setTopText("FLASHLIGHT");
+        _inHandFLBtn->setImage("vrui\\flashlight-in-hand.DDS");
+        _inHandFLBtn->setBottomText("IN HAND");
+        _inHandFLBtn->setOnToggleHandler([this](UIToggleButtonPanel*, bool) { switchingToInHandConfig(); });
 
-        _onWeaponFLBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-on-weapon.nif");
-        _onWeaponFLBtn->setOnToggleHandler([](UIWidget*, bool) { switchingToOnWeaponConfig(); });
+        _onWeaponFLBtn = std::make_shared<UIToggleButtonPanel>("ImFl_OnWeaponToggle");
+        _onWeaponFLBtn->setTopText("FLASHLIGHT");
+        _onWeaponFLBtn->setImage("vrui\\flashlight-on-weapon.DDS");
+        _onWeaponFLBtn->setBottomText("ON WEAPON");
+        _onWeaponFLBtn->setOnToggleHandler([](UIToggleButtonPanel*, bool) { switchingToOnWeaponConfig(); });
 
         _row1ToggleContainer = std::make_shared<UIToggleGroupContainer>("Row1", UIContainerLayout::HorizontalCenter, 0.3f);
         _row1ToggleContainer->addElement(_onHeadFLBtn);
@@ -395,28 +404,43 @@ namespace ImFl::config
         _row1ToggleContainer->addElement(_onWeaponFLBtn);
         setFlashlightButtonsToggleStateByLocation();
 
-        _beamTuningTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-beam-tuning.nif");
-        _beamTuningTglBtn->setOnToggleHandler([this](UIWidget*, bool) {});
+        _beamTuningTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_BeamTuningToggle");
+        _beamTuningTglBtn->setTopText("BEAM");
+        _beamTuningTglBtn->setImage("vrui\\beam-tuning.DDS");
+        _beamTuningTglBtn->setBottomText("TUNING");
+        _beamTuningTglBtn->setOnToggleHandler([this](UIToggleButtonPanel*, bool) {});
 
-        const auto switchGoboBtn = std::make_shared<UIButton>("ui-config-main\\btn-switch-gobo.nif");
-        switchGoboBtn->setOnPressHandler([this](UIWidget*) { switchBeamGobo(); });
+        const auto switchGoboBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchGoboButton");
+        switchGoboBtn->setTopText("SWITCH");
+        switchGoboBtn->setImage("vrui\\switch-gobo.DDS");
+        switchGoboBtn->setBottomText("GOBO");
+        switchGoboBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamGobo(); });
 
-        const auto switchColorBtn = std::make_shared<UIButton>("ui-config-main\\btn-switch-color.nif");
-        switchColorBtn->setOnPressHandler([this](UIWidget*) { switchBeamColor(); });
+        const auto switchColorBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchColorButton");
+        switchColorBtn->setTopText("SWITCH");
+        switchColorBtn->setImage("vrui\\switch-color.DDS");
+        switchColorBtn->setBottomText("COLOR");
+        switchColorBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamColor(); });
 
         const auto row2Container = std::make_shared<UIContainer>("Row2", UIContainerLayout::HorizontalCenter, 0.3f);
         row2Container->addElement(_beamTuningTglBtn);
         row2Container->addElement(switchGoboBtn);
         row2Container->addElement(switchColorBtn);
 
-        const auto saveBtn = std::make_shared<UIButton>("ui-common\\btn-save.nif");
-        saveBtn->setOnPressHandler([this](UIWidget*) { saveConfig(); });
+        const auto saveBtn = std::make_shared<UIButtonPanel>("ImFl_SaveButton");
+        saveBtn->setImage("vrui\\save.DDS");
+        saveBtn->setBottomText("SAVE");
+        saveBtn->setOnPressHandler([this](UIButtonPanel*) { saveConfig(); });
 
-        const auto resetBtn = std::make_shared<UIButton>("ui-common\\btn-reset.nif");
-        resetBtn->setOnPressHandler([this](UIWidget*) { resetConfig(); });
+        const auto resetBtn = std::make_shared<UIButtonPanel>("ImFl_ResetButton");
+        resetBtn->setImage("vrui\\reset.DDS");
+        resetBtn->setBottomText("RESET");
+        resetBtn->setOnPressHandler([this](UIButtonPanel*) { resetConfig(); });
 
-        const auto backBtn = std::make_shared<UIButton>("ui-common\\btn-back.nif");
-        backBtn->setOnPressHandler([this](UIWidget*) {
+        const auto backBtn = std::make_shared<UIButtonPanel>("ImFl_BackButton");
+        backBtn->setImage("vrui\\exit.DDS");
+        backBtn->setBottomText("BACK");
+        backBtn->setOnPressHandler([this](UIButtonPanel*) {
             if (_onBack) {
                 _onBack();
             }
@@ -427,14 +451,30 @@ namespace ImFl::config
         row3Container->addElement(resetBtn);
         row3Container->addElement(backBtn);
 
-        _configMsg = std::make_shared<UIWidget>("ui-config-main\\msg-beam-main.nif");
-        _beamTuningMsg = std::make_shared<UIWidget>("ui-config-main\\msg-beam-tuning.nif");
+        // one footer whose text follows the beam tuning toggle
+        const auto footer = std::make_shared<UITextPanel>("ImFl_BeamFooter");
+        footer->setStyle(F4VR_PANEL_STYLE);
+        footer->setTextHeight(0.2f);
+        footer->setContent([beamTuningTglBtn = std::weak_ptr(_beamTuningTglBtn)](std::vector<TextRow>& rows) {
+            const auto tuningBtn = beamTuningTglBtn.lock();
+            if (tuningBtn && tuningBtn->isToggleOn()) {
+                rows.emplace_back("PRIMARY STICK UP/DOWN: INTENSITY");
+                rows.emplace_back("PRIMARY STICK LEFT/RIGHT: DISTANCE");
+                rows.emplace_back("OFFHAND STICK UP/DOWN: SPREAD");
+            } else {
+                rows.emplace_back("TUNE VALUES SEPARATELY PER LOCATION");
+                rows.emplace_back("SAVE TO PERSIST CHANGES BEFORE EXIT");
+                rows.emplace_back("RESET RESETS TO MOD DEFAULTS");
+            }
+        });
 
         const auto row4Container = std::make_shared<UIContainer>("Row4", UIContainerLayout::HorizontalCenter, 0.3f);
-        row4Container->addElement(_configMsg);
-        row4Container->addElement(_beamTuningMsg);
+        row4Container->addElement(footer);
 
-        const auto header = std::make_shared<UIWidget>("ui-config-main\\title.nif", 1.5f);
+        const auto header = std::make_shared<UITextPanel>("ImFl_Title");
+        header->setStyle(UIPanelStyle{ .color = F4VR_PANEL_STYLE.color });
+        header->setTextHeight(0.5f);
+        header->setContent([](std::vector<TextRow>& rows) { rows.emplace_back("IMMERSIVE FLASHLIGHT: CONFIG", std::nullopt, f4cf::render::TextDecoration::Underline); });
 
         _ui = std::make_shared<UIContainer>("BeamConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _ui->addElement(row4Container);

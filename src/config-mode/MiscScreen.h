@@ -5,7 +5,6 @@
 
 #include "Config.h"
 #include "vrui/UIContainer.h"
-#include "vrui/UIToggleButton.h"
 
 namespace ImFl::config
 {

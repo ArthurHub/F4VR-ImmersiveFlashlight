@@ -4,9 +4,8 @@
 #include <memory>
 
 #include "vrui/UIContainer.h"
-#include "vrui/UIToggleButton.h"
+#include "vrui/UIToggleButtonPanel.h"
 #include "vrui/UIToggleGroupContainer.h"
-#include "vrui/UIWidget.h"
 
 namespace ImFl::config
 {
@@ -42,14 +41,12 @@ namespace ImFl::config
 
         // configuration UI
         std::shared_ptr<vrui::UIContainer> _ui;
-        std::shared_ptr<vrui::UIToggleButton> _beamTuningTglBtn;
-        std::shared_ptr<vrui::UIToggleButton> _onHeadFLBtn;
-        std::shared_ptr<vrui::UIToggleButton> _onPAHeadFLBtn;
-        std::shared_ptr<vrui::UIToggleButton> _inHandFLBtn;
-        std::shared_ptr<vrui::UIToggleButton> _onWeaponFLBtn;
+        std::shared_ptr<vrui::UIToggleButtonPanel> _beamTuningTglBtn;
+        std::shared_ptr<vrui::UIToggleButtonPanel> _onHeadFLBtn;
+        std::shared_ptr<vrui::UIToggleButtonPanel> _onPAHeadFLBtn;
+        std::shared_ptr<vrui::UIToggleButtonPanel> _inHandFLBtn;
+        std::shared_ptr<vrui::UIToggleButtonPanel> _onWeaponFLBtn;
         std::shared_ptr<vrui::UIToggleGroupContainer> _row1ToggleContainer;
-        std::shared_ptr<vrui::UIWidget> _configMsg;
-        std::shared_ptr<vrui::UIWidget> _beamTuningMsg;
 
         std::function<void()> _onBack;
 

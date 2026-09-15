@@ -7,9 +7,11 @@
 #include "RestrictionHandler.h"
 #include "Utils.h"
 #include "f4vr/PlayerNodes.h"
-#include "vrui/UIButton.h"
+#include "vrui/UIButtonPanel.h"
 #include "vrui/UIManager.h"
-#include "vrui/UIMultiStateToggleButton.h"
+#include "vrui/UIMultiStateToggleButtonPanel.h"
+#include "vrui/UITextPanel.h"
+#include "vrui/UIToggleButtonPanel.h"
 
 using namespace vrui;
 
@@ -163,40 +165,49 @@ namespace ImFl::config
      */
     void MiscScreen::createUI()
     {
-        // headgear requirement cycles through its 3 states; each state needs its own nif (all stubbed for now)
-        const std::map<FlashlightHeadgearRequirement, std::string> headgearNifs{
-            { FlashlightHeadgearRequirement::None, "ui-config-main\\btn-restrict-on-head-none.nif" },
-            { FlashlightHeadgearRequirement::AnyHeadGear, "ui-config-main\\btn-restrict-on-head-any.nif" },
-            { FlashlightHeadgearRequirement::Immersive, "ui-config-main\\btn-restrict-on-head-immersive.nif" },
+        // headgear requirement cycles through its 3 states
+        const std::map<FlashlightHeadgearRequirement, UIButtonPanelContent> headgearStates{
+            { FlashlightHeadgearRequirement::None, { .topText = "HEADGEAR", .middleText = "RESTRICT:", .bottomText = "NONE" } },
+            { FlashlightHeadgearRequirement::AnyHeadGear, { .topText = "HEADGEAR", .middleText = "RESTRICT:", .bottomText = "ANY" } },
+            { FlashlightHeadgearRequirement::Immersive, { .topText = "HEADGEAR", .middleText = "RESTRICT:", .bottomText = "IMMERSIVE" } },
         };
-        const auto headgearReqBtn = std::make_shared<UIMultiStateToggleButton<FlashlightHeadgearRequirement>>(headgearNifs);
+        const auto headgearReqBtn = std::make_shared<UIMultiStateToggleButtonPanel<FlashlightHeadgearRequirement>>("ImFl_HeadgearRequirementButton", headgearStates);
         headgearReqBtn->setState(g_config.flashlightHeadgearRequirement);
         headgearReqBtn->setOnStateChangedHandler(
-            [](UIMultiStateToggleButton<FlashlightHeadgearRequirement>*, const FlashlightHeadgearRequirement state) { onHeadgearRequirementChanged(state); });
+            [](UIMultiStateToggleButtonPanel<FlashlightHeadgearRequirement>*, const FlashlightHeadgearRequirement state) { onHeadgearRequirementChanged(state); });
 
-        // weapon-mesh requirement cycles through its 3 states; each state has its own nif
-        const std::map<FlashlightWeaponMeshRequirement, std::string> weaponReqNifs{
-            { FlashlightWeaponMeshRequirement::Disabled, "ui-config-main\\btn-restrict-on-weapon-none.nif" },
-            { FlashlightWeaponMeshRequirement::Enabled, "ui-config-main\\btn-restrict-on-weapon-on.nif" },
-            { FlashlightWeaponMeshRequirement::AutoDetect, "ui-config-main\\btn-restrict-on-weapon-auto.nif" },
+        // weapon-mesh requirement cycles through its 3 states
+        const std::map<FlashlightWeaponMeshRequirement, UIButtonPanelContent> weaponReqStates{
+            { FlashlightWeaponMeshRequirement::Disabled, { .topText = "WEAPON", .middleText = "RESTRICT:", .bottomText = "NONE" } },
+            { FlashlightWeaponMeshRequirement::Enabled, { .topText = "WEAPON", .middleText = "RESTRICT:", .bottomText = "ON" } },
+            { FlashlightWeaponMeshRequirement::AutoDetect, { .topText = "WEAPON", .middleText = "RESTRICT:", .bottomText = "AUTO" } },
         };
-        const auto weaponReqBtn = std::make_shared<UIMultiStateToggleButton<FlashlightWeaponMeshRequirement>>(weaponReqNifs);
+        const auto weaponReqBtn = std::make_shared<UIMultiStateToggleButtonPanel<FlashlightWeaponMeshRequirement>>("ImFl_WeaponRequirementButton", weaponReqStates);
         weaponReqBtn->setState(g_config.weaponFlashlightMeshRequirement);
         weaponReqBtn->setOnStateChangedHandler(
-            [](UIMultiStateToggleButton<FlashlightWeaponMeshRequirement>*, const FlashlightWeaponMeshRequirement state) { onWeaponMeshRequirementChanged(state); });
+            [](UIMultiStateToggleButtonPanel<FlashlightWeaponMeshRequirement>*, const FlashlightWeaponMeshRequirement state) { onWeaponMeshRequirementChanged(state); });
 
-        const auto npcDetectionTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-npc-detection.nif");
+        const auto npcDetectionTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_NpcDetectionToggle");
+        npcDetectionTglBtn->setTopText("NPC");
+        npcDetectionTglBtn->setMiddleText("ENEMY");
+        npcDetectionTglBtn->setBottomText("DETECTION");
         npcDetectionTglBtn->setToggleState(g_config.npcDetectionEnabled);
-        npcDetectionTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleNpcDetection(enabled); });
+        npcDetectionTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool enabled) { toggleNpcDetection(enabled); });
 
-        const auto showOnBodyTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-mesh-on-body.nif");
+        const auto showOnBodyTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_ShowOnBodyToggle");
+        showOnBodyTglBtn->setTopText("GRAB");
+        showOnBodyTglBtn->setMiddleText("FLASHLIGHT");
+        showOnBodyTglBtn->setBottomText("ON BELT");
         showOnBodyTglBtn->setToggleState(g_config.showFlashlightOnBody);
-        showOnBodyTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleShowOnBody(enabled); });
+        showOnBodyTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool enabled) { toggleShowOnBody(enabled); });
 
         // the button is the vanilla binding itself, so it is ON when the disable config flag is OFF
-        const auto disableVanillaTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-disable-global-toggle.nif");
+        const auto disableVanillaTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_VanillaToggleToggle");
+        disableVanillaTglBtn->setTopText("VANILLA");
+        disableVanillaTglBtn->setMiddleText("GLOBAL");
+        disableVanillaTglBtn->setBottomText("TOGGLE");
         disableVanillaTglBtn->setToggleState(!g_config.disableVanillaFlashlightToggle);
-        disableVanillaTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleDisableVanillaToggle(enabled); });
+        disableVanillaTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool enabled) { toggleDisableVanillaToggle(enabled); });
 
         const auto row1 = std::make_shared<UIContainer>("MiscRow1", UIContainerLayout::HorizontalCenter, 0.3f);
         row1->addElement(headgearReqBtn);
@@ -205,16 +216,24 @@ namespace ImFl::config
         row1->addElement(showOnBodyTglBtn);
         row1->addElement(disableVanillaTglBtn);
 
-        const auto shadowsTglBtn = std::make_shared<UIToggleButton>("ui-config-main\\btn-flashlight-shadows.nif");
+        const auto shadowsTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_ShadowsToggle");
+        shadowsTglBtn->setTopText("SHADOWS");
+        shadowsTglBtn->setImage("vrui\\flashlight-shadows.DDS");
+        shadowsTglBtn->setBottomText("ON / OFF");
         shadowsTglBtn->setToggleState(Utils::areFlashlightShadowsEnabled());
-        shadowsTglBtn->setOnToggleHandler([](UIWidget*, const bool shadowsEnabled) { toggleShadows(shadowsEnabled); });
+        shadowsTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool shadowsEnabled) { toggleShadows(shadowsEnabled); });
 
-        const auto debugSpheresTglBtn = std::make_shared<UIToggleButton>("ui-common\\btn-debug-spheres.nif");
+        const auto debugSpheresTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_DebugSpheresToggle");
+        debugSpheresTglBtn->setTopText("DEBUG");
+        debugSpheresTglBtn->setImage("vrui\\debug-spheres.DDS");
+        debugSpheresTglBtn->setBottomText("SPHERES");
         debugSpheresTglBtn->setToggleState(g_config.showAllActivationSpheres);
-        debugSpheresTglBtn->setOnToggleHandler([](UIWidget*, const bool enabled) { toggleDebugSpheres(enabled); });
+        debugSpheresTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool enabled) { toggleDebugSpheres(enabled); });
 
-        const auto backBtn = std::make_shared<UIButton>("ui-common\\btn-back.nif");
-        backBtn->setOnPressHandler([this](UIWidget*) {
+        const auto backBtn = std::make_shared<UIButtonPanel>("ImFl_BackButton");
+        backBtn->setImage("vrui\\exit.DDS");
+        backBtn->setBottomText("BACK");
+        backBtn->setOnPressHandler([this](UIButtonPanel*) {
             if (_onBack) {
                 _onBack();
             }
@@ -225,7 +244,10 @@ namespace ImFl::config
         row2->addElement(debugSpheresTglBtn);
         row2->addElement(backBtn);
 
-        const auto header = std::make_shared<UIWidget>("ui-config-main\\title.nif", 1.5f);
+        const auto header = std::make_shared<UITextPanel>("ImFl_Title");
+        header->setStyle(UIPanelStyle{ .color = F4VR_PANEL_STYLE.color });
+        header->setTextHeight(0.45f);
+        header->setContent([](std::vector<TextRow>& rows) { rows.emplace_back("IMMERSIVE FLASHLIGHT: CONFIG", std::nullopt, render::TextDecoration::Underline); });
 
         _ui = std::make_shared<UIContainer>("MiscConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _ui->addElement(row2);

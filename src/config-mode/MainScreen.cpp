@@ -5,8 +5,9 @@
 #include "Utils.h"
 #include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
-#include "vrui/UIButton.h"
+#include "vrui/UIButtonPanel.h"
 #include "vrui/UIManager.h"
+#include "vrui/UITextPanel.h"
 
 // ShellExecuteA is already declared transitively via the CommonLibF4/Windows headers; we only need the
 // import lib to link it. (Directly #include-ing <shellapi.h> here breaks against the F4SE Windows setup.)
@@ -184,36 +185,60 @@ namespace ImFl::config
     void MainScreen::createMenuUI()
     {
         // open beam config reuses the same icon FRIK shows to open this config
-        const auto beamConfigBtn = std::make_shared<UIButton>("ui-config-main\\btn-per-location-config.nif");
-        beamConfigBtn->setOnPressHandler([this](UIWidget*) { _pending = Nav::Beam; });
+        const auto beamConfigBtn = std::make_shared<UIButtonPanel>("ImFl_BeamConfigButton");
+        beamConfigBtn->setTopText("TUNING");
+        beamConfigBtn->setImage("vrui\\per-location-config.DDS");
+        beamConfigBtn->setBottomText("PER LOCATION");
+        beamConfigBtn->setOnPressHandler([this](UIButtonPanel*) { _pending = Nav::Beam; });
 
-        const auto miscConfigBtn = std::make_shared<UIButton>("ui-common\\btn-misc-config.nif");
-        miscConfigBtn->setOnPressHandler([this](UIWidget*) { _pending = Nav::Misc; });
+        const auto miscConfigBtn = std::make_shared<UIButtonPanel>("ImFl_MiscConfigButton");
+        miscConfigBtn->setTopText("MISC");
+        miscConfigBtn->setImage("vrui\\misc-config.DDS");
+        miscConfigBtn->setBottomText("CONFIG");
+        miscConfigBtn->setOnPressHandler([this](UIButtonPanel*) { _pending = Nav::Misc; });
 
         const auto row1 = std::make_shared<UIContainer>("MainNav", UIContainerLayout::HorizontalCenter, 0.3f);
         row1->addElement(beamConfigBtn);
         row1->addElement(miscConfigBtn);
 
-        const auto advancedConfigBtn = std::make_shared<UIButton>("ui-common\\btn-advanced-config.nif");
-        advancedConfigBtn->setOnPressHandler([](UIWidget*) { openIniFileForAdvancedEditing(); });
+        const auto advancedConfigBtn = std::make_shared<UIButtonPanel>("ImFl_AdvancedConfigButton");
+        advancedConfigBtn->setTopText("OPEN");
+        advancedConfigBtn->setImage("vrui\\advanced-config.DDS");
+        advancedConfigBtn->setBottomText("INI CONFIG");
+        advancedConfigBtn->setOnPressHandler([](UIButtonPanel*) { openIniFileForAdvancedEditing(); });
 
-        const auto wikiBtn = std::make_shared<UIButton>("ui-common\\btn-help-wiki.nif");
-        wikiBtn->setOnPressHandler([](UIWidget*) { openWiki(); });
+        const auto wikiBtn = std::make_shared<UIButtonPanel>("ImFl_HelpWikiButton");
+        wikiBtn->setTopText("OPEN");
+        wikiBtn->setImage("vrui\\help-wiki.DDS");
+        wikiBtn->setBottomText("HELP WIKI");
+        wikiBtn->setOnPressHandler([](UIButtonPanel*) { openWiki(); });
 
-        const auto exitBtn = std::make_shared<UIButton>("ui-common\\btn-exit.nif");
-        exitBtn->setOnPressHandler([this](UIWidget*) { _pending = Nav::Exit; });
+        const auto exitBtn = std::make_shared<UIButtonPanel>("ImFl_ExitButton");
+        exitBtn->setImage("vrui\\exit.DDS");
+        exitBtn->setBottomText("EXIT");
+        exitBtn->setOnPressHandler([this](UIButtonPanel*) { _pending = Nav::Exit; });
 
         const auto row2 = std::make_shared<UIContainer>("MainExit", UIContainerLayout::HorizontalCenter, 0.3f);
         row2->addElement(advancedConfigBtn);
         row2->addElement(wikiBtn);
         row2->addElement(exitBtn);
 
-        const auto mainMsg = std::make_shared<UIWidget>("ui-config-main\\msg-main.nif");
+        const auto mainMsg = std::make_shared<UITextPanel>("ImFl_MainFooter");
+        mainMsg->setStyle(F4VR_PANEL_STYLE);
+        mainMsg->setTextHeight(0.2f);
+        mainMsg->setContent([](std::vector<TextRow>& rows) {
+            rows.emplace_back("TURN ON/OFF BY OFFHAND TRIGGER TAP");
+            rows.emplace_back("IN EACH ACTIVATION LOCATION:");
+            rows.emplace_back("LEFT HIP / FOREHEAD / WEAPON");
+        });
 
         const auto row3 = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
         row3->addElement(mainMsg);
 
-        const auto header = std::make_shared<UIWidget>("ui-config-main\\title.nif", 1.5f);
+        const auto header = std::make_shared<UITextPanel>("ImFl_Title");
+        header->setStyle(UIPanelStyle{ .color = F4VR_PANEL_STYLE.color });
+        header->setTextHeight(0.5f);
+        header->setContent([](std::vector<TextRow>& rows) { rows.emplace_back("IMMERSIVE FLASHLIGHT: CONFIG", std::nullopt, f4cf::render::TextDecoration::Underline); });
 
         _menuUI = std::make_shared<UIContainer>("MainConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _menuUI->addElement(row3);
