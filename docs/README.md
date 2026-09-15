@@ -43,11 +43,24 @@ When the light is set to a hand, the runtime adapts to what that hand is doing:
 - **Primary hand, melee/unarmed drawn** → the hand is occupied, so the light turns off (it can't sit there).
 - **Offhand, two-handed grip** → the offhand is on the foregrip, so the light routes onto the weapon. If the weapon-flashlight requirement is on and the weapon has no modeled lamp, it falls back to your head instead of being lost; releasing the grip returns it to the offhand.
 
+### Weapons in the offhand (ROCK)
+
+When [ROCK](https://github.com/brunocatani/ROCK) handles your weapons, it can put the weapon in your offhand, and the light follows how the weapon is actually held:
+
+- **Two-handed grip** (from FRIK or ROCK) → the light goes onto the weapon, following ROCK's two-handed weapon pose.
+- **Pistol fired one-handed from the offhand** → your primary hand is free, so the light sits there, whichever hand the light is set to.
+- **Rifle carried by the offhand** (held without firing it) → the light stays on the weapon, unless you put it into the free primary hand with a gesture.
+- While the offhand holds the weapon, your free **primary hand** takes over the head gesture and can grab / stow the light from your chest. The move-to-hand gesture is inactive then, and so is the two-handed toggle while the offhand fires (its button is the fire trigger).
+
+Known limitation: while ROCK fires from the left hand, the mod's primary-hand haptics are felt in the offhand.
+
 ## Moving the Light (Gestures)
 
 ![activation zones](assets/activation-zones.jpg)
 
 Locations are changed physically, with haptic feedback when your hand enters an interaction zone. These gestures are the primary way to move and toggle the light — the in-game config UI is only for tuning. All bindings are configurable (see below); set any to `none` to disable that gesture.
+
+The gestures are inactive until you've picked up the **Pip-Boy** (before that the game only has the vanilla wrist light, which stays under the vanilla toggle), and while a menu that takes controller input is open — workbench, container, terminal, dialogue. The Pip-Boy, scope, and VATS keep them working.
 
 ### Grab from / stow on your body
 
@@ -56,6 +69,7 @@ A beam-less flashlight model sits on your chest whenever the light is off, head-
 - **Grab**: reach a hand into the model's grab zone and fire the grab binding to take the light into that hand — the light turns on in that hand.
 - **Stow**: reach the same hand back into the zone and fire again to put the model back — the light turns off.
 - A hand holding a **drawn weapon** can't grab or stow (in practice, your primary hand while holding the gun).
+- While your hand is inside the zone a sphere is drawn as a hint; see the [FAQ](faq.md#visuals) to hide it.
 
 ### Put the light on your head
 
@@ -184,7 +198,7 @@ Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlas
 
 Logs are written to `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`.
 
-Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation zone at its exact size and position while tuning (or set a single gesture's `sShowSphere` to `always` / `wheninside` in its section). See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
+Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation zone at its exact size and position while tuning. Each gesture's own `sShowSphere` (`never` / `always` / `wheninside`, in its section) controls its sphere otherwise — the body grab zone ships as `wheninside`, the others as `never`. See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
 
 ## Mod Recommendations
 

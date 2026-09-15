@@ -1,3 +1,11 @@
+## v1.1
+
+- ROCK: Added support for [ROCK](https://github.com/brunocatani/ROCK) weapon handling alongside FRIK. A two-handed grip from either mod puts the light on the weapon.
+- ROCK: The free primary hand can hold the light while the offhand handles the weapon on its own.
+- Fixed a crash when starting a new game or loading a save under certain conditions.
+- Fixed flashlight gestures working while some game menus were open (workbench, container, etc.).
+- Fixed flashlight gestures working before the Pip-Boy is picked up. The light uses vanilla behavior until you get the Pip-Boy in Vault 111.
+
 ## v1.0
 
 - Flashlight: Added a visible flashlight model held in your hand, with forward (thumb-up) and overhand (ice-pick) grips auto-detected from how you tilt the controller, or locked to one.

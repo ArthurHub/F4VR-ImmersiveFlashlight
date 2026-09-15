@@ -17,7 +17,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [\*][size=3]Classic toggle: The vanilla long-press of the off-hand trigger still turns the flashlight on/off. Turn it off in the config (misc screen, or [b]bDisableVanillaFlashlightToggle[/b] in the INI) so only the physical gestures control the light, for full immersion.[/size][*]
 [\*][size=3]Configure settings: Open via FRIK configuration UI (hold both thumbsticks for 2 seconds).[/size][*]
 [\*][size=3]Every gesture and binding is configurable, and any gesture can be disabled.[/size][*]
-[\*][size=3][b]Important: [/b]Set game "Shadows Quality" to "HIGH" to prevent corrupted shadows ([url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md#the-flashlight-shadows-look-bad-or-blocky]details and how to disable shadows[/url]﻿).[/size][*]
+[\*][size=3][b]Important: [/b]Set game "Shadows Quality" to "HIGH" to prevent corrupted shadows ([url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md#visuals]details and how to disable shadows[/url]﻿).[/size][*]
 [/list]
 
 [size=4][b]Features[/b][/size]
@@ -50,6 +50,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [list]
 [\*][size=3]Primary hand to weapon-mounted when non-melee weapon is equipped.[/size][*]
 [\*][size=3]Off-hand to weapon-mounted when gripping a weapon two-handed.[/size][*]
+[\*][size=3]ROCK support: the light follows two-handed grips and weapons held in the off-hand, moving to your free primary hand when needed.[/size][*]
 [/list]
 [*]
 [/list]

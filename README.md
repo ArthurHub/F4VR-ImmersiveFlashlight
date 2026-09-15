@@ -46,6 +46,7 @@ Download from [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) and in
 ### Compatibility
 
 - **FRIK v76 and below** is not supported - the in-game config UI and the FRIK flashlight integration require FRIK v77+.
+- [ROCK](https://github.com/brunocatani/ROCK) weapon handling is supported alongside FRIK: the light follows two-handed grips and weapons held in the offhand.
 - Other flashlight mods that drive the Pip-Boy light may conflict; run only one flashlight replacement at a time.
 
 ## Usage
