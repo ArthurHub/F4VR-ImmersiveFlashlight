@@ -1,3 +1,7 @@
+## v1.1.1
+
+Fixed the mod failing to connect to newer FRIK versions that extend the FRIK API resulting in no flashlight in hand.
+
 ## v1.1
 
 - ROCK: Added support for [ROCK](https://github.com/brunocatani/ROCK) weapon handling alongside FRIK. A two-handed grip from either mod puts the light on the weapon.

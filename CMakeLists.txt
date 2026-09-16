@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 4.2)
 # >>> Project
 set(NAME "ImmersiveFlashlightVR")
 set(FRIENDLY_NAME "Immersive Flashlight VR")
-set(VERSION 1.1.0)
+set(VERSION 1.1.1)
 
 message(">>> Start build for '${NAME}' v${VERSION}")
 

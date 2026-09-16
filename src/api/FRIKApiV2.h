@@ -657,7 +657,7 @@ namespace frik::api
             }
 
             const auto getApiStructSize = reinterpret_cast<std::uint32_t(FRIK_CALL*)()>(GetProcAddress(frikDll, "FRIKAPI_V2_GetApiStructSize"));
-            if (!getApiStructSize || getApiStructSize() != sizeof(FRIKApiV2)) {
+            if (!getApiStructSize || getApiStructSize() < sizeof(FRIKApiV2)) {
                 return 5;
             }
 
