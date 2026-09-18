@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
+#include "vrui/BindingPrompt.h"
 #include "vrui/UIButtonPanel.h"
 #include "vrui/UIManager.h"
 #include "vrui/UITextPanel.h"
@@ -17,6 +18,39 @@ namespace
 {
     // SW_SHOWNORMAL, declared locally so we don't depend on the winuser.h macro being visible here.
     constexpr int SHELL_SW_SHOWNORMAL = 1;
+
+    /**
+     * The footer telling the player how to turn the light on and off: each activation location with the
+     * binding that works it.
+     *
+     * The three gestures are bound separately but ship with the same binding, so they are grouped by the
+     * prompt they show: while they agree it is one line naming every location, and a location bound
+     * differently gets a line of its own rather than a prompt that would be wrong for it.
+     */
+    void appendActivationPrompts(std::vector<vrui::TextRow>& rows)
+    {
+        const std::pair<const char*, const vrcf::InputBinding*> locations[]{
+            { "LEFT HIP", &ImFl::g_config.bodyActivation.primary },
+            { "FOREHEAD", &ImFl::g_config.headActivation.primary },
+            { "WEAPON", &ImFl::g_config.primaryHandActivation.primary },
+        };
+
+        std::vector<std::pair<std::string, const vrcf::InputBinding*>> groups;
+        for (const auto& [name, binding] : locations) {
+            const auto same = std::ranges::find_if(groups, [binding](const auto& group) { return vrui::samePrompt(*group.second, *binding); });
+            if (same != groups.end()) {
+                same->first += std::format(" / {}", name);
+            } else {
+                groups.emplace_back(name, binding);
+            }
+        }
+
+        rows.emplace_back(groups.size() == 1 ? "TURN ON/OFF AT EACH LOCATION:" : "TURN ON/OFF AT:");
+        for (const auto& [names, binding] : groups) {
+            rows.push_back({ .spans = { { std::format("{} BY ", names) } } });
+            appendBindingPrompt(rows.back().spans, *binding);
+        }
+    }
 }
 
 using namespace vrui;
@@ -226,11 +260,7 @@ namespace ImFl::config
         const auto mainMsg = std::make_shared<UITextPanel>("ImFl_MainFooter");
         mainMsg->setStyle(F4VR_PANEL_STYLE);
         mainMsg->setTextHeight(0.2f);
-        mainMsg->setContent([](std::vector<TextRow>& rows) {
-            rows.emplace_back("TURN ON/OFF BY OFFHAND TRIGGER TAP");
-            rows.emplace_back("IN EACH ACTIVATION LOCATION:");
-            rows.emplace_back("LEFT HIP / FOREHEAD / WEAPON");
-        });
+        mainMsg->setContent([](std::vector<TextRow>& rows) { appendActivationPrompts(rows); });
 
         const auto row3 = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
         row3->addElement(mainMsg);

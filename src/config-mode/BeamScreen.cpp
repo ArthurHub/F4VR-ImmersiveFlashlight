@@ -6,6 +6,7 @@
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
+#include "vrui/BindingPrompt.h"
 #include "vrui/UIButtonPanel.h"
 #include "vrui/UIManager.h"
 #include "vrui/UITextPanel.h"
@@ -458,9 +459,19 @@ namespace ImFl::config
         footer->setContent([beamTuningTglBtn = std::weak_ptr(_beamTuningTglBtn)](std::vector<TextRow>& rows) {
             const auto tuningBtn = beamTuningTglBtn.lock();
             if (tuningBtn && tuningBtn->isToggleOn()) {
-                rows.emplace_back("PRIMARY STICK UP/DOWN: INTENSITY");
-                rows.emplace_back("PRIMARY STICK LEFT/RIGHT: DISTANCE");
-                rows.emplace_back("OFFHAND STICK UP/DOWN: SPREAD");
+                // the tuning reads the thumbsticks directly (see handleBeamTuningAdjustments), so the prompts
+                // are built from bindings describing exactly those reads
+                constexpr BindingPromptStyle STICK_PROMPT_STYLE{ .imageHeight = 2.0f };
+                const auto stick = [](const vrcf::Hand hand) {
+                    return vrcf::InputBinding{ .hand = hand, .type = vrcf::ActivationType::AxisDirection, .axis = vrcf::Axis::Thumbstick };
+                };
+                for (const auto& [hand, text] : { std::pair{ vrcf::Hand::Primary, " UP/DOWN: INTENSITY" },
+                         std::pair{ vrcf::Hand::Primary, " LEFT/RIGHT: DISTANCE" },
+                         std::pair{ vrcf::Hand::Offhand, " UP/DOWN: SPREAD" } }) {
+                    rows.push_back({});
+                    appendBindingPrompt(rows.back().spans, stick(hand), STICK_PROMPT_STYLE);
+                    rows.back().spans.push_back({ .text = text });
+                }
             } else {
                 rows.emplace_back("TUNE VALUES SEPARATELY PER LOCATION");
                 rows.emplace_back("SAVE TO PERSIST CHANGES BEFORE EXIT");
