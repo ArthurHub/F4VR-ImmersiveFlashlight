@@ -73,7 +73,7 @@ namespace ImFl::config
     }
 
     /**
-     * Toggle rendering of the grab/activation debug spheres. Read live by Flashlight each frame, so the
+     * Toggle rendering of every activation sphere at its true size. Read live by Flashlight each frame, so the
      * spheres appear/disappear on the next frame; persisted so the choice survives a restart.
      */
     void MiscScreen::toggleDebugSpheres(const bool enabled)

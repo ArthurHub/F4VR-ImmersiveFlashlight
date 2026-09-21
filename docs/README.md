@@ -198,7 +198,7 @@ Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlas
 
 Logs are written to `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`.
 
-Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation zone at its exact size and position while tuning. Each gesture's own `sShowSphere` (`never` / `always` / `wheninside`, in its section) controls its sphere otherwise — the body grab zone ships as `wheninside`, the others as `never`. See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
+Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation sphere at its exact size and position while tuning. Otherwise each gesture marks its zone with an icon and/or a sphere, each with its own setting in its section (`sShowIcon` / `sShowSphere`: `never` / `always` / `wheninside` / `whenavailable`, the last while the gesture can fire). The body grab and primary-hand gestures show their flashlight icon while a hand is inside; the head gesture shows nothing. See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
 
 ## Mod Recommendations
 

@@ -94,14 +94,14 @@ When no modeled flashlight is detected the beam sits at a generic offset near th
 ## Visuals
 
 <details>
-  <summary>How do I hide the sphere that shows when my hand is near the flashlight on my chest?</summary>
+  <summary>How do I hide the icon that shows when my hand is near the flashlight on my chest?</summary>
 &#10240;
 
-That sphere is the **grab zone** of the flashlight stowed on your chest. By default it's drawn only while a hand is inside it, as a hint that a trigger press will grab or stow the light. To hide it, set `sShowSphere = never` in the `[ImFl_BodyActivationSphere]` section of the INI. The grab keeps working exactly the same, and the haptic tick still tells you when your hand is in the zone. The change applies live.
+The icon marks the **grab zone** of the flashlight stowed on your chest. By default it's drawn only while a hand is inside the zone, as a hint that a trigger press will grab or stow the light. To hide it, set `sShowIcon = never` in the `[ImFl_BodyActivationSphere]` section of the INI. The grab keeps working exactly the same, and the haptic tick still tells you when your hand is in the zone. The change applies live.
 
-If a sphere still shows, the global **show all activation spheres** toggle is on (misc config screen, or `bShowAllActivationSpheres` in the INI). It forces every zone visible, so turn it off.
+If a sphere shows around it, the global **show all activation spheres** toggle is on (misc config screen, or `bShowAllActivationSpheres` in the INI). It forces every sphere visible at its full size, so turn it off.
 
-If you'd rather keep the hint but make it less intrusive, lower `fSphereScale` in the same section — it draws a smaller sphere without shrinking the actual grab zone.
+If you'd rather keep the hint but make it less intrusive, lower `fIconSize` in the same section — it draws a smaller icon without shrinking the actual grab zone. To mark the zone with a glowing sphere instead (or as well), set `sShowSphere = wheninside`; `fSphereScale` sizes it.
 
 </details>
 

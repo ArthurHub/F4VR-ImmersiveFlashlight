@@ -262,8 +262,9 @@ namespace ImFl
         // Section [ImFl_PrimaryHandActivationSphere].
         f4vr::WandActivationConfig primaryHandActivation;
 
-        // Force every grab/activation sphere to always render — a global master that overrides each sphere's
-        // own WandActivationConfig::showSphere to Always (for tuning or discovering the zones).
+        // Force every activation sphere to always render at its zone's true size — a global master over each
+        // sphere's own WandActivationConfig::showSphere and sphere scale (WandActivationSphere::Frame::showZone),
+        // for tuning or discovering the zones. Icons are left as configured.
         bool showAllActivationSpheres = false;
 
         // Zone-less offhand toggle of the weapon-mounted light for two-handed weapon holds, where the offhand

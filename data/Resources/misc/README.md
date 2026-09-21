@@ -8,9 +8,11 @@ itself is drawn with primitives (its icons live as loose textures in `Textures\I
   ([src/FlashlightMod.cpp](../../../src/FlashlightMod.cpp)).
 
 The activation / debug sphere visuals are not in this atlas: they are the framework's standalone meshes and
-textures, copied unchanged from its `mod-template` into `Meshes\ImmersiveFlashlightVR\spheres\` and
-`Textures\ImmersiveFlashlightVR\spheres\` (the texture is set by code at runtime, so nothing in them names the
-mod). An `[ImFl_*ActivationSphere]` section's `sSphereStyle` picks their look.
+textures, copied unchanged from its `mod-template` into `Meshes\ImmersiveFlashlightVR\f4cf\` and
+`Textures\ImmersiveFlashlightVR\f4cf\` (the texture is set by code at runtime, so nothing in them names the
+mod). An `[ImFl_*ActivationSphere]` section's `sSphereStyle` picks their look. The spheres' icons are loose
+textures too: the framework's `f4cf\activation-icon-hand.dds` / `activation-icon-ring.dds` / `activation-icon-circle.dds` and the mod's own
+`activation-icon-flashlight.dds` (picked by `sIcon`).
 
 ## Pack command
 

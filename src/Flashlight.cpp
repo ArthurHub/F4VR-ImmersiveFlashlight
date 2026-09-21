@@ -236,10 +236,12 @@ namespace ImFl
                     { .binding=primaryTapActive ? WeaponGripHandler::adjustBindingForInputRemap(g_config.bodyActivation.secondary) : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.bodyActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.bodyActivation.entryHaptic,
-                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.bodyActivation.showSphere,
+                .showSphere = g_config.bodyActivation.showSphere,
+                .showZone = g_config.showAllActivationSpheres,
                 .sphereStyle = &g_config.bodyActivation.sphereStyle,
-                .sphereScale = g_config.bodyActivation.sphereScale,
                 .sphereOrientation = g_config.bodyActivation.sphereOrientation,
+                .showIcon = g_config.bodyActivation.showIcon,
+                .iconStyle = &g_config.bodyActivation.iconStyle,
             },
             [&](const vrcf::InputBinding& binding) {
                 const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
@@ -290,10 +292,12 @@ namespace ImFl
                     { .binding=headToOffhandActive ? toHandBinding : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.headActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.headActivation.entryHaptic,
-                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.headActivation.showSphere,
+                .showSphere = g_config.headActivation.showSphere,
+                .showZone = g_config.showAllActivationSpheres,
                 .sphereStyle = &g_config.headActivation.sphereStyle,
-                .sphereScale = g_config.headActivation.sphereScale,
                 .sphereOrientation = g_config.headActivation.sphereOrientation,
+                .showIcon = g_config.headActivation.showIcon,
+                .iconStyle = &g_config.headActivation.iconStyle,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press head -> hand (headActivation.secondary; only fed while the light is head-mounted).
@@ -378,10 +382,12 @@ namespace ImFl
                     { .binding=weaponToOffhandActive ? toOffhandBinding : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.primaryHandActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.primaryHandActivation.entryHaptic,
-                .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.primaryHandActivation.showSphere,
+                .showSphere = g_config.primaryHandActivation.showSphere,
+                .showZone = g_config.showAllActivationSpheres,
                 .sphereStyle = &g_config.primaryHandActivation.sphereStyle,
-                .sphereScale = g_config.primaryHandActivation.sphereScale,
                 .sphereOrientation = g_config.primaryHandActivation.sphereOrientation,
+                .showIcon = g_config.primaryHandActivation.showIcon,
+                .iconStyle = &g_config.primaryHandActivation.iconStyle,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press weapon -> offhand (primaryHandActivation.secondary; only fed while on the weapon).
