@@ -17,10 +17,6 @@ namespace
     constexpr const char* SECTION_HEAD_ACTIVATION_SPHERE = "ImFl_HeadActivationSphere";
     constexpr const char* SECTION_PRIMARY_HAND_ACTIVATION_SPHERE = "ImFl_PrimaryHandActivationSphere";
 
-    // Sphere mesh for an activation sphere whose INI section sets no sSphereNif, in the mod's own misc atlas
-    // (the framework's default names a ui-common mesh this mod does not ship).
-    constexpr const char* DEFAULT_SPHERE_NIF = "misc\\activation-sphere@white-medium.nif";
-
     // Named INI sections for the advanced, per-feature settings (moved out of the main [ImmersiveFlashlightVR]
     // section in config version 15). Location, beam appearance and the global light/toggle keys stay in the
     // main section (DEFAULT_SECTION); only the advanced groups are read from these.
@@ -484,7 +480,6 @@ namespace ImFl
                 .zone = grabSphereDefault,
                 .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .secondary = { .hand = vrcf::Hand::Primary, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
-                .sphereNif = DEFAULT_SPHERE_NIF,
             });
 
         RE::NiTransform headSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -495,7 +490,6 @@ namespace ImFl
                 .zone = headSphereDefault,
                 .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
-                .sphereNif = DEFAULT_SPHERE_NIF,
             });
 
         RE::NiTransform primaryHandSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -506,7 +500,6 @@ namespace ImFl
                 .zone = primaryHandSphereDefault,
                 .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
-                .sphereNif = DEFAULT_SPHERE_NIF,
             });
         toggleWeaponFlashlightTwoHandedBinding = getInputBindingValue(ini,
             SECTION_WEAPON_MOUNT,

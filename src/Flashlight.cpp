@@ -237,8 +237,9 @@ namespace ImFl
                 },
                 .entryHaptic = g_config.bodyActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.bodyActivation.showSphere,
-                .sphereNif = g_config.bodyActivation.sphereNif,
+                .sphereStyle = &g_config.bodyActivation.sphereStyle,
                 .sphereScale = g_config.bodyActivation.sphereScale,
+                .sphereOrientation = g_config.bodyActivation.sphereOrientation,
             },
             [&](const vrcf::InputBinding& binding) {
                 const auto newLocation = f4vr::isPrimaryHand(binding.hand) ? FlashlightLocation::InPrimaryHand : FlashlightLocation::InOffhand;
@@ -290,8 +291,9 @@ namespace ImFl
                 },
                 .entryHaptic = g_config.headActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.headActivation.showSphere,
-                .sphereNif = g_config.headActivation.sphereNif,
+                .sphereStyle = &g_config.headActivation.sphereStyle,
                 .sphereScale = g_config.headActivation.sphereScale,
+                .sphereOrientation = g_config.headActivation.sphereOrientation,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press head -> hand (headActivation.secondary; only fed while the light is head-mounted).
@@ -377,8 +379,9 @@ namespace ImFl
                 },
                 .entryHaptic = g_config.primaryHandActivation.entryHaptic,
                 .showSphere = g_config.showAllActivationSpheres ? f4vr::ActivationSphereVisibility::Always : g_config.primaryHandActivation.showSphere,
-                .sphereNif = g_config.primaryHandActivation.sphereNif,
+                .sphereStyle = &g_config.primaryHandActivation.sphereStyle,
                 .sphereScale = g_config.primaryHandActivation.sphereScale,
+                .sphereOrientation = g_config.primaryHandActivation.sphereOrientation,
             },
             [&](const vrcf::InputBinding& binding) {
                 // Long-press weapon -> offhand (primaryHandActivation.secondary; only fed while on the weapon).
