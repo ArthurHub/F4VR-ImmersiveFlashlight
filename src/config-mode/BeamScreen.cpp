@@ -495,17 +495,17 @@ namespace ImFl::config
         row2Container->addElement(_beamValuesPanel);
 
         const auto saveBtn = std::make_shared<UIButtonPanel>("ImFl_SaveButton");
-        saveBtn->setImage("vrui\\save.DDS");
+        saveBtn->setImage("f4cf\\vrui\\save.DDS");
         saveBtn->setBottomText("SAVE");
         saveBtn->setOnPressHandler([this](UIButtonPanel*) { saveConfig(); });
 
         const auto resetBtn = std::make_shared<UIButtonPanel>("ImFl_ResetButton");
-        resetBtn->setImage("vrui\\reset.DDS");
+        resetBtn->setImage("f4cf\\vrui\\reset.DDS");
         resetBtn->setBottomText("RESET");
         resetBtn->setOnPressHandler([this](UIButtonPanel*) { resetConfig(); });
 
         const auto backBtn = std::make_shared<UIButtonPanel>("ImFl_BackButton");
-        backBtn->setImage("vrui\\exit.DDS");
+        backBtn->setImage("f4cf\\vrui\\exit.DDS");
         backBtn->setBottomText("BACK");
         backBtn->setOnPressHandler([this](UIButtonPanel*) {
             if (_onBack) {

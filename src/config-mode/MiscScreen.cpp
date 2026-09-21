@@ -225,13 +225,13 @@ namespace ImFl::config
 
         const auto debugSpheresTglBtn = std::make_shared<UIToggleButtonPanel>("ImFl_DebugSpheresToggle");
         debugSpheresTglBtn->setTopText("DEBUG");
-        debugSpheresTglBtn->setImage("vrui\\debug-spheres.DDS");
+        debugSpheresTglBtn->setImage("f4cf\\vrui\\debug-spheres.DDS");
         debugSpheresTglBtn->setBottomText("SPHERES");
         debugSpheresTglBtn->setToggleState(g_config.showAllActivationSpheres);
         debugSpheresTglBtn->setOnToggleHandler([](UIToggleButtonPanel*, const bool enabled) { toggleDebugSpheres(enabled); });
 
         const auto backBtn = std::make_shared<UIButtonPanel>("ImFl_BackButton");
-        backBtn->setImage("vrui\\exit.DDS");
+        backBtn->setImage("f4cf\\vrui\\exit.DDS");
         backBtn->setBottomText("BACK");
         backBtn->setOnPressHandler([this](UIButtonPanel*) {
             if (_onBack) {

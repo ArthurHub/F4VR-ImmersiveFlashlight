@@ -227,7 +227,7 @@ namespace ImFl::config
 
         const auto miscConfigBtn = std::make_shared<UIButtonPanel>("ImFl_MiscConfigButton");
         miscConfigBtn->setTopText("MISC");
-        miscConfigBtn->setImage("vrui\\misc-config.DDS");
+        miscConfigBtn->setImage("f4cf\\vrui\\misc-config.DDS");
         miscConfigBtn->setBottomText("CONFIG");
         miscConfigBtn->setOnPressHandler([this](UIButtonPanel*) { _pending = Nav::Misc; });
 
@@ -237,18 +237,18 @@ namespace ImFl::config
 
         const auto advancedConfigBtn = std::make_shared<UIButtonPanel>("ImFl_AdvancedConfigButton");
         advancedConfigBtn->setTopText("OPEN");
-        advancedConfigBtn->setImage("vrui\\advanced-config.DDS");
+        advancedConfigBtn->setImage("f4cf\\vrui\\advanced-config.DDS");
         advancedConfigBtn->setBottomText("INI CONFIG");
         advancedConfigBtn->setOnPressHandler([](UIButtonPanel*) { openIniFileForAdvancedEditing(); });
 
         const auto wikiBtn = std::make_shared<UIButtonPanel>("ImFl_HelpWikiButton");
         wikiBtn->setTopText("OPEN");
-        wikiBtn->setImage("vrui\\help-wiki.DDS");
+        wikiBtn->setImage("f4cf\\vrui\\help-wiki.DDS");
         wikiBtn->setBottomText("HELP WIKI");
         wikiBtn->setOnPressHandler([](UIButtonPanel*) { openWiki(); });
 
         const auto exitBtn = std::make_shared<UIButtonPanel>("ImFl_ExitButton");
-        exitBtn->setImage("vrui\\exit.DDS");
+        exitBtn->setImage("f4cf\\vrui\\exit.DDS");
         exitBtn->setBottomText("EXIT");
         exitBtn->setOnPressHandler([this](UIButtonPanel*) { _pending = Nav::Exit; });
 
