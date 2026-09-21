@@ -20,21 +20,33 @@ namespace
 {
     const char* CONTROLLERS_SUPRESS_KEY = "ImFl_BeamConfig";
 
+    // how long the value a thumbstick adjustment just changed stays highlighted in the values panel
+    constexpr uint64_t TUNED_VALUE_HIGHLIGHT_MS = 1500;
+
+    // the width of the two preset buttons the values panel replaces plus the padding between them, so the
+    // beam tuning toggle beside it stays where it is when they are swapped
+    constexpr float BEAM_VALUES_PANEL_WIDTH = 4.3f;
+
+    // where a value starts, measured from the start of its row, so the three line up in a column
+    constexpr float BEAM_VALUES_TAB_WIDTH = 2.4f;
+
     struct ColorOption
     {
         std::array<int, 3> rgb;
+
+        // what the color button calls the preset, short enough not to be shrunk on a 2-unit button
         std::string_view name;
     };
 
     constexpr std::array<ColorOption, 8> COLOR_OPTIONS{ {
-        { .rgb = { 255, 255, 255 }, .name = "Full White" },
-        { .rgb = { 240, 230, 225 }, .name = "Mostly White" },
-        { .rgb = { 235, 224, 190 }, .name = "Warm White" },
-        { .rgb = { 255, 200, 150 }, .name = "Warm Dim White (yellowish)" },
-        { .rgb = { 255, 210, 210 }, .name = "Red" },
-        { .rgb = { 210, 255, 210 }, .name = "Green" },
-        { .rgb = { 190, 190, 255 }, .name = "Blue" },
-        { .rgb = { 190, 100, 255 }, .name = "Purple" },
+        { .rgb = { 255, 255, 255 }, .name = "FULL WHITE" },
+        { .rgb = { 240, 230, 225 }, .name = "MOSTLY WHITE" },
+        { .rgb = { 235, 224, 190 }, .name = "WARM WHITE" },
+        { .rgb = { 255, 200, 150 }, .name = "WARM DIM" },
+        { .rgb = { 255, 210, 210 }, .name = "RED" },
+        { .rgb = { 210, 255, 210 }, .name = "GREEN" },
+        { .rgb = { 190, 190, 255 }, .name = "BLUE" },
+        { .rgb = { 190, 100, 255 }, .name = "PURPLE" },
     } };
 
     int findCurrentColorIndex()
@@ -183,6 +195,11 @@ namespace ImFl::config
         _inHandFLBtn.reset();
         _onWeaponFLBtn.reset();
         _row1ToggleContainer.reset();
+        _switchGoboBtn.reset();
+        _switchColorBtn.reset();
+        _beamValuesPanel.reset();
+        _shownGoboPath.clear();
+        _shownColorTint.reset();
     }
 
     /**
@@ -200,9 +217,11 @@ namespace ImFl::config
 
         setFlashlightButtonsToggleStateByLocation();
 
-        handleBeamTuningAdjustments();
+        refreshPresetButtons();
 
-        showBeamCurrentValuesNotification();
+        updateBeamTuningPanelVisibility();
+
+        handleBeamTuningAdjustments();
     }
 
     /**
@@ -224,49 +243,90 @@ namespace ImFl::config
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
                 *FlashlightState::flashlightFade = fminf(*FlashlightState::flashlightFade + 0.1f, 4.0f);
+                markValueTuned(TunedValue::Intensity);
                 break;
             case vrcf::Direction::Down:
                 *FlashlightState::flashlightFade = fmaxf(*FlashlightState::flashlightFade - 0.1f, 0.2f);
+                markValueTuned(TunedValue::Intensity);
                 break;
             case vrcf::Direction::Right:
                 *FlashlightState::flashlightRadius = min(*FlashlightState::flashlightRadius + 200, 10000);
+                markValueTuned(TunedValue::Distance);
                 break;
             case vrcf::Direction::Left:
                 *FlashlightState::flashlightRadius = max(*FlashlightState::flashlightRadius - 200, 1000);
+                markValueTuned(TunedValue::Distance);
                 break;
             }
             FlashlightState::toggleLightRefreshValues();
-            _lastValuesChangeNotificationPensing = true;
         }
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
                 *FlashlightState::flashlightFov = fminf(*FlashlightState::flashlightFov + 5, 150);
+                markValueTuned(TunedValue::Spread);
                 FlashlightState::toggleLightRefreshValues();
-                _lastValuesChangeNotificationPensing = true;
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
                 *FlashlightState::flashlightFov = fmaxf(*FlashlightState::flashlightFov - 5, 5);
+                markValueTuned(TunedValue::Spread);
                 FlashlightState::toggleLightRefreshValues();
-                _lastValuesChangeNotificationPensing = true;
             }
         }
     }
 
     /**
-     * Show notification with current flashlight values after they were changed.
-     * Try not to spam too much.
+     * Remember which value a thumbstick adjustment just changed, so the values panel can highlight it.
      */
-    void BeamScreen::showBeamCurrentValuesNotification()
+    void BeamScreen::markValueTuned(const TunedValue value)
     {
-        const auto now = nowMillis();
-        if (_lastValuesChangeNotificationPensing && now - _lastValuesUpdateNotificationTime > 3000) {
-            _lastValuesChangeNotificationPensing = false;
-            _lastValuesUpdateNotificationTime = now;
-            f4vr::showNotification(std::format("Beam values updated:\nIntensity = {:.1f}\nDistance = {}\nSpread = {:.0f}\xC2\xB0",
-                *FlashlightState::flashlightFade,
-                *FlashlightState::flashlightRadius,
-                *FlashlightState::flashlightFov));
+        _lastTunedValue = value;
+        _lastTunedValueTime = nowMillis();
+    }
+
+    /**
+     * One row of the values panel: the value's name, then the value itself at the tab stop so the three
+     * line up, highlighted while it is the one the last thumbstick adjustment changed.
+     */
+    vrui::TextRow BeamScreen::beamValueRow(const std::string_view label, const std::string& value, const TunedValue tunedValue) const
+    {
+        const auto highlighted = tunedValue == _lastTunedValue && nowMillis() - _lastTunedValueTime < TUNED_VALUE_HIGHLIGHT_MS;
+        return { .spans = { { .text = std::format("{}\t", label) }, { .text = value, .color = highlighted ? std::optional(render::colors::Yellow) : std::nullopt } } };
+    }
+
+    /**
+     * Paint the preset buttons with the preset they are on: the gobo texture itself as the gobo button's
+     * image, the beam color as the color button's tint, each naming its preset below. Runs every frame,
+     * since a location switch, a reset or a config reload changes the preset as much as a press does, but
+     * touches a button only when what it shows has actually changed - the gobo one loads a texture.
+     */
+    void BeamScreen::refreshPresetButtons()
+    {
+        if (const auto& goboPath = *FlashlightState::flashlightGoboPath; goboPath != _shownGoboPath) {
+            _shownGoboPath = goboPath;
+            _switchGoboBtn->setImage(goboPath);
+            const auto goboIndex = findCurrentGoboPathIndex();
+            _switchGoboBtn->setBottomText(goboIndex < 0 ? "GOBO" : std::format("GOBO {}/{}", goboIndex + 1, goboTextureFilePaths.size()));
         }
+
+        const auto color = render::Color::rgba(*FlashlightState::flashlightColorRed, *FlashlightState::flashlightColorGreen, *FlashlightState::flashlightColorBlue);
+        if (_shownColorTint != color) {
+            _shownColorTint = color;
+            _switchColorBtn->setImageTint(color);
+            const auto colorIndex = findCurrentColorIndex();
+            _switchColorBtn->setBottomText(colorIndex < 0 ? "CUSTOM" : std::string(COLOR_OPTIONS[colorIndex].name));
+        }
+    }
+
+    /**
+     * While beam tuning is on the gobo and color buttons give their place in the row to the values panel:
+     * the three tuned values are what the thumbsticks are changing, and the presets are not.
+     */
+    void BeamScreen::updateBeamTuningPanelVisibility() const
+    {
+        const auto tuning = _beamTuningTglBtn->isToggleOn();
+        _switchGoboBtn->setVisibility(!tuning);
+        _switchColorBtn->setVisibility(!tuning);
+        _beamValuesPanel->setVisibility(tuning);
     }
 
     /**
@@ -278,10 +338,6 @@ namespace ImFl::config
         *FlashlightState::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
 
         FlashlightState::toggleLightRefreshValues();
-
-        auto goboFileName = std::filesystem::path(*FlashlightState::flashlightGoboPath).stem().string();
-        std::ranges::replace(goboFileName, '_', ' ');
-        f4vr::showNotification(std::format("Beam Gobo: {}\nPreset: {} out of {}", goboFileName, nextGoboIndex + 1, goboTextureFilePaths.size()));
     }
 
     /**
@@ -295,8 +351,6 @@ namespace ImFl::config
         *FlashlightState::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
 
         FlashlightState::toggleLightRefreshValues();
-
-        f4vr::showNotification(std::format("Beam Color: {}\nPreset: {} out of {}", COLOR_OPTIONS[nextColorIndex].name, nextColorIndex + 1, COLOR_OPTIONS.size()));
     }
 
     /**
@@ -411,22 +465,34 @@ namespace ImFl::config
         _beamTuningTglBtn->setBottomText("TUNING");
         _beamTuningTglBtn->setOnToggleHandler([this](UIToggleButtonPanel*, bool) {});
 
-        const auto switchGoboBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchGoboButton");
-        switchGoboBtn->setTopText("SWITCH");
-        switchGoboBtn->setImage("vrui\\switch-gobo.DDS");
-        switchGoboBtn->setBottomText("GOBO");
-        switchGoboBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamGobo(); });
+        // the image and the bottom line of both preset buttons are the preset itself - see refreshPresetButtons
+        _switchGoboBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchGoboButton");
+        _switchGoboBtn->setTopText("SWITCH");
+        _switchGoboBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamGobo(); });
 
-        const auto switchColorBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchColorButton");
-        switchColorBtn->setTopText("SWITCH");
-        switchColorBtn->setImage("vrui\\switch-color.DDS");
-        switchColorBtn->setBottomText("COLOR");
-        switchColorBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamColor(); });
+        _switchColorBtn = std::make_shared<UIButtonPanel>("ImFl_SwitchColorButton");
+        _switchColorBtn->setTopText("SWITCH");
+        _switchColorBtn->setImage("vrui\\switch-color.DDS");
+        _switchColorBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamColor(); });
 
+        _beamValuesPanel = std::make_shared<UITextPanel>("ImFl_BeamValues", BEAM_VALUES_PANEL_WIDTH);
+        _beamValuesPanel->setStyle(F4VR_PANEL_STYLE);
+        _beamValuesPanel->setTabWidth(BEAM_VALUES_TAB_WIDTH);
+        _beamValuesPanel->setContent([this](std::vector<TextRow>& rows) {
+            rows.push_back(beamValueRow("INTENSITY", std::format("{:.1f}", *FlashlightState::flashlightFade), TunedValue::Intensity));
+            rows.push_back(beamValueRow("DISTANCE", std::format("{}", *FlashlightState::flashlightRadius), TunedValue::Distance));
+            rows.push_back(beamValueRow("SPREAD", std::format("{:.0f}\xC2\xB0", *FlashlightState::flashlightFov), TunedValue::Spread));
+        });
+
+        refreshPresetButtons();
+        updateBeamTuningPanelVisibility();
+
+        // the preset buttons and the values panel share the middle of the row, one pair or the other showing
         const auto row2Container = std::make_shared<UIContainer>("Row2", UIContainerLayout::HorizontalCenter, 0.3f);
         row2Container->addElement(_beamTuningTglBtn);
-        row2Container->addElement(switchGoboBtn);
-        row2Container->addElement(switchColorBtn);
+        row2Container->addElement(_switchGoboBtn);
+        row2Container->addElement(_switchColorBtn);
+        row2Container->addElement(_beamValuesPanel);
 
         const auto saveBtn = std::make_shared<UIButtonPanel>("ImFl_SaveButton");
         saveBtn->setImage("vrui\\save.DDS");
