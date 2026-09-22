@@ -18,6 +18,7 @@ For installation, requirements, and credits see the [main README](../README.md).
 - [Restrictions](#restrictions)
 - [NPC Light Detection](#npc-light-detection)
 - [Vanilla Flashlight Toggle](#vanilla-flashlight-toggle)
+- [Pip-Boy](#pip-boy)
 - [Advanced Configuration](#advanced-configuration)
 - [Mod Recommendations](#mod-recommendations)
 
@@ -69,7 +70,7 @@ A beam-less flashlight model sits on your chest whenever the light is off, head-
 - **Grab**: reach a hand into the model's grab zone and fire the grab binding to take the light into that hand — the light turns on in that hand.
 - **Stow**: reach the same hand back into the zone and fire again to put the model back — the light turns off.
 - A hand holding a **drawn weapon** can't grab or stow (in practice, your primary hand while holding the gun).
-- While your hand is inside the zone a sphere is drawn as a hint; see the [FAQ](faq.md#visuals) to hide it.
+- While your hand is inside the zone a small flashlight icon marks it as a hint; see the [FAQ](faq.md#visuals) to hide it.
 
 ### Put the light on your head
 
@@ -87,6 +88,7 @@ A beam-less flashlight model sits on your chest whenever the light is off, head-
   - Light **off** + ranged weapon drawn → turns on **onto the weapon**.
   - Light **off** with no weapon drawn → nothing happens. This gesture only ever turns the light on onto a weapon, never into an empty hand.
 - **Long-press** to pull an on-weapon light back to your offhand.
+- While your offhand is inside the zone and a tap would do something, a small flashlight icon marks it.
 - When the weapon-flashlight requirement has detected a modeled lamp, this zone anchors to the **gun's lamp**, so you reach it by bringing your offhand to the flashlight on the gun.
 
 ### Toggle the weapon light two-handed
@@ -132,8 +134,8 @@ Power armor swaps the skeleton and poses the hands differently, so most spatial 
 
 Open the FRIK configuration UI (hold both thumbsticks for ~2 seconds) and select Immersive Flashlight. The UI is split into three screens:
 
-- **Main menu** — opens the beam and misc screens, opens the INI file for advanced editing, opens the wiki, or exits.
-- **Beam screen** — location toggles, live beam tuning, gobo and color presets, and Save / Reset. Unsaved changes are discarded when you close it.
+- **Main menu** — opens the beam and misc screens, opens the INI file for advanced editing, opens the wiki, or exits. Its footer shows the controller button that turns the light on and off at each location.
+- **Beam screen** — location toggles, beam tuning, gobo and color presets, and Save / Reset. The gobo and color buttons show the current gobo texture and beam color. With **beam tuning** on, the primary thumbstick changes intensity (up/down) and distance (left/right) and the offhand thumbstick changes spread (up/down); a panel shows the three values, highlighting the one you just changed, and the lit beam updates as you tune without the light turning off. Unsaved changes are discarded when you close it.
 - **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, NPC light detection, and the vanilla-toggle disable. Each is saved immediately and applied live.
 
 Everything is applied while you watch, so you can tune the beam against the actual scene.

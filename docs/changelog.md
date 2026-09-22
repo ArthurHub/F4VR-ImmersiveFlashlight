@@ -1,3 +1,11 @@
+## v1.2
+
+- Pip-Boy: The flashlight now stays on while the Pip-Boy is open, as it already did in power armor. It can be turned off in the INI for the vanilla behavior.
+- Config: Redesigned the in-game config UI. The main menu lists the controller button each gesture uses, and the beam tuning screen shows the thumbsticks that tune it.
+- Config: The gobo and color buttons show the current gobo texture and beam color with the preset's name, and beam tuning shows the three tuned values on screen, highlighting the one you just changed.
+- Config: Beam tuning updates the lit flashlight live instead of flicking it off and on, and each tuning step ticks the controller. INI changes apply to a lit flashlight without the toggle sounds.
+- Gestures: The chest grab zone and the primary-hand zone show a small flashlight icon while your hand is inside, replacing the chest's sphere. Each gesture's icon and sphere look (style preset, color, glow, size) is configurable in the INI.
+
 ## v1.1.1
 
 Fixed the mod failing to connect to newer FRIK versions that extend the FRIK API resulting in no flashlight in hand.
