@@ -19,7 +19,7 @@ namespace ImFl
         static bool isVRFPSStabilizerModInstalled();
         static bool isPluginLoaded(std::string_view pluginName);
         static const char* getHandLabel(vrcf::Hand hand);
-        static void loadGoboTexture(const std::string& goboFilePath);
+        static RE::NiTexture* loadGoboTexture(const std::string& goboFilePath);
         static bool isFlashlightOn();
         static void turnFlashlightOn();
         static void turnFlashlightOff();

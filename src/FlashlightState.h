@@ -7,6 +7,19 @@
 namespace ImFl
 {
     /**
+     * How FlashlightState::refreshLightValues() applies changed values to a light that is on.
+     * Recreate hides and shows the light again, the engine's own path, silently. RecreateWithSound adds the vanilla
+     * light-on sound, for a location change. InPlace writes them into the live light (LiveLight::refresh()), so they
+     * show without the light going off, and is kept to beam tuning.
+     */
+    enum class LightRefreshMode : std::uint8_t
+    {
+        Recreate,
+        RecreateWithSound,
+        InPlace,
+    };
+
+    /**
      * Static holder for the flashlight's runtime state and the transitions over it: the resolved runtime
      * location, the active grip style, the references into Config for the active location's beam values,
      * and the refresh/switch logic that pushes those values onto the game light (the low-level on/off
@@ -23,7 +36,7 @@ namespace ImFl
         static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
 
         static void refreshFlashlightLocation();
-        static void toggleLightRefreshValues();
+        static void refreshLightValues(LightRefreshMode mode = LightRefreshMode::Recreate);
         static void setLightValues();
         static void refreshGripStyle();
 
@@ -48,6 +61,7 @@ namespace ImFl
     private:
         static FlashlightLocation getFlashlightLocation();
         static void refreshConfigReferences();
+        static RE::TESObjectLIGH* getLightForm();
 
         inline static std::optional<FlashlightLocation> _runtimeLocationOverride;
 

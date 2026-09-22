@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "FlashlightMod.h"
 #include "FlashlightState.h"
+#include "LiveLight.h"
 #include "NpcDetectionHandler.h"
 #include "RestrictionHandler.h"
 #include "Utils.h"
@@ -108,6 +109,7 @@ namespace ImFl
         if (_iniChanged.exchange(false)) {
             applyIniChange();
         }
+        LiveLight::onFrameUpdate();
 
         handlePowerArmorTransition();
 
@@ -164,7 +166,7 @@ namespace ImFl
         Utils::updateVanillaFlashlightToggleDisabled();
         Utils::updateKeepFlashlightOnInPipboy();
         FlashlightState::refreshFlashlightLocation();
-        FlashlightState::toggleLightRefreshValues();
+        FlashlightState::refreshLightValues();
     }
 
     /**

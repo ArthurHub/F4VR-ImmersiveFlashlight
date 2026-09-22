@@ -64,7 +64,7 @@ namespace ImFl::config
     void MiscScreen::toggleShadows(const bool shadowsEnabled)
     {
         g_config.setFlashlightFlagsBitmask(shadowsEnabled ? Utils::FLASHLIGHT_FLAGS_WITH_SHADOWS : Utils::FLASHLIGHT_FLAGS_NO_SHADOWS);
-        FlashlightState::toggleLightRefreshValues();
+        FlashlightState::refreshLightValues();
         if (shadowsEnabled) {
             f4vr::showNotification(std::format("Flashlight Shadows: On\nMake sure Shadow Quality is set to HIGH in settings"));
         } else {

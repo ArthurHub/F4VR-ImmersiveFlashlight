@@ -180,7 +180,7 @@ namespace ImFl::config
         FlashlightState::setFlashlightRuntimeLocationOverride(std::nullopt);
         g_config.load();
         if (Utils::isFlashlightOn()) {
-            FlashlightState::toggleLightRefreshValues();
+            FlashlightState::refreshLightValues();
         }
 
         // unblock player input if needed
@@ -240,6 +240,7 @@ namespace ImFl::config
         const auto offhandDirection = vrcf::VRControllers.getThumbstickPressedDirection(vrcf::Hand::Offhand, 0.8f, 0.5f);
 
         if (primaryDirection.has_value()) {
+            vrcf::VRHaptics.trigger(vrcf::Hand::Primary, vrcf::HapticPattern::Tick);
             switch (primaryDirection.value()) {
             case vrcf::Direction::Up:
                 *FlashlightState::flashlightFade = fminf(*FlashlightState::flashlightFade + 0.1f, 4.0f);
@@ -258,18 +259,20 @@ namespace ImFl::config
                 markValueTuned(TunedValue::Distance);
                 break;
             }
-            FlashlightState::toggleLightRefreshValues();
+            FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
         }
 
         if (offhandDirection.has_value()) {
             if (offhandDirection.value() == vrcf::Direction::Up) {
+                vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::Tick);
                 *FlashlightState::flashlightFov = fminf(*FlashlightState::flashlightFov + 5, 150);
                 markValueTuned(TunedValue::Spread);
-                FlashlightState::toggleLightRefreshValues();
+                FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
+                vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::Tick);
                 *FlashlightState::flashlightFov = fmaxf(*FlashlightState::flashlightFov - 5, 5);
                 markValueTuned(TunedValue::Spread);
-                FlashlightState::toggleLightRefreshValues();
+                FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
             }
         }
     }
@@ -337,7 +340,7 @@ namespace ImFl::config
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
         *FlashlightState::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
 
-        FlashlightState::toggleLightRefreshValues();
+        FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
 
     /**
@@ -350,7 +353,7 @@ namespace ImFl::config
         *FlashlightState::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex].rgb[1];
         *FlashlightState::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
 
-        FlashlightState::toggleLightRefreshValues();
+        FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
 
     /**
@@ -369,7 +372,7 @@ namespace ImFl::config
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
         g_config.resetFlashlightValuesToDefault(FlashlightState::flashlightLocation);
-        FlashlightState::toggleLightRefreshValues();
+        FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
 
     void BeamScreen::switchingToOnHeadConfig()

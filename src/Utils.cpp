@@ -53,20 +53,21 @@ namespace ImFl
     }
 
     /**
-     * Load the gobo texture into the game so it will be available to the flashlight light.
+     * Load the gobo texture into the game so it will be available to the flashlight light, and return it.
      * The game caches the texture so when the path is set on "textureName" it can find it.
-     * Only load each texture once.
+     * Only load each texture once; the reference taken here keeps it loaded.
      */
-    void Utils::loadGoboTexture(const std::string& goboFilePath)
+    RE::NiTexture* Utils::loadGoboTexture(const std::string& goboFilePath)
     {
-        if (_goboTextures.contains(goboFilePath)) {
-            return;
+        if (const auto it = _goboTextures.find(goboFilePath); it != _goboTextures.end()) {
+            return it->second;
         }
 
         logger::info("Loading gobo texture: {}", goboFilePath);
         RE::NiTexture* newGoboTexture = nullptr;
         f4vr::LoadTextureByPath(goboFilePath.c_str(), 1, newGoboTexture, 0, 0, 0);
         _goboTextures[goboFilePath] = newGoboTexture;
+        return newGoboTexture;
     }
 
     /**

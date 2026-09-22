@@ -4,12 +4,50 @@
 #include <cmath>
 
 #include "Config.h"
+#include "LiveLight.h"
 #include "RestrictionHandler.h"
 #include "Utils.h"
 #include "WeaponGripHandler.h"
 #include "common/MatrixUtils.h"
 #include "f4vr/F4VROffsets.h"
 #include "f4vr/PlayerNodes.h"
+
+namespace
+{
+    /**
+     * The light form values FlashlightState::setLightValues() writes, compared before and after to tell whether a
+     * refresh changed anything the light is built from.
+     */
+    struct LightFormValues
+    {
+        float fade;
+        std::uint32_t radius;
+        float fov;
+        float nearDistance;
+        REX::EnumSet<RE::TES_LIGHT_FLAGS, std::uint32_t> flags;
+        std::uint8_t red;
+        std::uint8_t green;
+        std::uint8_t blue;
+        std::string gobo;
+
+        static LightFormValues of(const RE::TESObjectLIGH& light)
+        {
+            return {
+                .fade = light.fade,
+                .radius = light.data.radius,
+                .fov = light.data.fov,
+                .nearDistance = light.data.nearDistance,
+                .flags = light.data.flags,
+                .red = light.data.color.red,
+                .green = light.data.color.green,
+                .blue = light.data.color.blue,
+                .gobo = std::string(light.goboTexture.textureName.c_str()),
+            };
+        }
+
+        bool operator==(const LightFormValues&) const = default;
+    };
+}
 
 namespace ImFl
 {
@@ -39,7 +77,7 @@ namespace ImFl
     }
 
     /**
-     * Switch the flashlight location to the given location, update the light values, and toggle the light to apply the changes.
+     * Switch the flashlight location to the given location and apply its light values (re-creating an on light).
      * Switching to the primary hand while the offhand carries the weapon puts the light in the free hand for the
      * rest of that carry, even when the config location is already the primary hand (which otherwise resolves to
      * the weapon).
@@ -95,35 +133,49 @@ namespace ImFl
         refreshConfigReferences();
 
         // push the new location's values onto the light
-        toggleLightRefreshValues();
+        refreshLightValues(LightRefreshMode::RecreateWithSound);
     }
 
     /**
-     * Reload the light values from config onto the game light.
-     * The game reads the values when the light is turned on, so an off light only needs them written:
-     * toggling is what makes an already-on light pick them up, and doing it while off is the visible
-     * on-off-on flicker when the light is turned on into a location it wasn't last on in.
+     * Reload the light values from config onto the game light, doing nothing more when none of them changed.
+     * The game copies the light form onto the light when it's turned on, so an off light only needs the form
+     * written. An on light is re-created by default (LiveLight::recreate(): the engine's own hide and show, without
+     * the vanilla toggle's sounds), which INI hot-reload uses. A location change re-creates it with the vanilla
+     * light-on sound (RecreateWithSound); the light moving hides the swap.
+     * InPlace, for beam tuning, writes the values into the live light instead (LiveLight::refresh()) so they show
+     * without it going off. That reaches deeper into the engine, so it's kept to tuning, and it still re-creates the
+     * light when the flags changed (shadows on/off make another kind of light) or the light can't take them.
      */
-    void FlashlightState::toggleLightRefreshValues()
+    void FlashlightState::refreshLightValues(const LightRefreshMode mode)
     {
-        const auto player = f4vr::getPlayer();
-        if (!f4vr::isPipboyLightOn(player)) {
-            setLightValues();
+        const auto* light = getLightForm();
+        if (!light) {
+            logger::warn("Failed to find light object to set flashlight values");
             return;
         }
-        logger::debug("Toggle light refresh values...");
-        f4vr::togglePipboyLight(player);
+
+        const auto before = LightFormValues::of(*light);
         setLightValues();
-        f4vr::togglePipboyLight(player);
+        const auto after = LightFormValues::of(*light);
+        if (after == before || !Utils::isFlashlightOn()) {
+            return;
+        }
+        if (mode == LightRefreshMode::InPlace && after.flags == before.flags && LiveLight::refresh(*light)) {
+            return;
+        }
+        logger::debug("Re-create the light to apply its values...");
+        LiveLight::recreate();
+        if (mode == LightRefreshMode::RecreateWithSound) {
+            RE::UIUtils::PlayMenuSound("UIPipBoyLightOn");
+        }
     }
 
     /**
      * Set the light values to config depending if the flashlight is in hand or on head.
-     * The light object is the standard PA light.
      */
     void FlashlightState::setLightValues()
     {
-        auto* light = RE::TESForm::GetFormByID<RE::TESObjectLIGH>(0xB48A0);
+        auto* light = getLightForm();
         if (!light) {
             logger::warn("Failed to find light object to set flashlight values");
             return;
@@ -146,6 +198,15 @@ namespace ImFl
         light->data.color.blue = static_cast<std::uint8_t>(*flashlightColorBlue);
         light->goboTexture.textureName = *flashlightGoboPath;
         Utils::loadGoboTexture(*flashlightGoboPath);
+    }
+
+    /**
+     * The light form the flashlight is built from: the standard PA light, which the game uses while a worn item
+     * carries the headlamp keyword (added to the Pip-Boy at load).
+     */
+    RE::TESObjectLIGH* FlashlightState::getLightForm()
+    {
+        return RE::TESForm::GetFormByID<RE::TESObjectLIGH>(0xB48A0);
     }
 
     /**
