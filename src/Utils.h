@@ -25,6 +25,7 @@ namespace ImFl
         static void turnFlashlightOff();
         static bool areFlashlightShadowsEnabled();
         static void updateVanillaFlashlightToggleDisabled();
+        static void updateKeepFlashlightOnInPipboy();
         static const char* findOpenGestureBlockingMenu();
 
     private:
@@ -49,5 +50,8 @@ namespace ImFl
         // first call always runs) and the original "fPipboyLightDelay:Controls" value to restore on re-enable.
         inline static bool _vanillaFlashlightToggleDisabled = false;
         inline static float _originalPipboyLightDelay = -1.0f;
+
+        // The keep-the-light-on-in-the-Pip-Boy state applied to the game code (false = the vanilla code, as loaded).
+        inline static bool _keepFlashlightOnInPipboyApplied = false;
     };
 }

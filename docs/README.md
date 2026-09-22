@@ -190,6 +190,10 @@ It's on by default and switched on the misc config screen; the tuning lives in t
 
 `bDisableVanillaFlashlightToggle` (default **off**) disables the game's built-in global Pip-Boy light toggle so only this mod's gestures control the light. Leave it off to keep the vanilla long-press toggle working alongside the gestures.
 
+## Pip-Boy
+
+The flashlight stays on while you use the Pip-Boy. The vanilla game turns it off while the Pip-Boy is open (except in power armor) and back on when it closes; set `bKeepFlashlightOnInPipboy = false` in the INI to get that back.
+
 ## Advanced Configuration
 
 Many settings beyond the in-game UI live in the INI, and any change is live-loaded into the running game so you can tune and immediately see the effect.

@@ -85,14 +85,11 @@ namespace ImFl
         // initial setup of flashlight location and values
         FlashlightState::refreshFlashlightLocation();
         FlashlightState::setLightValues();
+        Utils::updateKeepFlashlightOnInPipboy();
 
-        // refresh flashlight values on config change
-        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) {
-            RestrictionHandler::invalidate();
-            Utils::updateVanillaFlashlightToggleDisabled();
-            FlashlightState::refreshFlashlightLocation();
-            FlashlightState::toggleLightRefreshValues();
-        });
+        // Refresh flashlight values on config change. The file watcher notifies on its own thread, so the change is
+        // applied on the next frame, on the game thread (applyIniChange()).
+        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) { _iniChanged = true; });
 
         WeaponGripHandler::setWeaponTransformFinalizedListener(onWeaponTransformFinalized);
     }
@@ -108,6 +105,10 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
+        if (_iniChanged.exchange(false)) {
+            applyIniChange();
+        }
+
         handlePowerArmorTransition();
 
         WeaponGripHandler::onFrameUpdate();
@@ -151,6 +152,19 @@ namespace ImFl
         NpcDetectionHandler::onFrameUpdate();
 
         maybeShowFPSStabilizerModWarning();
+    }
+
+    /**
+     * Apply a hot-reloaded INI change. Runs from onFrameUpdate() on the game thread rather than from the file
+     * watcher's thread, since refreshing the light and patching the game call into the engine.
+     */
+    void Flashlight::applyIniChange()
+    {
+        RestrictionHandler::invalidate();
+        Utils::updateVanillaFlashlightToggleDisabled();
+        Utils::updateKeepFlashlightOnInPipboy();
+        FlashlightState::refreshFlashlightLocation();
+        FlashlightState::toggleLightRefreshValues();
     }
 
     /**

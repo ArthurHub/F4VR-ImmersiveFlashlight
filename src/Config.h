@@ -276,6 +276,10 @@ namespace ImFl
         // Disable the vanilla game's global flashlight toggle so only this mod's gestures control the light.
         bool disableVanillaFlashlightToggle = false;
 
+        // Keep the flashlight on while the Pip-Boy is open, instead of the vanilla game turning it off until the
+        // Pip-Boy closes (outside power armor). Applied by Utils::updateKeepFlashlightOnInPipboy().
+        bool keepFlashlightOnInPipboy = true;
+
         // NPC light detection: on a throttled tick while the light is on, NpcDetectionHandler posts a
         // player-owned detection event at what the beam touches — near the nearest lit NPC (with line of
         // sight), or on the beam's lit spot on world geometry — so NPCs notice the beam directionally.

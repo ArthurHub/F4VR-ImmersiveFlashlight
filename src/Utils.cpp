@@ -136,6 +136,36 @@ namespace ImFl
     }
 
     /**
+     * Keep the flashlight on while the Pip-Boy is open, or restore the vanilla behavior of turning it off, by patching
+     * the IsPipboyLightOn call in PipboyManager::InitPipboy to report the light off (see
+     * f4vr::PipboyManager_InitPipboy_IsPipboyLightOnCall): the game then neither hides the light as the Pip-Boy opens
+     * nor shows it again as it closes. Writes code, so runs on the game thread. The call site's bytes are checked
+     * first, leaving a different game build or another mod's patch of the same spot alone.
+     */
+    void Utils::updateKeepFlashlightOnInPipboy()
+    {
+        const bool keepOn = g_config.keepFlashlightOnInPipboy;
+        if (_keepFlashlightOnInPipboyApplied == keepOn) {
+            return;
+        }
+        _keepFlashlightOnInPipboyApplied = keepOn;
+
+        // call PlayerCharacter::IsPipboyLightOn / xor eax, eax + nop padding
+        static constexpr std::array<std::uint8_t, 5> CALL_IS_PIPBOY_LIGHT_ON{ 0xE8, 0xDA, 0x2C, 0x2F, 0x00 };
+        static constexpr std::array<std::uint8_t, 5> LIGHT_OFF{ 0x31, 0xC0, 0x90, 0x90, 0x90 };
+        const auto& expected = keepOn ? CALL_IS_PIPBOY_LIGHT_ON : LIGHT_OFF;
+        const auto& replacement = keepOn ? LIGHT_OFF : CALL_IS_PIPBOY_LIGHT_ON;
+
+        const auto address = f4vr::PipboyManager_InitPipboy_IsPipboyLightOnCall.address();
+        if (std::memcmp(reinterpret_cast<const void*>(address), expected.data(), expected.size()) != 0) {
+            logger::warn("Unexpected code where the Pip-Boy turns the flashlight off (another mod patched it?), not changing it");
+            return;
+        }
+        REL::safe_write(address, replacement.data(), replacement.size());
+        logger::info("{}", keepOn ? "Keep the flashlight on while the Pip-Boy is open" : "Restore vanilla: the flashlight turns off while the Pip-Boy is open");
+    }
+
+    /**
      * The name of the first open menu that blocks the flashlight gestures, or null when none does. A menu blocks
      * when it is in GESTURE_BLOCKING_MENUS, or carries any GESTURE_BLOCKING_MENU_FLAGS and isn't in
      * GESTURE_ALLOWED_MENUS — so menus added by other mods block too, without being named. The always-open HUD

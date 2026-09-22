@@ -513,6 +513,7 @@ namespace ImFl
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
         disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", false);
+        keepFlashlightOnInPipboy = ini.GetBoolValue(DEFAULT_SECTION, "bKeepFlashlightOnInPipboy", true);
 
         // NPC light detection (NpcDetectionHandler)
         npcDetectionEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", true);
