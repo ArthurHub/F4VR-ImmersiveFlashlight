@@ -506,7 +506,7 @@ namespace ImFl
      */
     bool NpcDetectionHandler::getBeamCone(BeamCone& cone)
     {
-        const auto lightNode = f4vr::getFirstChild(f4vr::getPlayerNodes()->HeadLightParentNode);
+        const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode);
         if (!lightNode || !FlashlightState::flashlightRadius || !FlashlightState::flashlightFov) {
             return false;
         }

@@ -301,7 +301,7 @@ namespace ImFl
         _headSphere.onFrameUpdate(
             {
                 .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
-                .node = f4vr::getPlayerNodes()->HmdNode,
+                .node = f4vr::getVRPlayerNodes()->hmdNode,
                 .zone = g_config.headActivation.zone,
                 .bindings = {
                     { .binding=headTapActive ? tapBinding : vrcf::VRControllersManager::DisabledBinding, .activateHaptic=g_config.headActivation.primaryHaptic },
@@ -475,7 +475,7 @@ namespace ImFl
      */
     void Flashlight::adjustFlashlightTransformToHandOrHead()
     {
-        const auto lightNode = f4vr::getFirstChild(f4vr::getPlayerNodes()->HeadLightParentNode);
+        const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode);
         if (!lightNode) {
             return;
         }
@@ -535,7 +535,7 @@ namespace ImFl
             return;
         }
         adjustFlashlightTransformToHandOrHead();
-        if (const auto lightNode = f4vr::getFirstChild(f4vr::getPlayerNodes()->HeadLightParentNode)) {
+        if (const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode)) {
             f4vr::updateTransforms(lightNode);
         }
     }

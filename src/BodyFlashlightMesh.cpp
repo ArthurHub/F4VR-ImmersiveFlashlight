@@ -27,7 +27,7 @@ namespace ImFl
 
         const auto root = f4vr::getRootNode();
         _stowBone = root ? f4vr::findNode(root, STOW_BONE_NAME) : nullptr;
-        const auto parent = f4vr::getPlayerNodes()->primaryUIAttachNode;
+        const auto parent = f4vr::getVRPlayerNodes()->primaryUIAttachNode;
         if (!_stowBone || !parent) {
             detach();
             return;
