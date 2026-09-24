@@ -5,6 +5,26 @@
 
 #include "vrcf/VRControllersManager.h"
 
+namespace rock::api
+{
+    namespace core
+    {
+        struct ApiV1;
+    }
+    namespace input
+    {
+        struct ApiV1;
+    }
+    namespace weapon
+    {
+        struct ApiV1;
+    }
+    namespace weaponparts
+    {
+        struct ApiV1;
+    }
+}
+
 namespace ImFl
 {
     /**
@@ -39,14 +59,17 @@ namespace ImFl
 
     private:
         static void initializeRock();
-        static void registerRockWeaponSolvedCallback();
+        static void registerRockWeaponSolvedCallback(const rock::api::core::ApiV1* coreApi);
         static void registerRockPhysicalTriggerRestore();
         static bool queryRockGripState(bool& twoHanded, bool& firingHandLeft);
         static bool isRockHandCarryingWeapon(bool left);
 
-        // ROCK-issued consumer token, non-zero once registered with the equipped-weapon grip-state capability.
+        // ROCK-issued consumer token, non-zero once registered and bound to ROCK's Weapon interface.
         inline static std::uint64_t _rockOwnerToken = 0;
-        inline static bool _rockPartGripStateSupported = false;
+        // ROCK interface tables bound to the owner; null when ROCK is absent or doesn't offer the interface.
+        inline static const rock::api::weapon::ApiV1* _rockWeapon = nullptr;
+        inline static const rock::api::weaponparts::ApiV1* _rockWeaponParts = nullptr;
+        inline static const rock::api::input::ApiV1* _rockInput = nullptr;
 
         // Invoked after a weapon-handling mod has written this frame's final weapon transform.
         inline static std::function<void()> _weaponTransformFinalizedListener;

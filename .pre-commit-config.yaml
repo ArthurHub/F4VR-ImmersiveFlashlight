@@ -7,6 +7,8 @@ repos:
       - id: clang-format
         args: [--style=file]
         files: ^src/.*\.(c|cc|cpp|cxx|h|hh|hpp|hxx|inl)$
+        # ROCK's SDK headers are copied as-is; keep them byte-identical to upstream for re-copying.
+        exclude: ^src/api/ROCK/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0

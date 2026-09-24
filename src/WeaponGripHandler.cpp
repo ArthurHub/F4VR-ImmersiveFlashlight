@@ -3,16 +3,72 @@
 #include <Windows.h>
 
 #include "api/FRIKApi.h"
-#include "api/ROCKProviderApi.h"
+#include "api/ROCK/Core.h"
+#include "api/ROCK/Discovery.h"
+#include "api/ROCK/Input.h"
+#include "api/ROCK/Weapon.h"
+#include "api/ROCK/WeaponParts.h"
 #include "f4vr/F4VRUtils.h"
 
-using namespace rock::provider;
+using namespace rock::api;
 
 namespace
 {
-    bool hasGripStateFlag(const RockProviderEquippedWeaponGripStateV1& state, const RockProviderEquippedWeaponGripStateFlagV1 flag)
+    // Table bytes covering the last slot this mod calls in each ROCK interface (see queryRockInterface()).
+    constexpr auto ROCK_CORE_TABLE_BYTES = static_cast<std::uint32_t>(offsetof(core::ApiV1, bindInterface) + sizeof(void*));
+    constexpr auto ROCK_WEAPON_TABLE_BYTES = static_cast<std::uint32_t>(offsetof(weapon::ApiV1, getEquippedWeaponGripStateV1) + sizeof(void*));
+    constexpr auto ROCK_WEAPON_PARTS_TABLE_BYTES = static_cast<std::uint32_t>(offsetof(weaponparts::ApiV1, getWeaponPartGripStateV1) + sizeof(void*));
+    constexpr auto ROCK_INPUT_TABLE_BYTES = static_cast<std::uint32_t>(offsetof(input::ApiV1, getRawWandButtonStateV1) + sizeof(void*));
+
+    bool hasGripStateFlag(const weapon::EquippedWeaponGripStateV1& state, const weapon::EquippedWeaponGripStateFlagV1 flag)
     {
         return (state.flags & static_cast<std::uint32_t>(flag)) != 0;
+    }
+
+    /**
+     * Discover one of ROCK's interface tables (major 1) through its query export.
+     *
+     * Asks only for what this mod calls so that ROCK updates don't break it: minor 0 (every call used here is
+     * in the 1.0 table) and the table extent ending at the last slot called. ROCK only appends calls within a
+     * major (a higher minor and a longer table) and keeps its records frozen, so a newer ROCK still matches
+     * with the copied headers. Unlike the SDK's Client::acquire(), the descriptor's Core requirement isn't
+     * checked against the copied Core header's minor: the Core in use is the DLL's own, which meets it, and
+     * that check would reject every interface once ROCK bumps its Core minor.
+     */
+    template <class Table>
+    const Table* queryRockInterface(const QueryInterfaceV1 query, const std::uint32_t tableBytes, Status& status)
+    {
+        const InterfaceDescriptorV1* descriptor = nullptr;
+        status = query(Table::interfaceId, Table::majorVersion, 0, tableBytes, &descriptor);
+        if (status != Status::Ok) {
+            return nullptr;
+        }
+        if (!descriptor || descriptor->size < sizeof(InterfaceDescriptorV1) || descriptor->interfaceId != Table::interfaceId || descriptor->major != Table::majorVersion ||
+            descriptor->tableByteSize < tableBytes || !descriptor->table) {
+            status = Status::InvalidSize;
+            return nullptr;
+        }
+        return static_cast<const Table*>(descriptor->table);
+    }
+
+    /**
+     * Discover a ROCK interface table and bind the owner to it with the given permissions (local to that
+     * interface). Logs why it's unavailable, with the consequence for this mod, and returns null then.
+     */
+    template <class Table>
+    const Table* acquireRockInterface(const QueryInterfaceV1 query, const core::ApiV1* coreApi, const OwnerToken owner, const std::uint32_t tableBytes,
+        const std::uint32_t permissions, const std::string_view name, const std::string_view consequence)
+    {
+        Status status;
+        const auto* table = queryRockInterface<Table>(query, tableBytes, status);
+        if (table) {
+            status = coreApi->bindInterface(owner, Table::interfaceId, Table::majorVersion, permissions);
+        }
+        if (status != Status::Ok) {
+            logger::warn("ROCK {} interface not available (status: {}), {}", name, static_cast<std::uint32_t>(status), consequence);
+            return nullptr;
+        }
+        return table;
     }
 }
 
@@ -28,54 +84,65 @@ namespace ImFl
     }
 
     /**
-     * Negotiate ROCK's provider API and register as a consumer granted the equipped-weapon grip-state
-     * capability; the grip-state query refuses a caller without the ROCK-issued owner token. The animation-phase
-     * capability is requested too, for the after-solve callback (see registerRockWeaponSolvedCallback()). ROCK
-     * not being installed is the common case and only logged. The registration is kept for the process lifetime.
+     * Connect to ROCK's API: discover Core through ROCK.dll's query export, register this mod as an owner, then
+     * bind the owner to each interface it reads — Weapon (the grip state, required), WeaponParts (the offhand
+     * carry) and Input (the physical triggers) — plus Core callbacks for the after-solve callback (see
+     * registerRockWeaponSolvedCallback()). Each call is refused without the ROCK-issued owner token and the
+     * interface's permission. ROCK not being installed is the common case and only logged. The registration is
+     * kept for the process lifetime.
      */
     void WeaponGripHandler::initializeRock()
     {
-        const int err = RockProviderApi::initialize();
-        if (err != 0) {
-            logger::info("ROCK API not available (error: {}), weapon grip is read from FRIK only", err);
-            return;
-        }
-        logger::info("ROCK (v{}) API (v{}) init successful!", RockProviderApi::inst->getModVersion(), RockProviderApi::negotiatedApiVersion);
-
-        if (!supportsEquippedWeaponGripStateV1()) {
-            logger::warn("ROCK doesn't support the equipped-weapon grip state, weapon grip is read from FRIK only");
+        const auto rockDll = GetModuleHandleA("ROCK.dll");
+        const auto query = rockDll ? reinterpret_cast<QueryInterfaceV1>(GetProcAddress(rockDll, kQueryExportName)) : nullptr;
+        if (!query) {
+            logger::info("ROCK API not available, weapon grip is read from FRIK only");
             return;
         }
 
-        RockProviderConsumerRegistrationV1 registration{};
+        Status status;
+        const auto* coreApi = queryRockInterface<core::ApiV1>(query, ROCK_CORE_TABLE_BYTES, status);
+        if (!coreApi) {
+            logger::warn("ROCK Core interface not available (status: {}), weapon grip is read from FRIK only", static_cast<std::uint32_t>(status));
+            return;
+        }
+
+        core::RegistrationV1 registration{};
         strncpy_s(registration.modName, Version::PROJECT.data(), _TRUNCATE);
-        registration.requestedCapabilities = static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::EquippedWeaponGripState);
-        if (supportsAnimationPhasesV1()) {
-            registration.requestedCapabilities |= static_cast<std::uint32_t>(RockProviderConsumerCapabilityV1::AnimationPhases);
-        }
-        RockProviderConsumerHandleV1 handle{};
-        const auto result = RockProviderApi::inst->registerConsumerV1(&registration, &handle);
-        if (result != RockProviderResultV1::Ok || !hasConsumerCapabilityV1(handle.grantedCapabilities, RockProviderConsumerCapabilityV1::EquippedWeaponGripState)) {
-            logger::warn("ROCK consumer registration failed (result: {}, granted: 0x{:x}), weapon grip is read from FRIK only",
-                static_cast<std::uint32_t>(result),
-                handle.grantedCapabilities);
+        core::OwnerV1 owner{};
+        status = coreApi->registerConsumerV1(&registration, &owner);
+        if (status != Status::Ok) {
+            logger::warn("ROCK consumer registration failed (status: {}), weapon grip is read from FRIK only", static_cast<std::uint32_t>(status));
             return;
         }
+        const char* modVersion = nullptr;
+        coreApi->getModVersion(owner.ownerToken, &modVersion);
+        logger::info("Registered with ROCK (v{})", modVersion ? modVersion : "unknown");
 
-        _rockOwnerToken = handle.ownerToken;
-        logger::info("Registered with ROCK for the equipped-weapon grip state");
-
-        _rockPartGripStateSupported = supportsWeaponPartGripStateV1();
-        if (!_rockPartGripStateSupported) {
-            logger::warn("ROCK doesn't support the weapon part grip state, a weapon carried by the offhand isn't detected");
+        const auto read = static_cast<std::uint32_t>(weapon::PermissionV1::Read);
+        _rockWeapon = acquireRockInterface<weapon::ApiV1>(query, coreApi, owner.ownerToken, ROCK_WEAPON_TABLE_BYTES, read, "Weapon", "weapon grip is read from FRIK only");
+        if (!_rockWeapon) {
+            coreApi->unregisterConsumerV1(owner.ownerToken);
+            return;
         }
+        _rockOwnerToken = owner.ownerToken;
 
-        if (hasConsumerCapabilityV1(handle.grantedCapabilities, RockProviderConsumerCapabilityV1::AnimationPhases)) {
-            registerRockWeaponSolvedCallback();
-        } else {
-            logger::warn("ROCK didn't grant animation phases, weapon-anchored transforms may lag ROCK's weapon solve");
-        }
+        _rockWeaponParts = acquireRockInterface<weaponparts::ApiV1>(query,
+            coreApi,
+            _rockOwnerToken,
+            ROCK_WEAPON_PARTS_TABLE_BYTES,
+            read,
+            "WeaponParts",
+            "a weapon carried by the offhand isn't detected");
+        _rockInput = acquireRockInterface<input::ApiV1>(query,
+            coreApi,
+            _rockOwnerToken,
+            ROCK_INPUT_TABLE_BYTES,
+            read,
+            "Input",
+            "the free hand's trigger is unreadable while ROCK fires from the left hand");
 
+        registerRockWeaponSolvedCallback(coreApi);
         registerRockPhysicalTriggerRestore();
     }
 
@@ -89,8 +156,7 @@ namespace ImFl
      */
     void WeaponGripHandler::registerRockPhysicalTriggerRestore()
     {
-        if (!supportsRawWandButtonStateV1()) {
-            logger::warn("ROCK doesn't support raw wand button state, the free hand's trigger is unreadable while ROCK fires from the left hand");
+        if (!_rockInput) {
             return;
         }
 
@@ -98,9 +164,9 @@ namespace ImFl
             if (!_rockTriggerRemapActive) {
                 return;
             }
-            const auto hand = role == vr::TrackedControllerRole_LeftHand ? RockProviderHand::Left : RockProviderHand::Right;
-            RockProviderRawWandButtonStateV1 raw{};
-            if (!RockProviderApi::inst->getRawWandButtonStateV1(hand, vr::k_EButton_SteamVR_Trigger, &raw) || !raw.available) {
+            const auto hand = role == vr::TrackedControllerRole_LeftHand ? Hand::Left : Hand::Right;
+            input::RawWandButtonStateV1 raw{};
+            if (_rockInput->getRawWandButtonStateV1(_rockOwnerToken, hand, vr::k_EButton_SteamVR_Trigger, &raw) != Status::Ok || !raw.available) {
                 return;
             }
             const auto triggerMask = vr::ButtonMaskFromId(vr::k_EButton_SteamVR_Trigger);
@@ -115,24 +181,29 @@ namespace ImFl
      * hand instead of pointing between both hands). ROCK's AfterRock phase fires right after that solve, before
      * the frame is rendered: forward it to the listener so weapon-anchored transforms are re-applied on the
      * final pose. Skipped while ROCK reports scene writes aren't allowed (menus, skeleton not ready).
+     * Registering needs Core's callbacks permission on top of the Read that registration grants.
      */
-    void WeaponGripHandler::registerRockWeaponSolvedCallback()
+    void WeaponGripHandler::registerRockWeaponSolvedCallback(const core::ApiV1* coreApi)
     {
-        const auto callback = [](const RockProviderAnimationPhaseContextV1* context, void*) {
-            if (!context || context->phase != RockProviderAnimationPhaseV1::AfterRock || !_weaponTransformFinalizedListener) {
+        const auto callback = [](const core::AnimationPhaseContextV1* context, void*) {
+            if (!context || context->phase != core::AnimationPhaseV1::AfterRock || !_weaponTransformFinalizedListener) {
                 return;
             }
-            if ((context->flags & static_cast<std::uint32_t>(RockProviderAnimationPhaseContextFlagV1::VisualWritesAllowed)) == 0) {
+            if ((context->flags & static_cast<std::uint32_t>(core::AnimationPhaseContextFlagV1::VisualWritesAllowed)) == 0) {
                 return;
             }
             _weaponTransformFinalizedListener();
         };
 
+        const auto permissions = static_cast<std::uint32_t>(core::PermissionV1::Read) | static_cast<std::uint32_t>(core::PermissionV1::Callbacks);
+        auto status = coreApi->bindInterface(_rockOwnerToken, core::kInterfaceId, core::kMajor, permissions);
         std::uint64_t callbackToken = 0;
-        const auto result = RockProviderApi::inst->registerAnimationPhaseCallbackV1(_rockOwnerToken, callback, nullptr, &callbackToken);
-        if (result != RockProviderResultV1::Ok) {
-            logger::warn("ROCK animation phase callback registration failed (result: {}), weapon-anchored transforms may lag ROCK's weapon solve",
-                static_cast<std::uint32_t>(result));
+        if (status == Status::Ok) {
+            status = coreApi->registerAnimationPhaseCallbackV1(_rockOwnerToken, callback, nullptr, &callbackToken);
+        }
+        if (status != Status::Ok) {
+            logger::warn("ROCK animation phase callback registration failed (status: {}), weapon-anchored transforms may lag ROCK's weapon solve",
+                static_cast<std::uint32_t>(status));
             return;
         }
         logger::info("Registered with ROCK for the after weapon solve callback");
@@ -188,17 +259,17 @@ namespace ImFl
      */
     bool WeaponGripHandler::queryRockGripState(bool& twoHanded, bool& firingHandLeft)
     {
-        if (_rockOwnerToken == 0) {
+        if (!_rockWeapon) {
             return false;
         }
 
-        RockProviderEquippedWeaponGripStateV1 state{};
-        if (!RockProviderApi::inst->getEquippedWeaponGripStateV1(_rockOwnerToken, &state) || !hasGripStateFlag(state, RockProviderEquippedWeaponGripStateFlagV1::Valid)) {
+        weapon::EquippedWeaponGripStateV1 state{};
+        if (_rockWeapon->getEquippedWeaponGripStateV1(_rockOwnerToken, &state) != Status::Ok || !hasGripStateFlag(state, weapon::EquippedWeaponGripStateFlagV1::Valid)) {
             return false;
         }
 
-        twoHanded = hasGripStateFlag(state, RockProviderEquippedWeaponGripStateFlagV1::TwoHandGripActive);
-        firingHandLeft = hasGripStateFlag(state, RockProviderEquippedWeaponGripStateFlagV1::FiringHandLeft);
+        twoHanded = hasGripStateFlag(state, weapon::EquippedWeaponGripStateFlagV1::TwoHandGripActive);
+        firingHandLeft = hasGripStateFlag(state, weapon::EquippedWeaponGripStateFlagV1::FiringHandLeft);
         return true;
     }
 
@@ -208,12 +279,12 @@ namespace ImFl
      */
     bool WeaponGripHandler::isRockHandCarryingWeapon(const bool left)
     {
-        if (!_rockPartGripStateSupported) {
+        if (!_rockWeaponParts) {
             return false;
         }
-        RockProviderWeaponPartGripStateV1 state{};
-        return RockProviderApi::inst->getWeaponPartGripStateV1(left ? RockProviderHand::Left : RockProviderHand::Right, &state) && state.active &&
-            state.gripKind == RockProviderWeaponPartGripKindV1::PartCarry;
+        weaponparts::WeaponPartGripStateV1 state{};
+        return _rockWeaponParts->getWeaponPartGripStateV1(_rockOwnerToken, left ? Hand::Left : Hand::Right, &state) == Status::Ok && state.active &&
+            state.gripKind == weaponparts::WeaponPartGripKindV1::PartCarry;
     }
 
     /**
