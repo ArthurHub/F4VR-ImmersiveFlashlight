@@ -129,6 +129,7 @@ namespace ImFl
             return;
         }
 
+        logger::info("Flashlight runtime location: {} -> {}", getFlashlightLocationLabel(flashlightLocation), getFlashlightLocationLabel(newFlashlightLocation));
         flashlightLocation = newFlashlightLocation;
         refreshConfigReferences();
 
@@ -283,6 +284,27 @@ namespace ImFl
             return "InOffhand";
         case FlashlightConfigLocation::InPrimaryHand:
             return "InPrimaryHand";
+        default:
+            return "Unknown";
+        }
+    }
+
+    /**
+     * Get a readable label for a runtime flashlight location.
+     */
+    const char* FlashlightState::getFlashlightLocationLabel(const FlashlightLocation location)
+    {
+        switch (location) {
+        case FlashlightLocation::OnHead:
+            return "OnHead";
+        case FlashlightLocation::OnPAHead:
+            return "OnPAHead";
+        case FlashlightLocation::InOffhand:
+            return "InOffhand";
+        case FlashlightLocation::InPrimaryHand:
+            return "InPrimaryHand";
+        case FlashlightLocation::OnWeapon:
+            return "OnWeapon";
         default:
             return "Unknown";
         }

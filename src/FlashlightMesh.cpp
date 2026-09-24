@@ -79,18 +79,18 @@ namespace ImFl
     void FlashlightMesh::onFrameUpdate(const bool isFlashlightOn)
     {
         if (!g_config.showFlashlightMesh) {
-            hide(true);
+            hide(true, "mesh disabled");
             return;
         }
 
         if (!isFlashlightOn || !isMeshLocation(FlashlightState::flashlightLocation)) {
-            hide(true);
+            hide(true, !isFlashlightOn ? "light off" : FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation));
             return;
         }
 
         const auto parent = resolveParentNode();
         if (!parent) {
-            hide(true);
+            hide(true, "no hand node");
             return;
         }
 
@@ -132,7 +132,11 @@ namespace ImFl
         }
 
         if (handPoseState != frik::api::FRIKApi::HandPoseTagState::Active) {
-            hide(false);
+            // Another FRIK hand pose on top of ours (e.g. melee fists, a grabbed object): the hand isn't holding the light.
+            hide(false,
+                handPoseState == frik::api::FRIKApi::HandPoseTagState::None ? "FRIK hand pose not set"
+                    : f4vr::isMeleeWeaponDrawn()                            ? "hand pose overridden, melee drawn"
+                                                                            : "hand pose overridden");
             return;
         }
 
@@ -220,13 +224,14 @@ namespace ImFl
     }
 
     /**
-     * Hides the cached mesh and optionally clears this mod's FRIK hand-pose tag.
+     * Hides the cached mesh and optionally clears this mod's FRIK hand-pose tag. `reason` is logged when the mesh
+     * goes from visible to hidden.
      */
-    void FlashlightMesh::hide(const bool clearPose) const
+    void FlashlightMesh::hide(const bool clearPose, const char* reason) const
     {
         if (_meshNode && f4vr::isNodeVisible(_meshNode.get())) {
             f4vr::setNodeVisibility(_meshNode.get(), false);
-            logger::info("FlashlightMesh: hidden");
+            logger::info("FlashlightMesh: hidden ({})", reason);
         }
         if (clearPose) {
             clearHandPose();
@@ -241,7 +246,7 @@ namespace ImFl
         if (_meshNode && !f4vr::isNodeVisible(_meshNode.get())) {
             f4vr::updateTransformsDown(_meshNode.get(), true);
             f4vr::setNodeVisibility(_meshNode.get(), true);
-            logger::info("FlashlightMesh: shown");
+            logger::info("FlashlightMesh: shown in {}", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation));
         }
     }
 

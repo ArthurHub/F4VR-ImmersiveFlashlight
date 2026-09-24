@@ -44,6 +44,7 @@ namespace ImFl
         // gameplay enforcement, e.g. RestrictionHandler, while previewing a location in the config UI).
         static bool isRuntimeLocationOverrideActive();
         static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
+        static const char* getFlashlightLocationLabel(FlashlightLocation location);
         static const char* getGripStyleLabel(FlashlightGripStyle style);
 
         static inline FlashlightLocation flashlightLocation = FlashlightLocation::OnWeapon;

@@ -171,8 +171,9 @@ namespace ImFl
      * when it is in GESTURE_BLOCKING_MENUS, or carries any GESTURE_BLOCKING_MENU_FLAGS and isn't in
      * GESTURE_ALLOWED_MENUS — so menus added by other mods block too, without being named. The always-open HUD
      * menus carry none of those flags.
-     * Every change to the set of open menus (or their blocking flags) is logged with each menu's flags, since the
-     * flag rule is the part that could misjudge a VR menu. The returned name lives in the game's string pool.
+     * A change of the blocking menu is logged at info. Every change to the set of open menus (or their blocking
+     * flags) is logged at debug with each menu's flags, since the flag rule is the part that could misjudge a VR
+     * menu. The returned name lives in the game's string pool.
      */
     const char* Utils::findOpenGestureBlockingMenu()
     {
@@ -204,11 +205,19 @@ namespace ImFl
             }
         });
 
+        const std::string_view blockingMenuName = blockingMenu ? blockingMenu : "";
+        if (blockingMenuName != _gestureBlockingMenu) {
+            _gestureBlockingMenu = blockingMenuName;
+            logger::info("Gestures {}", blockingMenu ? std::format("blocked by: {}", blockingMenu) : "unblocked");
+        }
+
         if (signature != _openMenusSignature) {
             _openMenusSignature = signature;
-            std::string openMenus;
-            forEachOpenMenu([&](const char* name, const std::uint32_t flags) { openMenus += std::format(" {}[0x{:X}]", name, flags); });
-            logger::info("Open menus changed (gestures blocked by: {}):{}", blockingMenu ? blockingMenu : "none", openMenus);
+            if (logger::isDebugEnabled()) {
+                std::string openMenus;
+                forEachOpenMenu([&](const char* name, const std::uint32_t flags) { openMenus += std::format(" {}[0x{:X}]", name, flags); });
+                logger::debug("Open menus changed (gestures blocked by: {}):{}", blockingMenu ? blockingMenu : "none", openMenus);
+            }
         }
         return blockingMenu;
     }

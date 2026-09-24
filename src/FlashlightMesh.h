@@ -29,7 +29,7 @@ namespace ImFl
         void attach(RE::NiNode* parentNode);
         void setMeshTransform() const;
         void detach();
-        void hide(bool clearPose) const;
+        void hide(bool clearPose, const char* reason) const;
         void show() const;
         void clearHandPose() const;
 

@@ -265,7 +265,10 @@ namespace ImFl
                     logger::info("Returning flashlight to body from {} hand", Utils::getHandLabel(binding.hand));
                     Utils::turnFlashlightOff();
                 } else {
-                    logger::info("Grabbing flashlight from body into {} hand", Utils::getHandLabel(binding.hand));
+                    logger::info("Grabbing flashlight from body into {} hand (was {} {})",
+                        Utils::getHandLabel(binding.hand),
+                        Utils::isFlashlightOn() ? "on" : "off",
+                        FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation));
                     FlashlightState::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
                     Utils::turnFlashlightOn();
                 }

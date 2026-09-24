@@ -44,6 +44,9 @@ namespace ImFl
         // Order-independent signature of the open menus and their blocking flags, to log the set only when it changes.
         inline static std::size_t _openMenusSignature = 0;
 
+        // The menu currently blocking the gestures (empty = none), to log only when it changes.
+        inline static std::string _gestureBlockingMenu;
+
         inline static std::unordered_map<std::string, RE::NiTexture*> _goboTextures;
 
         // Tracks the applied vanilla Pipboy-light-toggle disable state (nullopt until first applied, so the
