@@ -62,7 +62,7 @@ namespace ImFl
         void checkHeadActivation();
         void checkPrimaryHandActivation();
         void checkWeaponFlashlightToggle() const;
-        static void adjustFlashlightTransformToHandOrHead();
+        static void adjustFlashlightTransformToHandOrHead(const RE::NiAVObject* inHandLightAnchor);
         static void onWeaponTransformFinalized();
         void maybeShowFPSStabilizerModWarning();
 

@@ -153,6 +153,11 @@ namespace ImFl
         tintLens();
     }
 
+    RE::NiAVObject* FlashlightMesh::getLightAnchorNode() const
+    {
+        return _attachedTo && _meshNode && f4vr::isNodeVisible(_meshNode.get()) ? _beamAttachNode : nullptr;
+    }
+
     /** Forces the cached mesh to detach so it can reattach to fresh skeleton nodes later. */
     void FlashlightMesh::invalidate()
     {
@@ -171,8 +176,9 @@ namespace ImFl
 
             f4vr::makeEffectShaderMaterialsPrivate(_meshNode.get());
             _lensNode = f4vr::findAVObject(_meshNode.get(), LENS_NODE_NAME);
-            if (const auto beamAttachNode = f4vr::findNode(_meshNode.get(), BEAM_ATTACH_NODE_NAME)) {
-                _beamGlow.attach(beamAttachNode);
+            _beamAttachNode = f4vr::findNode(_meshNode.get(), BEAM_ATTACH_NODE_NAME);
+            if (_beamAttachNode) {
+                _beamGlow.attach(_beamAttachNode);
             } else {
                 logger::warn("FlashlightMesh: no '{}' node in the model; the beam glow is off", BEAM_ATTACH_NODE_NAME);
             }
@@ -197,14 +203,15 @@ namespace ImFl
      * bone for the primary hand out of left-handed mode and for the offhand in left-handed mode. The other
      * cases land on the mirror-image left-hand bone (LArm_Hand) — the offhand out of left-handed mode, or
      * the primary hand in it — so mirror exactly when location-is-offhand and left-handed-mode disagree.
+     *
+     * The model's world transforms are brought up to date right away: the light is rooted at its lens this frame
+     * (getLightAnchorNode), and FRIK has already posed the hand bone by the time this mod's frame update runs.
      */
     void FlashlightMesh::setMeshTransform() const
     {
         if (!_meshNode) {
             return;
         }
-
-        f4vr::updateTransformsDown(_meshNode.get(), true);
 
         const auto transform = activeMeshTransform();
 
@@ -216,6 +223,8 @@ namespace ImFl
         common::MatrixUtils::getEulerAnglesFromMatrixDegrees(transform.rotate, &heading, &roll, &attitude);
         _meshNode->local.rotate = common::MatrixUtils::getMatrixFromEulerAnglesDegrees(sign * heading, roll, attitude);
         _meshNode->local.scale = transform.scale;
+
+        f4vr::updateTransformsDown(_meshNode.get(), true);
     }
 
     /** Detaches the mesh from its current parent while keeping the cloned node cached. */

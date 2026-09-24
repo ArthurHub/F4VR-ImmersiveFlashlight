@@ -139,7 +139,8 @@ namespace ImFl
         int flashlightInHandColorGreen = 0;
         int flashlightInHandColorBlue = 0;
         std::string flashlightInHandGoboPath;
-        // Per-hand pose of the flashlight light node relative to the hand wand node, for the Forward grip.
+        // Per-hand pose of the flashlight light node relative to the hand wand node, for the Forward grip. Only
+        // while the hand-held model isn't shown; with it shown the light is rooted at the model's lens.
         RE::NiTransform flashlightInOffhandTransform{};
         RE::NiTransform flashlightInPrimaryHandTransform{};
         // Same, for the Overhand (fist) grip.

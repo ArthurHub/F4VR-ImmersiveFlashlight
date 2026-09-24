@@ -149,7 +149,7 @@ namespace ImFl
         _inHandFlashlightMesh.onFrameUpdate(true);
         _onWeaponBeamMesh.onFrameUpdate();
 
-        adjustFlashlightTransformToHandOrHead();
+        adjustFlashlightTransformToHandOrHead(_inHandFlashlightMesh.getLightAnchorNode());
 
         NpcDetectionHandler::onFrameUpdate();
 
@@ -475,8 +475,12 @@ namespace ImFl
      *
      * Per-location pose comes from the configured `tFlashlight*Transform` values; no hardcoded
      * tilt/offset constants live here. Offhand and primary hand have independent transforms.
+     *
+     * While the hand-held model is shown, `inHandLightAnchor` is its lens node and the light is rooted there, so it
+     * leaves the model along its beam glow; the configured in-hand light transforms (set against the wand, not the
+     * model) apply only while the model isn't shown. The weapon lamp is rooted the same way.
      */
-    void Flashlight::adjustFlashlightTransformToHandOrHead()
+    void Flashlight::adjustFlashlightTransformToHandOrHead(const RE::NiAVObject* inHandLightAnchor)
     {
         const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode);
         if (!lightNode) {
@@ -491,7 +495,7 @@ namespace ImFl
             // update world transforms after reverting to original
             f4vr::updateTransforms(lightNode);
 
-            RE::NiAVObject* attachNode;
+            const RE::NiAVObject* attachNode;
             RE::NiMatrix3 rotationOffset;
             RE::NiPoint3 positionOffset;
             if (FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && hasWeaponToMountLightOn()) {
@@ -506,8 +510,13 @@ namespace ImFl
                     rotationOffset = MatrixUtils::getMatrixFromEulerAnglesDegrees(90, 0, -90);
                     positionOffset = RE::NiPoint3(15.0f, 4.0f, -4.0f);
                 }
+            } else if (inHandLightAnchor) {
+                // The hand-held model is shown: its lens node's +X is the beam axis, as the light's is.
+                attachNode = inHandLightAnchor;
+                rotationOffset = MatrixUtils::getIdentityMatrix();
+                positionOffset = RE::NiPoint3(0, 0, 0);
             } else {
-                // In-hand, or the on-weapon config preview with no weapon in hand (see hasWeaponToMountLightOn).
+                // In-hand without the model, or the on-weapon config preview with no weapon in hand (see hasWeaponToMountLightOn).
                 const bool isOffhand = FlashlightState::flashlightLocation == FlashlightLocation::InOffhand;
                 attachNode = isOffhand ? f4vr::getOffhandWandNode() : f4vr::getPrimaryHandWandNode();
                 const auto& handTransform = g_config.getFlashlightInHandLightTransform(isOffhand, FlashlightState::flashlightGripStyle);
@@ -537,7 +546,8 @@ namespace ImFl
         if (FlashlightState::flashlightLocation != FlashlightLocation::OnWeapon || !Utils::isFlashlightOn() || !f4vr::getWeaponNode()) {
             return;
         }
-        adjustFlashlightTransformToHandOrHead();
+        // on-weapon only, so no in-hand anchor
+        adjustFlashlightTransformToHandOrHead(nullptr);
         if (const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode)) {
             f4vr::updateTransforms(lightNode);
         }

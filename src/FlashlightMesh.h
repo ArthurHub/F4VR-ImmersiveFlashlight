@@ -28,6 +28,13 @@ namespace ImFl
          */
         void invalidate();
 
+        /**
+         * The model's lens node ("Flashlight_beam_attach", +X out of the lamp), where the beam glow starts, while the
+         * model is shown in a hand this frame; null otherwise. The light is rooted here so it leaves the model along
+         * the glow. Its world transform is current once onFrameUpdate() has run this frame.
+         */
+        RE::NiAVObject* getLightAnchorNode() const;
+
     private:
         void attach(RE::NiNode* parentNode);
         void setMeshTransform() const;
@@ -41,6 +48,7 @@ namespace ImFl
 
         RE::NiPointer<RE::NiNode> _meshNode;
         BeamGlowMesh _beamGlow{ BEAM_GLOW_NODE_NAME };
+        RE::NiNode* _beamAttachNode = nullptr;
         RE::NiAVObject* _lensNode = nullptr;
         std::optional<std::array<float, 3>> _lensColor;
         RE::NiNode* _attachedTo = nullptr;
