@@ -23,6 +23,7 @@ namespace
     // Named INI sections for the advanced, per-feature settings (moved out of the main [ImmersiveFlashlightVR]
     // section in config version 15). Location, beam appearance and the global light/toggle keys stay in the
     // main section (DEFAULT_SECTION); only the advanced groups are read from these.
+    constexpr const char* SECTION_BEAM_GLOW = "ImFl_BeamGlow";
     constexpr const char* SECTION_HAND_MOUNT = "ImFl_HandMount";
     constexpr const char* SECTION_HEADGEAR_RESTRICTION = "ImFl_HeadgearRestriction";
     constexpr const char* SECTION_WEAPON_MOUNT = "ImFl_WeaponMount";
@@ -377,6 +378,11 @@ namespace ImFl
         flashlightNearDistance = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightNearDistance", 30.0));
         flashlightFlagsBitmask = ini.GetValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", "0000010000100001");
         warnAboutFPSStabilizerMod = ini.GetBoolValue(DEFAULT_SECTION, "bWarnAboutFPSStabilizerMod", true);
+
+        // visible beam glow at the hand-held model's lens and the weapon lamp
+        beamGlowBaseIntensity = fmaxf(0.0f, static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowBaseIntensity", 0.2)));
+        beamGlowIntensity = fmaxf(0.0f, static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowIntensity", 0.15)));
+        beamGlowFovOffset = static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowFovOffset", 5.0));
 
         // flashlight mesh model in hand
         showFlashlightMesh = ini.GetBoolValue(SECTION_HAND_MOUNT, "bShowFlashlightMesh", true);

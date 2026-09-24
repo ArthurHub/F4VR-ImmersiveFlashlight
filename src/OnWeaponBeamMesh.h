@@ -1,11 +1,12 @@
 #pragma once
 
+#include "BeamGlowMesh.h"
 #include "Config.h"
 
 namespace ImFl
 {
     /**
-     * Manages a cloned beam-only model (just the lamp glow FX, no flashlight body) rooted at the weapon's
+     * Manages the beam glow (a BeamGlowMesh — just the glow cone, no flashlight body) rooted at the weapon's
      * modeled flashlight mesh. Shown only while the beam is mounted to that mesh (the weapon-flashlight
      * beam-to-mesh path is active), so the gun's own lamp emits a visible beam glow that tracks the weapon;
      * detached and hidden in every other state. Uses the same `tWeaponFlashlightMountTransform` offset that
@@ -17,8 +18,8 @@ namespace ImFl
         explicit OnWeaponBeamMesh() = default;
 
         /**
-         * Called every frame. When `meshNode` is a node, attaches the beam-only model to it (cloning on
-         * first use) with the configured mount transform; a null `meshNode` detaches and hides it.
+         * Called every frame. While the light sits on a weapon with a detected flashlight mesh, attaches the beam
+         * glow to it with the configured mount transform and shows it while the light is on; otherwise detaches it.
          */
         void onFrameUpdate();
 
@@ -33,11 +34,10 @@ namespace ImFl
         void detach();
         void applyMountTransform() const;
 
-        RE::NiPointer<RE::NiNode> _meshNode;
+        BeamGlowMesh _beamGlow{ MESH_NODE_NAME };
         RE::NiNode* _attachedTo = nullptr;
         std::optional<RE::NiTransform> _onWeaponTransform;
 
         static constexpr const char* MESH_NODE_NAME = "ImmersiveFlashlightWeaponBeam";
-        static constexpr const char* NIF_PATH = "flashlight-beam-only.nif";
     };
 }

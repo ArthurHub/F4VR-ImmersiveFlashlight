@@ -160,6 +160,16 @@ namespace ImFl
         std::string flashlightFlagsBitmask;
         bool warnAboutFPSStabilizerMod = false;
 
+        // Visible beam glow (BeamGlowMesh) at the hand-held model's lens and the weapon lamp. Its brightness is
+        // beamGlowBaseIntensity + the active beam's fade x beamGlowIntensity: the base keeps it visible at any fade,
+        // so the fade only has to shade it. A total of 0 hides the glow.
+        float beamGlowBaseIntensity = 0.2f;
+        float beamGlowIntensity = 0.15f;
+        // How many degrees narrower than the active beam's FOV the glow cone is, before rounding down to a mesh
+        // variant: the gobo darkens the cone's edge, so the visibly lit area is narrower than the FOV. A fixed offset
+        // (not a fraction) keeps every 5-degree FOV step landing on its own variant.
+        float beamGlowFovOffset = 5.0f;
+
         // flashlight mesh model in hand
         bool showFlashlightMesh = true;
         // Pose of the mesh for the Forward grip, authored for the right-hand bone. The left-hand bone (the

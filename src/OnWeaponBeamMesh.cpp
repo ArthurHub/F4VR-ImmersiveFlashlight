@@ -9,9 +9,9 @@
 namespace ImFl
 {
     /**
-     * Attaches the beam-only model to the supplied weapon flashlight mesh node (cloning on first use),
-     * re-attaching when the node changes, then re-applies the mount transform each frame so INI live-reload
-     * is reflected immediately. A null node detaches and hides the model.
+     * Attaches the beam glow to the weapon flashlight mesh's parent node, re-attaching when the node changes, then
+     * keeps it in step with the beam values and re-applies the mount transform each frame so INI live-reload is
+     * reflected immediately. Without a mounted lamp it detaches.
      */
     void OnWeaponBeamMesh::onFrameUpdate()
     {
@@ -24,59 +24,56 @@ namespace ImFl
             attach();
         }
 
-        if (_attachedTo && _meshNode) {
-            const bool beamVisible = FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && Utils::isFlashlightOn();
-            f4vr::setNodeVisibility(_meshNode.get(), beamVisible);
+        if (_attachedTo) {
+            const bool beamVisible = Utils::isFlashlightOn();
+            _beamGlow.setVisible(beamVisible);
             if (beamVisible) {
+                _beamGlow.onFrameUpdate();
                 applyMountTransform();
             }
         }
     }
 
-    /** Forces the cached model to detach so it re-attaches to fresh weapon 3D later. */
+    /**
+     * Forces the glow to detach so it re-attaches to fresh weapon 3D later.
+     */
     void OnWeaponBeamMesh::invalidate()
     {
         detach();
     }
 
-    /** Clones the beam-only model on first use (dropping collision) and attaches it to the mesh node. */
+    /**
+     * Hangs the beam glow under the weapon flashlight mesh's parent, a sibling of the lamp.
+     */
     void OnWeaponBeamMesh::attach()
     {
-        if (!_meshNode) {
-            _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
-            if (!_meshNode) {
-                logger::warn("OnWeaponBeamMesh: failed to clone NIF '{}'", NIF_PATH);
-                return;
-            }
-            // Passive glow prop: no collision so it can't disturb physics on the moving weapon.
-            _meshNode->collisionObject.reset();
-            logger::info("OnWeaponBeamMesh: cloned beam-only NIF");
-        }
-
         const auto [onWeaponNode, onWeaponTransform] = RestrictionHandler::getOnWeaponFlashlightMeshNode();
+        if (!onWeaponNode->parent) {
+            return;
+        }
 
         _onWeaponTransform = onWeaponTransform;
         _attachedTo = onWeaponNode->parent;
 
-        _attachedTo->AttachChild(_meshNode.get(), true);
+        _beamGlow.attach(_attachedTo);
 
         applyMountTransform();
-        f4vr::updateTransformsDown(_meshNode.get(), true);
+        if (const auto node = _beamGlow.node()) {
+            f4vr::updateTransformsDown(node, true);
+        }
         logger::info("OnWeaponBeamMesh: attached to weapon flashlight mesh");
     }
 
-    /** Detaches the cached model from its parent while keeping the clone cached. */
+    /**
+     * Detaches the beam glow from the weapon while keeping its loaded meshes cached.
+     */
     void OnWeaponBeamMesh::detach()
     {
         if (!_attachedTo) {
             return;
         }
 
-        if (_meshNode && _meshNode->parent) {
-            RE::NiPointer<RE::NiAVObject> held;
-            _meshNode->parent->DetachChild(_meshNode.get(), held);
-            // held goes out of scope; the NiPointer member keeps the clone alive
-        }
+        _beamGlow.detach();
 
         _attachedTo = nullptr;
         _onWeaponTransform.reset();
@@ -84,15 +81,20 @@ namespace ImFl
     }
 
     /**
-     * Sets the model's local transform from the configured mount offset (the same value that roots the game
+     * Sets the glow's local transform from the configured mount offset (the same value that roots the game
      * light at the mesh node). No handedness mirroring — the weapon mesh is the same in both modes.
      */
     void OnWeaponBeamMesh::applyMountTransform() const
     {
-        _meshNode->local = *_onWeaponTransform;
+        const auto node = _beamGlow.node();
+        if (!node) {
+            return;
+        }
+
+        node->local = *_onWeaponTransform;
         const auto& transform = g_config.weaponFlashlightMountTransform;
-        _meshNode->local.translate += transform.translate;
-        _meshNode->local.rotate = _meshNode->local.rotate * transform.rotate;
-        _meshNode->local.scale *= transform.scale;
+        node->local.translate += transform.translate;
+        node->local.rotate = node->local.rotate * transform.rotate;
+        node->local.scale *= transform.scale;
     }
 }

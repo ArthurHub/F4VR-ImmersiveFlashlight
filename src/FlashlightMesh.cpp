@@ -5,6 +5,7 @@
 #include "api/FRIKApi.h"
 #include "api/FRIKApiV2.h"
 #include "common/MatrixUtils.h"
+#include "f4vr/EffectShaderMaterials.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
 
@@ -147,6 +148,9 @@ namespace ImFl
         show();
 
         setMeshTransform();
+
+        _beamGlow.onFrameUpdate();
+        tintLens();
     }
 
     /** Forces the cached mesh to detach so it can reattach to fresh skeleton nodes later. */
@@ -155,12 +159,23 @@ namespace ImFl
         detach();
     }
 
-    /** Attaches the cached flashlight mesh to the requested parent node, cloning it if needed. */
+    /**
+     * Attaches the cached flashlight mesh to the requested parent node, cloning it if needed. A fresh clone gets its lens
+     * material made its own (before it is first attached) and the beam glow hung at its lens.
+     */
     void FlashlightMesh::attach(RE::NiNode* parentNode)
     {
         if (!_meshNode) {
             _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
             logger::info("FlashlightMesh: cloned NIF for location {}", static_cast<int>(FlashlightState::flashlightLocation));
+
+            f4vr::makeEffectShaderMaterialsPrivate(_meshNode.get());
+            _lensNode = f4vr::findAVObject(_meshNode.get(), LENS_NODE_NAME);
+            if (const auto beamAttachNode = f4vr::findNode(_meshNode.get(), BEAM_ATTACH_NODE_NAME)) {
+                _beamGlow.attach(beamAttachNode);
+            } else {
+                logger::warn("FlashlightMesh: no '{}' node in the model; the beam glow is off", BEAM_ATTACH_NODE_NAME);
+            }
         } else {
             logger::info("FlashlightMesh: re-attaching cached node for location {}", static_cast<int>(FlashlightState::flashlightLocation));
         }
@@ -261,6 +276,25 @@ namespace ImFl
             _handPoseSetForLocation = FlashlightLocation::OnHead;
             _handPoseSetForGripStyle = FlashlightGripStyle::Forward;
         }
+    }
+
+    /**
+     * Tints the lens disc with the beam color when it changed. Its brightness stays as authored: it is the lamp's face,
+     * which the beam's intensity doesn't change the way it does the glow.
+     */
+    void FlashlightMesh::tintLens()
+    {
+        const auto look = BeamGlowMesh::getActiveBeamLook();
+        if (!_lensNode || !look || look->color == _lensColor) {
+            return;
+        }
+
+        f4vr::forEachEffectShaderMaterial(_lensNode, [&](RE::BSEffectShaderMaterial& material, RE::BSGeometry&) {
+            material.baseColor.r = look->color[0];
+            material.baseColor.g = look->color[1];
+            material.baseColor.b = look->color[2];
+        });
+        _lensColor = look->color;
     }
 
     /**
