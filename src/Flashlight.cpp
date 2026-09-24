@@ -349,12 +349,14 @@ namespace ImFl
      * it back to the offhand. Each binding is fed only in states where it acts (a melee/unarmed weapon, or the
      * light off with no weapon to carry it, is inert), so the offhand button is suppressed (with a one-shot
      * entry haptic) only then. Runs before the on/off early-return so the on-weapon turn-on works from off.
-     * Fully inert while the offhand holds the weapon (firing it or carrying it): the bindings are then that
-     * hand's, and a sphere anchored to the weapon's lamp would always contain the offhand and swallow its button.
+     * Fully inert while the offhand is on the weapon — holding it (firing or carrying) or supporting it in a
+     * two-handed grip: the bindings are then that hand's, and a sphere anchored to the weapon's lamp would always
+     * contain the offhand and swallow its button. A two-handed grip has its own zone-less toggle
+     * (checkWeaponFlashlightToggle()).
      */
     void Flashlight::checkPrimaryHandActivation()
     {
-        const bool weaponInOffhand = WeaponGripHandler::isOffhandHoldingWeapon();
+        const bool offhandOnWeapon = WeaponGripHandler::isOffhandHoldingWeapon() || WeaponGripHandler::isTwoHandedGripActive();
         const bool on = Utils::isFlashlightOn();
         const auto location = FlashlightState::flashlightLocation;
 
@@ -370,11 +372,11 @@ namespace ImFl
             (location == FlashlightLocation::OnWeapon || location == FlashlightLocation::InPrimaryHand || location == FlashlightLocation::InOffhand ||
                 (FlashlightState::isHeadMountedFlashlight() && weaponDrawn));
         const bool tapTurnOnActive = !on && weaponCanHoldLight;
-        const bool tapActive = !weaponInOffhand && (tapMoveActive || tapTurnOnActive);
+        const bool tapActive = !offhandOnWeapon && (tapMoveActive || tapTurnOnActive);
 
         // Long-press binding: only pulls the on-weapon light back to the offhand.
         const auto toOffhandBinding = WeaponGripHandler::adjustBindingForInputRemap(g_config.primaryHandActivation.secondary);
-        const bool weaponToOffhandActive = !weaponInOffhand && on && location == FlashlightLocation::OnWeapon;
+        const bool weaponToOffhandActive = !offhandOnWeapon && on && location == FlashlightLocation::OnWeapon;
 
         auto zone = g_config.primaryHandActivation.zone;
 
