@@ -1,3 +1,11 @@
+## v1.3
+
+- Flashlight: The hand-held flashlight and a weapon's lamp now show a glow cone that matches the beam's spread, color, and brightness, and follows the beam live as you tune it. Its brightness and width are adjustable in the INI.
+- ROCK: Updated to ROCK's modular API. ROCK 0.9 dropped the old API, so the mod had stopped detecting ROCK's weapon grips. Older ROCK versions without the modular API are no longer supported.
+- Fixed the in-hand beam not lining up with the flashlight model. The light now comes out of the model's lens.
+- Fixed the primary-hand gesture zone reacting to the offhand on a two-handed weapon's foregrip, where it showed its icon and a long-press pulled the light off the weapon. The two-handed toggle handles the light there.
+- Fixed a brief stutter the first time a gesture icon or the config UI is shown.
+
 ## v1.2
 
 - Pip-Boy: The flashlight now stays on while the Pip-Boy is open, as it already did in power armor. It can be turned off in the INI for the vanilla behavior.
