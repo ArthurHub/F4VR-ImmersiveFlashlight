@@ -12,7 +12,10 @@ namespace ImFl
     public:
         FlashlightMod()
             : ModBase(Settings(Version::PROJECT, Version::NAME, &g_config, 32, true))
-        {}
+        {
+            // the activation-sphere icons and config UI panels draw on the framework's overlay
+            _settings.preloadRendering = true;
+        }
 
         bool isConfigOpen() const;
 
