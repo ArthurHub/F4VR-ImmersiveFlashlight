@@ -46,7 +46,7 @@ When the light is set to a hand, the runtime adapts to what that hand is doing:
 
 ### Weapons in the offhand (ROCK)
 
-When [ROCK](https://github.com/brunocatani/ROCK) handles your weapons, it can put the weapon in your offhand, and the light follows how the weapon is actually held:
+When [ROCK](https://github.com/brunocatani/ROCK) (v0.9 or newer) handles your weapons, it can put the weapon in your offhand, and the light follows how the weapon is actually held:
 
 - **Two-handed grip** (from FRIK or ROCK) → the light goes onto the weapon, following ROCK's two-handed weapon pose.
 - **Pistol fired one-handed from the offhand** → your primary hand is free, so the light sits there, whichever hand the light is set to.
@@ -153,6 +153,10 @@ Each location stores its own beam profile:
 | **Gobo**                | Beam texture / pattern projected by the light. |
 
 The defaults aim for a wide, soft head lamp for tight spaces; a far-reaching, tighter hand flashlight for walking in the dark; and a tighter, "tactical" weapon beam. Tune them per mode in the beam screen or the INI.
+
+### Beam glow
+
+The flashlight in your hand, and a weapon's modeled lamp, show a soft glow cone coming out of the lens. It takes the beam's color, its spread follows the beam's spread, and its brightness follows the beam's intensity, updating live as you tune. Adjust it in the INI's `[ImFl_BeamGlow]` section: `fBeamGlowBaseIntensity` and `fBeamGlowIntensity` set how bright it is (both `0` hides it), and `fBeamGlowFovOffset` how much narrower than the beam it is drawn.
 
 ## Restrictions
 

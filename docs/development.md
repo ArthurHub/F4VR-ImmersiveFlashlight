@@ -42,9 +42,11 @@ Then either build in Visual Studio or from the command line:
 - **Command line**:
 
   ```
-  cmake --build build --config Release
-  cmake --build build --config Debug
+  cmake --build --preset release
+  cmake --build --preset debug
   ```
+
+  The `release` / `debug` build presets build the `default` configure preset; with another configure preset, use `cmake --build build --config Release` (or `Debug`).
 
 Release builds automatically produce a `.7z` package of the DLL and mod data in `build/package`.
 

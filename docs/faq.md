@@ -169,7 +169,7 @@ Run only one flashlight replacement at a time — other mods that drive the Pip-
   <summary>Does it work with ROCK?</summary>
 &#10240;
 
-Yes. When [ROCK](https://github.com/brunocatani/ROCK) handles your weapons, the light follows how the weapon is actually held: a two-handed grip puts it on the weapon, a pistol fired one-handed from your offhand moves it to your free primary hand, and a rifle carried by the offhand keeps it on the weapon. While the offhand holds the weapon, your free primary hand takes over the head and body gestures. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
+Yes, with **ROCK v0.9 or newer**; older ROCK versions aren't detected. When [ROCK](https://github.com/brunocatani/ROCK) handles your weapons, the light follows how the weapon is actually held: a two-handed grip puts it on the weapon, a pistol fired one-handed from your offhand moves it to your free primary hand, and a rifle carried by the offhand keeps it on the weapon. While the offhand holds the weapon, your free primary hand takes over the head and body gestures. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
 
 One known limitation: while ROCK fires from your left hand, the mod's primary-hand haptics are felt in the offhand. That needs a fix in ROCK.
 

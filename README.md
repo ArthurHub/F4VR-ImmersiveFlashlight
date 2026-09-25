@@ -26,7 +26,7 @@ Fallout 4 VR ships with a single Pip-Boy flashlight that is awkward to control a
 What it provides:
 
 - **Five mounting positions** - in either hand, on the head, on the power-armor helmet, and weapon-mounted, with automatic, context-aware switching (a drawn ranged weapon routes the light onto the gun; melee frees the hand).
-- **Per-mode beam tuning** - independent intensity, distance (radius), spread (FOV), RGB color, and gobo texture for every location.
+- **Per-mode beam tuning** - independent intensity, distance (radius), spread (FOV), RGB color, and gobo texture for every location, with a visible glow cone at the flashlight's lens that matches the beam.
 - **Physical interaction** - a grabbable flashlight model stowed on your body, a bring-offhand-to-head gesture for the head lamp, and an offhand-to-primary-hand gesture to move the light to your hand or weapon.
 - **Optional restrictions** - gate the head lamp behind worn headgear (any, or specific light-capable helmets), and gate the weapon light behind a weapon that actually carries a modeled flashlight, rooting the beam at that mesh.
 - **In-game VR configuration** - a multi-screen VR UI for beam tuning, location toggles, color/gobo presets, and global options, all applied live with no restart.
@@ -46,7 +46,7 @@ Download from [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) and in
 ### Compatibility
 
 - **FRIK v76 and below** is not supported - the in-game config UI and the FRIK flashlight integration require FRIK v77+.
-- [ROCK](https://github.com/brunocatani/ROCK) weapon handling is supported alongside FRIK: the light follows two-handed grips and weapons held in the offhand.
+- [ROCK](https://github.com/brunocatani/ROCK) v0.9+ weapon handling is supported alongside FRIK: the light follows two-handed grips and weapons held in the offhand. Older ROCK versions aren't detected.
 - Other flashlight mods that drive the Pip-Boy light may conflict; run only one flashlight replacement at a time.
 
 ## Usage

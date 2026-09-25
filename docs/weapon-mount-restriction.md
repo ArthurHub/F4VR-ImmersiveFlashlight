@@ -66,9 +66,10 @@ Three things, all on by default:
   the actual flashlight node and follows it exactly, including when the weapon animates.
   `bWeaponFlashlightMountBeamToMesh` turns this off; `tWeaponFlashlightMountTransform` fine-tunes the offset
   from the lamp, live, while you watch.
-- **The lamp glows.** A glow-only model — the lamp's light effect with no flashlight body — is attached at
-  the lamp while the light is on, so the flashlight on your gun visibly emits rather than sitting dark with
-  a beam beside it.
+- **The lamp glows.** While the light is on, a glow cone comes out of the lamp, so the flashlight on your
+  gun visibly emits rather than sitting dark with a beam beside it. It matches the weapon beam's spread,
+  color, and brightness, and `tWeaponFlashlightMountTransform` moves it along with the light. See
+  [Beam glow](README.md#beam-glow) to adjust it.
 - **The move-to-weapon gesture moves onto the lamp.** The offhand-to-primary-hand zone normally sits at your
   primary hand; with a lamp detected, it anchors to the lamp instead, so you reach for the flashlight on the
   gun to move or toggle the light. `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` turns this off. It needs
