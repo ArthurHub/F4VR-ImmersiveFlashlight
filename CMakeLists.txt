@@ -64,6 +64,8 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 # >>> Bring in the framework (it brings CommonLibF4 transitively)
+# The mod draws no Dear ImGui UI, so leave the framework's f4cf::imgui layer (and its vcpkg port) out
+set(F4CF_WITH_IMGUI_UI OFF)
 add_subdirectory(${F4VR_COMMON_FRAMEWORK_PATH_SELECTED} "F4VR-CommonFramework" EXCLUDE_FROM_ALL)
 # >>> IMPORTANT:
 # For CommonLibF4 to build successfully you must satisfy it's vcpkg dependencies

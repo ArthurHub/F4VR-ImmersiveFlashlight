@@ -203,7 +203,7 @@ The master toggle (`bNpcDetectionEnabled`) has a `MiscScreen` button; the rest o
 Pulled via vcpkg (`vcpkg.json`) with a **pinned baseline** required for CommonLibF4 compatibility:
 
 - `F4VR-CommonFramework` (git submodule at `external/`) — re-exports CommonLibF4 and the framework base classes
-- `spdlog`, `nlohmann-json`, `simpleini`, `thomasmonkman-filewatch`, `args`, `rapidcsv`, `rsm-mmio`, `xbyak`, `cpptrace`, `imgui` (feature `dx11-binding`, for the framework's `f4cf::imgui` layer)
+- `spdlog`, `nlohmann-json`, `simpleini`, `thomasmonkman-filewatch`, `args`, `rapidcsv`, `rsm-mmio`, `xbyak`, `cpptrace` (no `imgui`: the mod draws no Dear ImGui UI, so `CMakeLists.txt` builds the framework with `F4CF_WITH_IMGUI_UI=OFF`)
 
 The vcpkg baseline **must not be changed** without verifying CommonLibF4 still builds; it was specifically pinned to `b4a3d89125e45bc8f80fb94bef9761d4f4e14fb9`.
 
