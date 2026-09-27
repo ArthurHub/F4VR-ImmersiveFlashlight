@@ -83,7 +83,7 @@ cmake --preset default
 cmake --build build --config Release
 ```
 
-This generates the Visual Studio solution in `build/`. Open `build/ImmersiveFlashlightVR.slnx` if you prefer building or debugging in Visual Studio. Project configuration belongs in `CMakeLists.txt`, not the generated VS project files. Release builds automatically produce a `.7z` package in `build/package`.
+This generates the Visual Studio solution in `build/`. Open `build/ImmersiveFlashlightVR.slnx` if you prefer building or debugging in Visual Studio. Project configuration belongs in `CMakeLists.txt`, not the generated VS project files. To package, build the `package_mod` target (`cmake --build --preset package`); it writes a versioned `.7z` to `build/package`.
 
 For local post-build copying, see `CMakeUserPresets.json.template` and set `COPY_PLUGIN_BASE_PATH` to your MO2 mod folder or Fallout 4 VR `Data` folder. More development notes are in [docs/development.md](docs/development.md).
 

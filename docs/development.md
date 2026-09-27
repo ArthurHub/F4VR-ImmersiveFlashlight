@@ -48,7 +48,13 @@ Then either build in Visual Studio or from the command line:
 
   The `release` / `debug` build presets build the `default` configure preset; with another configure preset, use `cmake --build build --config Release` (or `Debug`).
 
-Release builds automatically produce a `.7z` package of the DLL and mod data in `build/package`.
+A normal build does not package. To produce the versioned `.7z` of the DLL and mod data in `build/package`, build the `package_mod` target:
+
+```
+cmake --build --preset package
+```
+
+(or `cmake --build build --config Release --target package_mod`). It builds the plugin first if needed.
 
 ### Auto-copy to the game (optional)
 
@@ -56,7 +62,10 @@ To copy the built DLL/PDB into your game or mod-manager folder on each build, co
 
 ```
 cmake --preset custom
+cmake --build --preset custom-debug   # or custom-release, or custom-package to also package the mod
 ```
+
+Set `COPY_PLUGIN_CONFIGURATIONS` in that preset to limit the copy to some build configurations: `all` (the default) or a `;` list such as `"Release"` or `"Debug;RelWithDebInfo"` (case-insensitive).
 
 ## Code style
 

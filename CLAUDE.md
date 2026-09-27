@@ -22,11 +22,11 @@ cmake --build --preset release                            # or: cmake --build bu
 cmake --build --preset debug                              # or: cmake --build build --config Debug
 ```
 
-The default preset inherits `cmake-dev + vcpkg + windows + vs2026`. The `release` / `debug` build presets build the `default` configure preset. The build output is `build/`. In-source builds are blocked.
+The default preset inherits `cmake-dev + vcpkg + windows + vs2026`. The `release` / `debug` / `package` build presets build the `default` configure preset. The build output is `build/`. In-source builds are blocked.
 
-**Auto-copy to game (optional):** Pass `-DPOST_BUILD_COPY_PLUGIN=ON -DCOPY_PLUGIN_BASE_PATH=<Fallout4VR_path>` during configure to copy the DLL and PDB to `<path>/F4SE/Plugins/` on each build. Multiple paths can be separated by `;`.
+**Auto-copy to game (optional):** Pass `-DPOST_BUILD_COPY_PLUGIN=ON -DCOPY_PLUGIN_BASE_PATH=<Fallout4VR_path>` during configure to copy the DLL and PDB to `<path>/F4SE/Plugins/` on each build. Multiple paths can be separated by `;`. `COPY_PLUGIN_CONFIGURATIONS` limits the copy to some build configurations: `all` (default) or a `;` list like `Release` / `Debug;RelWithDebInfo`.
 
-**Release packaging:** Release builds automatically run `cmake/package.cmake` to produce a `.7z` archive with the DLL and mod data files.
+**Packaging:** an explicit step, not part of a normal build — build the `package_mod` target (`cmake --build --preset package`, or `cmake --build build --config Release --target package_mod`), which builds the plugin if needed and runs `cmake/package.cmake` to produce a versioned `.7z` with the DLL and mod data files in `build/package/`. A non-Release archive has the configuration in its file name.
 
 **No automated test suite** — testing is manual via in-game gameplay and the configuration UI.
 
