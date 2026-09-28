@@ -27,6 +27,8 @@ namespace ImFl
         static void invalidate();
         static std::pair<RE::NiAVObject*, RE::NiTransform> getOnWeaponFlashlightMeshNode();
         static void dumpHeadgear();
+        static const RE::TESObjectARMO* getWornHeadgear();
+        static const char* getHeadgearRuleMatch(const RE::TESObjectARMO* armor);
 
     private:
         static void resolveForms();
@@ -34,7 +36,6 @@ namespace ImFl
         static bool checkWeaponChangeForFlashlightOnWeaponDetection();
         static void enforceRestrictions();
         static bool isPipboyWorn();
-        static const RE::TESObjectARMO* getWornHeadgear();
         static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);
         static bool isLightCapableHeadgearWorn();
         static RE::NiAVObject* findWeaponFlashlightNode(RE::NiAVObject* weaponNode);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <utility>
 #include <vector>
 
@@ -106,6 +107,16 @@ namespace ImFl
         const RE::NiTransform& getFlashlightMeshTransform(FlashlightGripStyle grip, bool inPowerArmor) const;
         const frik::api::FRIKApi::HandPoseData& getFlashlightHandPose(FlashlightGripStyle grip, bool inPowerArmor) const;
         const RE::NiTransform& getFlashlightBodyTransform(bool inPowerArmor) const;
+
+        /**
+         * Whether the typed values were loaded again since the last call, clearing it: a hot-reload from disk, a session
+         * override set or cleared (the devbench tool's set / clear), or ConfigBase::reload(). Only the hot-reload
+         * notifies the INI-changed subscribers, so this is what catches all of them. Any thread.
+         */
+        bool consumeValuesReloaded()
+        {
+            return _valuesReloaded.exchange(false);
+        }
 
         // Flashlight location, configured independently for out of / in power armor (iFlashlightLocation / iFlashlightLocationInPA).
         FlashlightConfigLocation flashlightConfigLocation = FlashlightConfigLocation::OnHead;
@@ -354,6 +365,10 @@ namespace ImFl
     protected:
         virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
         virtual void updateIniConfigToLatestVersionCustom(int currentVersion, int latestVersion, const CSimpleIniA& oldIni, CSimpleIniA& newIni) const override;
+
+    private:
+        // Set by every loadIniConfigInternal(), which runs on the file watcher's thread for a hot-reload.
+        std::atomic<bool> _valuesReloaded = false;
     };
 
     // Global singleton for easy access

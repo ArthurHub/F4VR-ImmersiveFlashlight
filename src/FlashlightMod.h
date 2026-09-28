@@ -19,6 +19,11 @@ namespace ImFl
 
         bool isConfigOpen() const;
 
+        config::MainScreen* getConfigScreen() const
+        {
+            return _config.get();
+        }
+
     protected:
         virtual void onModLoaded(const F4SE::LoadInterface* f4SE) override;
         virtual void onGameLoaded() override;

@@ -1,3 +1,7 @@
+## v1.3.1
+
+- Dev: Added a devbench `immersiveflashlightvr` tool. Its `state` reports the light (location, beam), what gates the gestures, weapon grips, restrictions, the last NPC detection event and whether the config UI is open. Its actions turn the light on/off or move it, open or close the config UI, and explain the headgear and weapon restrictions. It publishes events for fired gestures, restriction turn-offs, and every state change. Session config overrides (`set` / `clear`) now apply to the light like an INI edit does.
+
 ## v1.3
 
 - Flashlight: The hand-held flashlight and a weapon's lamp now show a glow cone that matches the beam's spread, color, and brightness, and follows the beam live as you tune it. Its brightness and width are adjustable in the INI.

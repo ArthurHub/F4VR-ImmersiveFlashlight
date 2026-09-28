@@ -163,6 +163,14 @@ namespace ImFl
     }
 
     /**
+     * The last detection event the handler posted, for the devbench tool.
+     */
+    const NpcDetectionHandler::PostedEvent& NpcDetectionHandler::getLastEvent()
+    {
+        return _lastEvent;
+    }
+
+    /**
      * One detection tick: find what the beam is touching and post a single player-owned detection event
      * there — near the nearest lit NPC (offset toward the player) when the direct path is enabled, else on
      * the beam's lit spot on world geometry when the lit-spot path is enabled. The two paths are separately
@@ -290,6 +298,7 @@ namespace ImFl
             onPlayer ? (spotted ? "ON the player (spotted)" : "ON the player (point blank)") : std::format("offset {:.0f} toward player", offset));
         postDetectionEvent(eventPos, soundLevel);
         recordBeamLightLevel(beamDist);
+        _lastEvent = { .posted = true, .direct = true, .spotted = spotted, .soundLevel = soundLevel, .npcFormId = npc->formID, .timeMs = nowMillis() };
         _debug.recordDirectEvent(npc, eventPos, soundLevel, spotted);
         return true;
     }
@@ -443,6 +452,7 @@ namespace ImFl
         const int soundLevel = scaleSoundLevelByBeamStrength(g_config.npcDetectionLitSpotSoundLevel, spotDist);
         logger::sampleDebug(3000, "NpcDetector: lit spot seen by NPC {:08X}, event at beam-dist {:.0f}", witness->formID, spotDist);
         postDetectionEvent(spot, soundLevel);
+        _lastEvent = { .posted = true, .soundLevel = soundLevel, .npcFormId = witness->formID, .timeMs = nowMillis() };
         _debug.recordLitSpotEvent(spot, soundLevel, witness);
     }
 

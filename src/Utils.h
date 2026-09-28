@@ -27,6 +27,7 @@ namespace ImFl
         static void updateVanillaFlashlightToggleDisabled();
         static void updateKeepFlashlightOnInPipboy();
         static const char* findOpenGestureBlockingMenu();
+        static const std::string& getGestureBlockingMenu();
 
     private:
         // An open menu with any of these flags is a "real" menu that takes the controller input (the always-open

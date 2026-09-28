@@ -1,7 +1,5 @@
 #pragma once
 
-#include <atomic>
-
 #include "BodyFlashlightMesh.h"
 #include "FlashlightMesh.h"
 #include "OnWeaponBeamMesh.h"
@@ -65,9 +63,6 @@ namespace ImFl
         static void adjustFlashlightTransformToHandOrHead(const RE::NiAVObject* inHandLightAnchor);
         static void onWeaponTransformFinalized();
         void maybeShowFPSStabilizerModWarning();
-
-        // The INI changed on disk (hot-reload), set from the file watcher's thread: applied on the next frame.
-        inline static std::atomic<bool> _iniChanged = false;
 
         bool _wasInPowerArmor = false;
         // A gesture-blocking game menu is open this frame (Utils::findOpenGestureBlockingMenu()): every gesture is inert.

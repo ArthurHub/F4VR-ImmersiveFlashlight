@@ -30,7 +30,25 @@ namespace ImFl
     class NpcDetectionHandler
     {
     public:
+        /**
+         * A detection event the handler posted.
+         */
+        struct PostedEvent
+        {
+            // false until the first event
+            bool posted = false;
+            // on an NPC (direct), or on the beam's lit spot
+            bool direct = false;
+            // the direct hit escalated: the event went on the player
+            bool spotted = false;
+            int soundLevel = 0;
+            // the lit NPC (direct) or the witness (lit spot)
+            std::uint32_t npcFormId = 0;
+            std::uint64_t timeMs = 0;
+        };
+
         static void onFrameUpdate();
+        static const PostedEvent& getLastEvent();
 
     private:
         struct BeamCone
@@ -162,6 +180,7 @@ namespace ImFl
         static void releasePlayerLightLevel();
 
         inline static uint64_t _lastTickTime = 0;
+        inline static PostedEvent _lastEvent;
 
         // Player light-level state (docs 3.3) — the visual-detection half of the feature, kept across frames
         // because the beam's contribution is decided on the throttled tick but has to be applied every frame.

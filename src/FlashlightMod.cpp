@@ -4,6 +4,7 @@
 #include "WeaponGripHandler.h"
 #include "api/FRIKApi.h"
 #include "api/FRIKApiV2.h"
+#include "devbench/FlashlightDevBench.h"
 #include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
@@ -63,6 +64,8 @@ namespace ImFl
      */
     void FlashlightMod::onModLoaded(const F4SE::LoadInterface*)
     {
+        devbench::setupDevBenchTool();
+
         const int err = FRIKApiV2::initialize();
         if (err == 0) {
             logger::info("Disable FRIK flashlight feature");

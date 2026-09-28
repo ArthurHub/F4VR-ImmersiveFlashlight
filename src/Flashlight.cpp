@@ -9,8 +9,10 @@
 #include "Utils.h"
 #include "WeaponGripHandler.h"
 #include "common/MatrixUtils.h"
+#include "devbench/DevBench.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
+#include "perf/PerfMonitor.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
 
@@ -72,6 +74,21 @@ namespace
     {
         return !ImFl::FlashlightState::isRuntimeLocationOverrideActive() || f4vr::isNodeVisible(f4vr::getWeaponNode());
     }
+
+    /**
+     * Publish a fired gesture as the devbench "gesture" event, with where it left the light.
+     */
+    void emitGestureEvent(const char* gesture, const vrcf::Hand hand)
+    {
+        f4cf::devbench::emit("gesture", [&] {
+            return nlohmann::json{
+                { "gesture", gesture },
+                { "hand", ImFl::Utils::getHandLabel(hand) },
+                { "lightOn", ImFl::Utils::isFlashlightOn() },
+                { "location", ImFl::FlashlightState::getFlashlightLocationLabel(ImFl::FlashlightState::flashlightLocation) },
+            };
+        });
+    }
 }
 
 namespace ImFl
@@ -88,9 +105,8 @@ namespace ImFl
         FlashlightState::setLightValues();
         Utils::updateKeepFlashlightOnInPipboy();
 
-        // Refresh flashlight values on config change. The file watcher notifies on its own thread, so the change is
-        // applied on the next frame, on the game thread (applyIniChange()).
-        g_config.subscribeForIniChangedEvent("Flashlight", [](const std::string&) { _iniChanged = true; });
+        // applied above, as is every config load so far; later ones are applied by onFrameUpdate()
+        g_config.consumeValuesReloaded();
 
         WeaponGripHandler::setWeaponTransformFinalizedListener(onWeaponTransformFinalized);
     }
@@ -106,7 +122,12 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        if (_iniChanged.exchange(false)) {
+        static perf::PerfMonitor perf("Flashlight::onFrameUpdate");
+        const auto timer = perf.scope();
+
+        // The config values were loaded again (an INI hot-reload on the file watcher's thread, or a session override):
+        // applied here, on the game thread.
+        if (g_config.consumeValuesReloaded()) {
             applyIniChange();
         }
         LiveLight::onFrameUpdate();
@@ -272,6 +293,7 @@ namespace ImFl
                     FlashlightState::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
                     Utils::turnFlashlightOn();
                 }
+                emitGestureEvent("bodyGrab", binding.hand);
                 return true;
             });
     }
@@ -323,6 +345,7 @@ namespace ImFl
                 if (binding == toHandBinding) {
                     logger::info("Switching flashlight from head to {} hand", Utils::getHandLabel(binding.hand));
                     FlashlightState::switchFlashlightConfigLocation(f4vr::isPrimaryHand(binding.hand) ? FlashlightConfigLocation::InPrimaryHand : FlashlightConfigLocation::InOffhand);
+                    emitGestureEvent("head", binding.hand);
                     return true;
                 }
                 // Tap binding (headActivation.primary).
@@ -337,6 +360,7 @@ namespace ImFl
                     logger::info("Switching flashlight to head");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::OnHead);
                 }
+                emitGestureEvent("head", binding.hand);
                 return true;
             });
     }
@@ -415,6 +439,7 @@ namespace ImFl
                 if (binding == toOffhandBinding) {
                     logger::info("Switching flashlight from weapon to offhand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InOffhand);
+                    emitGestureEvent("primaryHand", binding.hand);
                     return true;
                 }
                 // Tap binding.
@@ -434,6 +459,7 @@ namespace ImFl
                     logger::info("Switching flashlight to primary hand");
                     FlashlightState::switchFlashlightConfigLocation(FlashlightConfigLocation::InPrimaryHand);
                 }
+                emitGestureEvent("primaryHand", binding.hand);
                 return true;
             });
     }
@@ -468,6 +494,7 @@ namespace ImFl
         if (vrcf::VRControllers.check(binding)) {
             logger::info("Toggle weapon flashlight in two-handed grip");
             f4vr::togglePipboyLight(f4vr::getPlayer());
+            emitGestureEvent("weaponToggle", binding.hand);
         }
     }
 

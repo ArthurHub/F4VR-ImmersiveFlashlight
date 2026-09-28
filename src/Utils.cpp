@@ -221,4 +221,12 @@ namespace ImFl
         }
         return blockingMenu;
     }
+
+    /**
+     * The menu findOpenGestureBlockingMenu() last found blocking the gestures; empty when none.
+     */
+    const std::string& Utils::getGestureBlockingMenu()
+    {
+        return _gestureBlockingMenu;
+    }
 }

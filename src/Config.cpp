@@ -540,6 +540,8 @@ namespace ImFl
         npcDetectionLightLevelMax = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMax", 220.0));
         npcDetectionLightLevelCurve = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelCurve", 1.0));
         npcDetectionLightLevelDecayMs = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelDecayMs", 1000.0));
+
+        _valuesReloaded = true;
     }
 
     /**

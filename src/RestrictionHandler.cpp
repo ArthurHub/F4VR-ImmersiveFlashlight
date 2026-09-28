@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "FlashlightState.h"
 #include "Utils.h"
+#include "devbench/DevBench.h"
 #include "f4vr/DebugInventory.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
@@ -177,6 +178,24 @@ namespace ImFl
     }
 
     /**
+     * Which part of the Immersive rule decides the headgear (see isLightCapableHeadgear()): "deny list", "allow list",
+     * "keyword", or "no match" (not light-capable, or nothing worn).
+     */
+    const char* RestrictionHandler::getHeadgearRuleMatch(const RE::TESObjectARMO* armor)
+    {
+        if (!armor) {
+            return "no match";
+        }
+        if (_headLightDenyIds.contains(armor->formID)) {
+            return "deny list";
+        }
+        if (_headLightAllowIds.contains(armor->formID)) {
+            return "allow list";
+        }
+        return isLightCapableHeadgear(armor) ? "keyword" : "no match";
+    }
+
+    /**
      * Immersive rule applied to the currently worn headgear.
      */
     bool RestrictionHandler::isLightCapableHeadgearWorn()
@@ -327,12 +346,14 @@ namespace ImFl
         if (FlashlightState::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
             logger::info("Headgear requirement not met — turning the head flashlight off");
             Utils::turnFlashlightOff();
+            f4cf::devbench::emit("restriction.lightOff", [] { return nlohmann::json{ { "rule", "headgear" } }; });
             return;
         }
 
         if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _weaponHandler.isDrawn() && !isWeaponFlashlightAllowed()) {
             logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
             Utils::turnFlashlightOff();
+            f4cf::devbench::emit("restriction.lightOff", [] { return nlohmann::json{ { "rule", "weaponFlashlightMesh" } }; });
         }
     }
 
