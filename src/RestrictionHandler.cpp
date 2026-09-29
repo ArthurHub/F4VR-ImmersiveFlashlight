@@ -251,6 +251,7 @@ namespace ImFl
      */
     bool RestrictionHandler::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         const bool weaponChanged = checkWeaponChangeForFlashlightOnWeaponDetection();
 
         enforceRestrictions();
@@ -282,6 +283,7 @@ namespace ImFl
      */
     RE::NiAVObject* RestrictionHandler::findWeaponFlashlightNode(RE::NiAVObject* weaponNode)
     {
+        F4CF_PERF_FUNCTION();
         if (!f4vr::isNodeVisible(weaponNode)) {
             return nullptr;
         }
@@ -339,6 +341,7 @@ namespace ImFl
      */
     void RestrictionHandler::enforceRestrictions()
     {
+        F4CF_PERF_FUNCTION();
         if (FlashlightState::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn() || !isFlashlightAvailable()) {
             return;
         }

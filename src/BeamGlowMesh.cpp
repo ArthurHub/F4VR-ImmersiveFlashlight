@@ -74,6 +74,7 @@ namespace ImFl
      */
     void BeamGlowMesh::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (!_parent) {
             return;
         }
@@ -108,6 +109,7 @@ namespace ImFl
         if (const auto it = _variants.find(degrees); it != _variants.end()) {
             return it->second;
         }
+        F4CF_PERF_SCOPE("load");
 
         const auto path = std::format("flashlight-beam-{}deg.nif", degrees);
         RE::NiPointer<RE::NiNode> variant;

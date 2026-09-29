@@ -226,6 +226,7 @@ namespace ImFl
      */
     void WeaponGripHandler::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         const bool frikTwoHanded = frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isOffHandGrippingWeapon();
 
         bool rockTwoHanded = false;

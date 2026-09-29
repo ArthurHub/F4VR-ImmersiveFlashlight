@@ -20,6 +20,7 @@ namespace ImFl
      */
     void BodyFlashlightMesh::onFrameUpdate(const bool enabled)
     {
+        F4CF_PERF_FUNCTION();
         if (!enabled) {
             detach();
             return;
@@ -73,6 +74,7 @@ namespace ImFl
      */
     void BodyFlashlightMesh::attach(RE::NiNode* parentNode)
     {
+        F4CF_PERF_FUNCTION();
         if (!_meshNode) {
             _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
 

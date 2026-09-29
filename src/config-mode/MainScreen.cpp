@@ -97,6 +97,7 @@ namespace ImFl::config
      */
     void MainScreen::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (!isConfigOpen() && _pending == Nav::None) {
             return;
         }

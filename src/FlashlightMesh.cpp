@@ -79,6 +79,7 @@ namespace ImFl
     /** Updates mesh attachment, visibility, and FRIK hand-pose state for the current frame. */
     void FlashlightMesh::onFrameUpdate(const bool isFlashlightOn)
     {
+        F4CF_PERF_FUNCTION();
         if (!g_config.showFlashlightMesh) {
             hide(true, "mesh disabled");
             return;
@@ -170,6 +171,7 @@ namespace ImFl
      */
     void FlashlightMesh::attach(RE::NiNode* parentNode)
     {
+        F4CF_PERF_FUNCTION();
         if (!_meshNode) {
             _meshNode.reset(f4vr::getClonedNiNodeForNifFileSetName(NIF_PATH, MESH_NODE_NAME));
             logger::info("FlashlightMesh: cloned NIF for location {}", static_cast<int>(FlashlightState::flashlightLocation));

@@ -71,6 +71,7 @@ namespace ImFl
      */
     bool LiveLight::refresh(const RE::TESObjectLIGH& form)
     {
+        F4CF_PERF_FUNCTION();
         const auto player = f4vr::getPlayer();
         auto* niLight = player ? player->niPipboyLight.get() : nullptr;
         auto* bsLight = player ? player->pipboyLight.get() : nullptr;
@@ -121,6 +122,7 @@ namespace ImFl
      */
     void LiveLight::recreate()
     {
+        F4CF_PERF_FUNCTION();
         _pendingRefreshForm = nullptr;
         _lightVolumeRebuildAttempts = 0;
 
@@ -135,6 +137,7 @@ namespace ImFl
      */
     void LiveLight::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (const auto* form = std::exchange(_pendingRefreshForm, nullptr)) {
             refresh(*form);
         }

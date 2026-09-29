@@ -141,6 +141,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (!g_config.npcDetectionEnabled || !Utils::isFlashlightOn() || FlashlightState::isRuntimeLocationOverrideActive()) {
             // disabled, light off, or config-UI beam preview: nothing to alert. Hand the player's light level
             // back if we were holding it — no frame below will run to do it.
@@ -181,6 +182,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::runDetectionTick()
     {
+        F4CF_PERF_FUNCTION();
         _debug.onTickStart();
         BeamCone cone;
         if (!getBeamCone(cone)) {
@@ -212,6 +214,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::gatherCandidates(const BeamCone& cone, std::vector<Candidate>& candidates)
     {
+        F4CF_PERF_FUNCTION();
         const auto player = f4vr::getPlayer();
         if (!player) {
             return;
@@ -262,6 +265,7 @@ namespace ImFl
      */
     bool NpcDetectionHandler::runNpcDirectDetection(const BeamCone& cone, const std::vector<Candidate>& candidates)
     {
+        F4CF_PERF_FUNCTION();
         if (!g_config.npcDetectionDirectEnabled) {
             _debug.setReason("direct off");
             return false;
@@ -347,6 +351,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::updatePlayerLightLevel()
     {
+        F4CF_PERF_FUNCTION();
         const auto player = f4vr::getPlayer();
         if (!player) {
             return;
@@ -425,6 +430,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::runLitSpotDetection(const BeamCone& cone, const std::vector<Candidate>& candidates)
     {
+        F4CF_PERF_FUNCTION();
         if (!g_config.npcDetectionLitSpotEnabled || g_config.npcDetectionLitSpotSoundLevel <= 0) {
             _debug.addReason("lit-spot off");
             return;
@@ -631,6 +637,7 @@ namespace ImFl
      */
     bool NpcDetectionHandler::castRay(const RE::NiPoint3& from, const RE::NiPoint3& to, const std::string& label, RayProbe& probe)
     {
+        F4CF_PERF_FUNCTION();
         // Every exit reports what ended the ray as it returns whether the ray was blocked; the message is
         // kept only while the overlay is on, and the callers read just the result / probe.hitPos.
         DebugState::startProbe(probe, label, from, to);
@@ -692,6 +699,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::postDetectionEvent(const RE::NiPoint3& location, const int soundLevel)
     {
+        F4CF_PERF_FUNCTION();
         const auto player = f4vr::getPlayer();
         if (!player || !player->currentProcess || soundLevel <= 0) {
             return;
@@ -894,6 +902,7 @@ namespace ImFl
      */
     void NpcDetectionHandler::DebugState::draw()
     {
+        F4CF_PERF_FUNCTION();
         if (!recording()) {
             return;
         }

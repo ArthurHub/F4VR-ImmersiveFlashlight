@@ -15,6 +15,7 @@ namespace ImFl
      */
     void OnWeaponBeamMesh::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (FlashlightState::flashlightLocation != FlashlightLocation::OnWeapon || !RestrictionHandler::getOnWeaponFlashlightMeshNode().first) {
             detach();
             return;

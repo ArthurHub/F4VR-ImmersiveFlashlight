@@ -12,7 +12,6 @@
 #include "devbench/DevBench.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
-#include "perf/PerfMonitor.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
 
@@ -122,8 +121,7 @@ namespace ImFl
      */
     void Flashlight::onFrameUpdate()
     {
-        static perf::PerfMonitor perf("Flashlight::onFrameUpdate");
-        const auto timer = perf.scope();
+        F4CF_PERF_FUNCTION();
 
         // The config values were loaded again (an INI hot-reload on the file watcher's thread, or a session override):
         // applied here, on the game thread.
@@ -183,6 +181,7 @@ namespace ImFl
      */
     void Flashlight::applyIniChange()
     {
+        F4CF_PERF_FUNCTION();
         RestrictionHandler::invalidate();
         Utils::updateVanillaFlashlightToggleDisabled();
         Utils::updateKeepFlashlightOnInPipboy();
@@ -227,6 +226,7 @@ namespace ImFl
      */
     void Flashlight::updateBodyStow()
     {
+        F4CF_PERF_FUNCTION();
         const bool enabled = g_config.showFlashlightOnBody && !_flashlightUnavailable && f4vr::getRootNode() != nullptr;
         _bodyFlashlightMesh.onFrameUpdate(enabled);
 
@@ -308,6 +308,7 @@ namespace ImFl
      */
     void Flashlight::checkHeadActivation()
     {
+        F4CF_PERF_FUNCTION();
         const auto gestureBinding = [](const vrcf::InputBinding& binding) {
             const auto handBinding = WeaponGripHandler::isPrimaryHandFreeOfWeapon() ? onOtherHand(binding) : binding;
             return WeaponGripHandler::adjustBindingForInputRemap(handBinding);
@@ -380,6 +381,7 @@ namespace ImFl
      */
     void Flashlight::checkPrimaryHandActivation()
     {
+        F4CF_PERF_FUNCTION();
         const bool offhandOnWeapon = WeaponGripHandler::isOffhandHoldingWeapon() || WeaponGripHandler::isTwoHandedGripActive();
         const bool on = Utils::isFlashlightOn();
         const auto location = FlashlightState::flashlightLocation;
@@ -474,6 +476,7 @@ namespace ImFl
      */
     void Flashlight::checkWeaponFlashlightToggle() const
     {
+        F4CF_PERF_FUNCTION();
         if (_gesturesBlockedByMenu || _flashlightUnavailable || !WeaponGripHandler::isTwoHandedGripActive() || WeaponGripHandler::isWeaponInOffhand()) {
             return;
         }
@@ -511,6 +514,7 @@ namespace ImFl
      */
     void Flashlight::adjustFlashlightTransformToHandOrHead(const RE::NiAVObject* inHandLightAnchor)
     {
+        F4CF_PERF_FUNCTION();
         const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode);
         if (!lightNode) {
             return;
@@ -572,6 +576,7 @@ namespace ImFl
      */
     void Flashlight::onWeaponTransformFinalized()
     {
+        F4CF_PERF_FUNCTION();
         if (FlashlightState::flashlightLocation != FlashlightLocation::OnWeapon || !Utils::isFlashlightOn() || !f4vr::getWeaponNode()) {
             return;
         }

@@ -120,6 +120,7 @@ namespace ImFl
      */
     void FlashlightState::refreshFlashlightLocation()
     {
+        F4CF_PERF_FUNCTION();
         if (!WeaponGripHandler::isWeaponCarriedByOffhand()) {
             _heldInFreePrimaryHand = false;
         }
@@ -149,6 +150,7 @@ namespace ImFl
      */
     void FlashlightState::refreshLightValues(const LightRefreshMode mode)
     {
+        F4CF_PERF_FUNCTION();
         const auto* light = getLightForm();
         if (!light) {
             logger::warn("Failed to find light object to set flashlight values");

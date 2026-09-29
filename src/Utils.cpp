@@ -177,6 +177,7 @@ namespace ImFl
      */
     const char* Utils::findOpenGestureBlockingMenu()
     {
+        F4CF_PERF_FUNCTION();
         const auto ui = RE::UI::GetSingleton();
         if (!ui) {
             return nullptr;

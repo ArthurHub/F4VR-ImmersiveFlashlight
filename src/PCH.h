@@ -10,6 +10,7 @@
 using namespace std::literals;
 
 #include "Logger.h"
+#include "perf/Perf.h"
 
 using namespace f4cf;
 
