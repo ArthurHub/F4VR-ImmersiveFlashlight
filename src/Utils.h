@@ -20,6 +20,7 @@ namespace ImFl
         static bool isPluginLoaded(std::string_view pluginName);
         static const char* getHandLabel(vrcf::Hand hand);
         static RE::NiTexture* loadGoboTexture(const std::string& goboFilePath);
+        static void loadConfiguredGoboTextures();
         static bool isFlashlightOn();
         static void turnFlashlightOn();
         static void turnFlashlightOff();
@@ -30,6 +31,8 @@ namespace ImFl
         static const std::string& getGestureBlockingMenu();
 
     private:
+        static std::string getGoboCacheKey(std::string_view goboFilePath);
+
         // An open menu with any of these flags is a "real" menu that takes the controller input (the always-open
         // HUD menus carry none of them), so it blocks the flashlight gestures unless allowed below.
         static constexpr std::uint32_t GESTURE_BLOCKING_MENU_FLAGS = std::to_underlying(RE::UI_MENU_FLAGS::kPausesGame) | std::to_underlying(RE::UI_MENU_FLAGS::kUsesCursor) |
@@ -48,6 +51,7 @@ namespace ImFl
         // The menu currently blocking the gestures (empty = none), to log only when it changes.
         inline static std::string _gestureBlockingMenu;
 
+        // keyed by getGoboCacheKey(): the same file reaches loadGoboTexture() spelled differently
         inline static std::unordered_map<std::string, RE::NiTexture*> _goboTextures;
 
         // Tracks the applied vanilla Pipboy-light-toggle disable state (nullopt until first applied, so the

@@ -56,18 +56,46 @@ namespace ImFl
      * Load the gobo texture into the game so it will be available to the flashlight light, and return it.
      * The game caches the texture so when the path is set on "textureName" it can find it.
      * Only load each texture once; the reference taken here keeps it loaded.
+     * The load reads the DDS from disk on the calling thread (~11 ms for a 1024x1024 gobo, a whole VR frame), so the
+     * configured gobos are loaded ahead of use by loadConfiguredGoboTextures().
      */
     RE::NiTexture* Utils::loadGoboTexture(const std::string& goboFilePath)
     {
-        if (const auto it = _goboTextures.find(goboFilePath); it != _goboTextures.end()) {
+        auto key = getGoboCacheKey(goboFilePath);
+        if (const auto it = _goboTextures.find(key); it != _goboTextures.end()) {
             return it->second;
         }
+        F4CF_PERF_SCOPE("load");
 
         logger::info("Loading gobo texture: {}", goboFilePath);
         RE::NiTexture* newGoboTexture = nullptr;
         f4vr::LoadTextureByPath(goboFilePath.c_str(), 1, newGoboTexture, 0, 0, 0);
-        _goboTextures[goboFilePath] = newGoboTexture;
+        _goboTextures.emplace(std::move(key), newGoboTexture);
         return newGoboTexture;
+    }
+
+    /**
+     * Load the gobo of every flashlight location at game load, so a location change never loads one mid-game.
+     */
+    void Utils::loadConfiguredGoboTextures()
+    {
+        for (const auto* path :
+            { &g_config.flashlightOnHeadGoboPath, &g_config.flashlightOnPAHeadGoboPath, &g_config.flashlightInHandGoboPath, &g_config.flashlightOnWeaponGoboPath }) {
+            if (!path->empty()) {
+                loadGoboTexture(*path);
+            }
+        }
+    }
+
+    /**
+     * The gobo cache key: the path lower-cased, with forward slashes as backslashes. The config spells a path as written
+     * ("data\Textures\..."), while the light form hands the same one back upper-cased ("DATA\TEXTURES\...").
+     */
+    std::string Utils::getGoboCacheKey(const std::string_view goboFilePath)
+    {
+        std::string key(goboFilePath);
+        std::ranges::transform(key, key.begin(), [](const unsigned char c) { return c == '/' ? '\\' : static_cast<char>(std::tolower(c)); });
+        return key;
     }
 
     /**

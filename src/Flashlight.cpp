@@ -102,6 +102,7 @@ namespace ImFl
         // initial setup of flashlight location and values
         FlashlightState::refreshFlashlightLocation();
         FlashlightState::setLightValues();
+        Utils::loadConfiguredGoboTextures();
         Utils::updateKeepFlashlightOnInPipboy();
 
         // applied above, as is every config load so far; later ones are applied by onFrameUpdate()
