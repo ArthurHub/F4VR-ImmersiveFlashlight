@@ -208,7 +208,7 @@ namespace ImFl::devbench
                 state.fade = *FlashlightState::flashlightFade;
                 state.radius = *FlashlightState::flashlightRadius;
                 state.fov = *FlashlightState::flashlightFov;
-                state.color = { *FlashlightState::flashlightColorRed, *FlashlightState::flashlightColorGreen, *FlashlightState::flashlightColorBlue };
+                state.color = { FlashlightState::flashlightColor->red, FlashlightState::flashlightColor->green, FlashlightState::flashlightColor->blue };
                 state.gobo = *FlashlightState::flashlightGoboPath;
             }
 

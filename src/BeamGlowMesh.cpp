@@ -13,17 +13,16 @@ namespace ImFl
      */
     std::optional<BeamGlowMesh::Look> BeamGlowMesh::getActiveBeamLook()
     {
-        if (!FlashlightState::flashlightFov || !FlashlightState::flashlightFade || !FlashlightState::flashlightColorRed || !FlashlightState::flashlightColorGreen ||
-            !FlashlightState::flashlightColorBlue) {
+        if (!FlashlightState::flashlightFov || !FlashlightState::flashlightFade || !FlashlightState::flashlightColor) {
             return std::nullopt;
         }
 
         const float glowFov = *FlashlightState::flashlightFov - g_config.beamGlowFovOffset;
         const int steps = static_cast<int>(std::floor(glowFov / VARIANT_STEP_DEGREES + 0.001f));
-        const auto channel = [](const int value) { return std::clamp(static_cast<float>(value) / 255.0f, 0.0f, 1.0f); };
+        const auto channel = [](const std::uint8_t value) { return static_cast<float>(value) / 255.0f; };
         return Look{
             .variantDegrees = std::clamp(steps * VARIANT_STEP_DEGREES, MIN_VARIANT_DEGREES, MAX_VARIANT_DEGREES),
-            .color = { channel(*FlashlightState::flashlightColorRed), channel(*FlashlightState::flashlightColorGreen), channel(*FlashlightState::flashlightColorBlue) },
+            .color = { channel(FlashlightState::flashlightColor->red), channel(FlashlightState::flashlightColor->green), channel(FlashlightState::flashlightColor->blue) },
             .colorScale = g_config.beamGlowBaseIntensity + *FlashlightState::flashlightFade * g_config.beamGlowIntensity,
         };
     }

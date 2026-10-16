@@ -54,9 +54,7 @@ namespace ImFl
         static inline float* flashlightFade = nullptr;
         static inline int* flashlightRadius = nullptr;
         static inline float* flashlightFov = nullptr;
-        static inline int* flashlightColorRed = nullptr;
-        static inline int* flashlightColorGreen = nullptr;
-        static inline int* flashlightColorBlue = nullptr;
+        static inline RE::ColorStruct* flashlightColor = nullptr;
         static inline std::string* flashlightGoboPath = nullptr;
 
     private:

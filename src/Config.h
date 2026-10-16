@@ -127,9 +127,8 @@ namespace ImFl
         float flashlightOnHeadFade = 0.0f;
         int flashlightOnHeadRadius = 0;
         float flashlightOnHeadFov = 0.0f;
-        int flashlightOnHeadColorRed = 0;
-        int flashlightOnHeadColorGreen = 0;
-        int flashlightOnHeadColorBlue = 0;
+        // the light's color as the light form has it, 0..255 per channel; its alpha is not used
+        RE::ColorStruct flashlightOnHeadColor{};
         std::string flashlightOnHeadGoboPath;
         RE::NiTransform flashlightOnHeadTransform{};
 
@@ -137,9 +136,7 @@ namespace ImFl
         float flashlightOnPAHeadFade = 0.0f;
         int flashlightOnPAHeadRadius = 0;
         float flashlightOnPAHeadFov = 0.0f;
-        int flashlightOnPAHeadColorRed = 0;
-        int flashlightOnPAHeadColorGreen = 0;
-        int flashlightOnPAHeadColorBlue = 0;
+        RE::ColorStruct flashlightOnPAHeadColor{};
         std::string flashlightOnPAHeadGoboPath;
         RE::NiTransform flashlightOnPAHeadTransform{};
 
@@ -147,9 +144,7 @@ namespace ImFl
         float flashlightInHandFade = 0.0f;
         int flashlightInHandRadius = 0;
         float flashlightInHandFov = 0.0f;
-        int flashlightInHandColorRed = 0;
-        int flashlightInHandColorGreen = 0;
-        int flashlightInHandColorBlue = 0;
+        RE::ColorStruct flashlightInHandColor{};
         std::string flashlightInHandGoboPath;
         // Per-hand pose of the flashlight light node relative to the hand wand node, for the Forward grip. Only
         // while the hand-held model isn't shown; with it shown the light is rooted at the model's lens.
@@ -163,9 +158,7 @@ namespace ImFl
         float flashlightOnWeaponFade = 0.0f;
         int flashlightOnWeaponRadius = 0;
         float flashlightOnWeaponFov = 0.0f;
-        int flashlightOnWeaponColorRed = 0;
-        int flashlightOnWeaponColorGreen = 0;
-        int flashlightOnWeaponColorBlue = 0;
+        RE::ColorStruct flashlightOnWeaponColor{};
         std::string flashlightOnWeaponGoboPath;
 
         // global to all flashlight locations
@@ -365,8 +358,11 @@ namespace ImFl
 
     protected:
         virtual void loadConfigInternal(const toml::table& config) override;
+        virtual void updateConfigToLatestVersionCustom(int currentVersion, int latestVersion, const toml::table& old, common::TomlEditor& latest) const override;
 
     private:
+        static void migrateBeamColorsToTables(const toml::table& old, common::TomlEditor& latest);
+
         // Set by every loadConfigInternal(), which runs on the file watcher's thread for a hot-reload.
         std::atomic<bool> _valuesReloaded = false;
     };

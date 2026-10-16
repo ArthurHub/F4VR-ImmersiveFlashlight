@@ -1,10 +1,15 @@
 #include "Config.h"
 
 #include <algorithm>
+#include <charconv>
+#include <cmath>
+#include <format>
+#include <optional>
 #include <sstream>
 
 #include "Utils.h"
 #include "common/MatrixUtils.h"
+#include "render/PrimitiveDraw.h"
 
 using namespace common;
 
@@ -92,6 +97,23 @@ namespace
             logger::warn("Ignoring unparsable collision filter value: '{}'", value);
             return defaultValue;
         }
+    }
+
+    /**
+     * A beam color as the TOML text of its table, { rgb = [r, g, b] } in 0..255, which a save writes as the table.
+     */
+    std::string beamColorText(const RE::ColorStruct& color)
+    {
+        return std::format("{{ rgb = [{}, {}, {}] }}", +color.red, +color.green, +color.blue);
+    }
+
+    /**
+     * A color read from the config, 0..1 per channel, as the 0..255 bytes the light form has; the alpha is left 0.
+     */
+    RE::ColorStruct toColorStruct(const render::Color& color)
+    {
+        const auto toByte = [](const float channel) { return static_cast<std::uint8_t>(std::clamp(std::lround(channel * 255.0f), 0l, 255l)); };
+        return { .red = toByte(color.r), .green = toByte(color.g), .blue = toByte(color.b), .alpha = 0 };
     }
 }
 
@@ -231,9 +253,7 @@ namespace ImFl
                     { "fFlashlightOnHeadFade", flashlightOnHeadFade },
                     { "iFlashlightOnHeadRadius", flashlightOnHeadRadius },
                     { "fFlashlightOnHeadFov", flashlightOnHeadFov },
-                    { "iFlashlightOnHeadColorRed", flashlightOnHeadColorRed },
-                    { "iFlashlightOnHeadColorGreen", flashlightOnHeadColorGreen },
-                    { "iFlashlightOnHeadColorBlue", flashlightOnHeadColorBlue },
+                    { "cFlashlightOnHeadColor", beamColorText(flashlightOnHeadColor) },
                     { "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath },
                 });
             break;
@@ -244,9 +264,7 @@ namespace ImFl
                     { "fFlashlightOnPAHeadFade", flashlightOnPAHeadFade },
                     { "iFlashlightOnPAHeadRadius", flashlightOnPAHeadRadius },
                     { "fFlashlightOnPAHeadFov", flashlightOnPAHeadFov },
-                    { "iFlashlightOnPAHeadColorRed", flashlightOnPAHeadColorRed },
-                    { "iFlashlightOnPAHeadColorGreen", flashlightOnPAHeadColorGreen },
-                    { "iFlashlightOnPAHeadColorBlue", flashlightOnPAHeadColorBlue },
+                    { "cFlashlightOnPAHeadColor", beamColorText(flashlightOnPAHeadColor) },
                     { "sFlashlightOnPAHeadGoboPath", flashlightOnPAHeadGoboPath },
                 });
             break;
@@ -258,9 +276,7 @@ namespace ImFl
                     { "fFlashlightInHandFade", flashlightInHandFade },
                     { "iFlashlightInHandRadius", flashlightInHandRadius },
                     { "fFlashlightInHandFov", flashlightInHandFov },
-                    { "iFlashlightInHandColorRed", flashlightInHandColorRed },
-                    { "iFlashlightInHandColorGreen", flashlightInHandColorGreen },
-                    { "iFlashlightInHandColorBlue", flashlightInHandColorBlue },
+                    { "cFlashlightInHandColor", beamColorText(flashlightInHandColor) },
                     { "sFlashlightInHandGoboPath", flashlightInHandGoboPath },
                 });
             break;
@@ -271,9 +287,7 @@ namespace ImFl
                     { "fFlashlightOnWeaponFade", flashlightOnWeaponFade },
                     { "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius },
                     { "fFlashlightOnWeaponFov", flashlightOnWeaponFov },
-                    { "iFlashlightOnWeaponColorRed", flashlightOnWeaponColorRed },
-                    { "iFlashlightOnWeaponColorGreen", flashlightOnWeaponColorGreen },
-                    { "iFlashlightOnWeaponColorBlue", flashlightOnWeaponColorBlue },
+                    { "cFlashlightOnWeaponColor", beamColorText(flashlightOnWeaponColor) },
                     { "sFlashlightOnWeaponGoboPath", flashlightOnWeaponGoboPath },
                 });
             break;
@@ -293,18 +307,14 @@ namespace ImFl
             flashlightOnHeadFade = defaultConfig.flashlightOnHeadFade;
             flashlightOnHeadRadius = defaultConfig.flashlightOnHeadRadius;
             flashlightOnHeadFov = defaultConfig.flashlightOnHeadFov;
-            flashlightOnHeadColorRed = defaultConfig.flashlightOnHeadColorRed;
-            flashlightOnHeadColorGreen = defaultConfig.flashlightOnHeadColorGreen;
-            flashlightOnHeadColorBlue = defaultConfig.flashlightOnHeadColorBlue;
+            flashlightOnHeadColor = defaultConfig.flashlightOnHeadColor;
             flashlightOnHeadGoboPath = defaultConfig.flashlightOnHeadGoboPath;
             break;
         case FlashlightLocation::OnPAHead:
             flashlightOnPAHeadFade = defaultConfig.flashlightOnPAHeadFade;
             flashlightOnPAHeadRadius = defaultConfig.flashlightOnPAHeadRadius;
             flashlightOnPAHeadFov = defaultConfig.flashlightOnPAHeadFov;
-            flashlightOnPAHeadColorRed = defaultConfig.flashlightOnPAHeadColorRed;
-            flashlightOnPAHeadColorGreen = defaultConfig.flashlightOnPAHeadColorGreen;
-            flashlightOnPAHeadColorBlue = defaultConfig.flashlightOnPAHeadColorBlue;
+            flashlightOnPAHeadColor = defaultConfig.flashlightOnPAHeadColor;
             flashlightOnPAHeadGoboPath = defaultConfig.flashlightOnPAHeadGoboPath;
             break;
         case FlashlightLocation::InOffhand:
@@ -312,18 +322,14 @@ namespace ImFl
             flashlightInHandFade = defaultConfig.flashlightInHandFade;
             flashlightInHandRadius = defaultConfig.flashlightInHandRadius;
             flashlightInHandFov = defaultConfig.flashlightInHandFov;
-            flashlightInHandColorRed = defaultConfig.flashlightInHandColorRed;
-            flashlightInHandColorGreen = defaultConfig.flashlightInHandColorGreen;
-            flashlightInHandColorBlue = defaultConfig.flashlightInHandColorBlue;
+            flashlightInHandColor = defaultConfig.flashlightInHandColor;
             flashlightInHandGoboPath = defaultConfig.flashlightInHandGoboPath;
             break;
         case FlashlightLocation::OnWeapon:
             flashlightOnWeaponFade = defaultConfig.flashlightOnWeaponFade;
             flashlightOnWeaponRadius = defaultConfig.flashlightOnWeaponRadius;
             flashlightOnWeaponFov = defaultConfig.flashlightOnWeaponFov;
-            flashlightOnWeaponColorRed = defaultConfig.flashlightOnWeaponColorRed;
-            flashlightOnWeaponColorGreen = defaultConfig.flashlightOnWeaponColorGreen;
-            flashlightOnWeaponColorBlue = defaultConfig.flashlightOnWeaponColorBlue;
+            flashlightOnWeaponColor = defaultConfig.flashlightOnWeaponColor;
             flashlightOnWeaponGoboPath = defaultConfig.flashlightOnWeaponGoboPath;
             break;
         }
@@ -335,13 +341,16 @@ namespace ImFl
         flashlightConfigLocation = static_cast<FlashlightConfigLocation>(config[DEFAULT_SECTION]["iFlashlightLocation"].value_or(0));
         flashlightConfigLocationInPA = static_cast<FlashlightConfigLocation>(config[DEFAULT_SECTION]["iFlashlightLocationInPA"].value_or(0));
 
+        // A beam color, { rgb = [r, g, b] } in 0..255, as the light form has it.
+        const auto readBeamColor = [&config](const char* key, const RE::ColorStruct& defaultValue) {
+            return toColorStruct(getColorValue(config, DEFAULT_SECTION, key, render::Color::rgba(defaultValue.red, defaultValue.green, defaultValue.blue)));
+        };
+
         // Head-mounted flashlight defaults
         flashlightOnHeadFade = config[DEFAULT_SECTION]["fFlashlightOnHeadFade"].value_or(1.1f);
         flashlightOnHeadRadius = config[DEFAULT_SECTION]["iFlashlightOnHeadRadius"].value_or(2400);
         flashlightOnHeadFov = config[DEFAULT_SECTION]["fFlashlightOnHeadFov"].value_or(100.0f);
-        flashlightOnHeadColorRed = config[DEFAULT_SECTION]["iFlashlightOnHeadColorRed"].value_or(235);
-        flashlightOnHeadColorGreen = config[DEFAULT_SECTION]["iFlashlightOnHeadColorGreen"].value_or(224);
-        flashlightOnHeadColorBlue = config[DEFAULT_SECTION]["iFlashlightOnHeadColorBlue"].value_or(190);
+        flashlightOnHeadColor = readBeamColor("cFlashlightOnHeadColor", { 235, 224, 190 });
         flashlightOnHeadGoboPath = config[DEFAULT_SECTION]["sFlashlightOnHeadGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
         flashlightOnHeadTransform =
             getTransformValue(config, DEFAULT_SECTION, "tFlashlightOnHeadTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
@@ -350,9 +359,7 @@ namespace ImFl
         flashlightOnPAHeadFade = config[DEFAULT_SECTION]["fFlashlightOnPAHeadFade"].value_or(flashlightOnHeadFade);
         flashlightOnPAHeadRadius = config[DEFAULT_SECTION]["iFlashlightOnPAHeadRadius"].value_or(flashlightOnHeadRadius);
         flashlightOnPAHeadFov = config[DEFAULT_SECTION]["fFlashlightOnPAHeadFov"].value_or(flashlightOnHeadFov);
-        flashlightOnPAHeadColorRed = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorRed"].value_or(flashlightOnHeadColorRed);
-        flashlightOnPAHeadColorGreen = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorGreen"].value_or(flashlightOnHeadColorGreen);
-        flashlightOnPAHeadColorBlue = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorBlue"].value_or(flashlightOnHeadColorBlue);
+        flashlightOnPAHeadColor = readBeamColor("cFlashlightOnPAHeadColor", flashlightOnHeadColor);
         flashlightOnPAHeadGoboPath = config[DEFAULT_SECTION]["sFlashlightOnPAHeadGoboPath"].value_or(flashlightOnHeadGoboPath);
         flashlightOnPAHeadTransform = getTransformValue(config, DEFAULT_SECTION, "tFlashlightOnPAHeadTransform", flashlightOnHeadTransform);
 
@@ -360,9 +367,7 @@ namespace ImFl
         flashlightInHandFade = config[DEFAULT_SECTION]["fFlashlightInHandFade"].value_or(1.3f);
         flashlightInHandRadius = config[DEFAULT_SECTION]["iFlashlightInHandRadius"].value_or(6000);
         flashlightInHandFov = config[DEFAULT_SECTION]["fFlashlightInHandFov"].value_or(65.0f);
-        flashlightInHandColorRed = config[DEFAULT_SECTION]["iFlashlightInHandColorRed"].value_or(240);
-        flashlightInHandColorGreen = config[DEFAULT_SECTION]["iFlashlightInHandColorGreen"].value_or(230);
-        flashlightInHandColorBlue = config[DEFAULT_SECTION]["iFlashlightInHandColorBlue"].value_or(225);
+        flashlightInHandColor = readBeamColor("cFlashlightInHandColor", { 240, 230, 225 });
         flashlightInHandGoboPath = config[DEFAULT_SECTION]["sFlashlightInHandGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
         flashlightInOffhandTransform =
             getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightInOffhandTransform", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
@@ -377,9 +382,7 @@ namespace ImFl
         flashlightOnWeaponFade = config[DEFAULT_SECTION]["fFlashlightOnWeaponFade"].value_or(1.3f);
         flashlightOnWeaponRadius = config[DEFAULT_SECTION]["iFlashlightOnWeaponRadius"].value_or(5000);
         flashlightOnWeaponFov = config[DEFAULT_SECTION]["fFlashlightOnWeaponFov"].value_or(55.0f);
-        flashlightOnWeaponColorRed = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorRed"].value_or(240);
-        flashlightOnWeaponColorGreen = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorGreen"].value_or(230);
-        flashlightOnWeaponColorBlue = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorBlue"].value_or(225);
+        flashlightOnWeaponColor = readBeamColor("cFlashlightOnWeaponColor", { 240, 230, 225 });
         flashlightOnWeaponGoboPath = config[DEFAULT_SECTION]["sFlashlightOnWeaponGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
 
         // global to all flashlight locations
@@ -552,5 +555,56 @@ namespace ImFl
         npcDetectionLightLevelDecayMs = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelDecayMs"].value_or(1000.0f);
 
         _valuesReloaded = true;
+    }
+
+    /**
+     * Move what the generic migration can't carry: a key that changed its name or type is dropped by it, and its
+     * default applies unless it is moved here. Runs after the generic migration, on the default of the latest version
+     * with the player's values set in it.
+     * - Version 1 (from the INI, imported as version 0): each beam color is one table key,
+     *   cFlashlight<location>Color = { rgb = [r, g, b] }, in place of the INI's three integer keys
+     *   iFlashlight<location>ColorRed / Green / Blue.
+     */
+    void Config::updateConfigToLatestVersionCustom(const int currentVersion, int, const toml::table& old, common::TomlEditor& latest) const
+    {
+        if (currentVersion < 1) {
+            migrateBeamColorsToTables(old, latest);
+        }
+    }
+
+    /**
+     * Move each beam color from the INI's three keys (iFlashlight<location>ColorRed / Green / Blue) into its table key
+     * (cFlashlight<location>Color = { rgb = [r, g, b] }). The INI import writes those keys as text, as the default
+     * doesn't have them. A channel the INI doesn't have keeps the default's, and a location with none keeps the
+     * default color.
+     */
+    void Config::migrateBeamColorsToTables(const toml::table& old, common::TomlEditor& latest)
+    {
+        const auto readChannel = [&old](const std::string& key) -> std::optional<int> {
+            const auto text = old[DEFAULT_SECTION][key].value<std::string>();
+            int value = 0;
+            if (!text || std::from_chars(text->data(), text->data() + text->size(), value).ec != std::errc{}) {
+                return std::nullopt;
+            }
+            return std::clamp(value, 0, 255);
+        };
+
+        for (const auto location : { "OnHead", "OnPAHead", "InHand", "OnWeapon" }) {
+            const auto red = readChannel(std::format("iFlashlight{}ColorRed", location));
+            const auto green = readChannel(std::format("iFlashlight{}ColorGreen", location));
+            const auto blue = readChannel(std::format("iFlashlight{}ColorBlue", location));
+            if (!red && !green && !blue) {
+                continue;
+            }
+
+            const auto key = std::format("cFlashlight{}Color", location);
+            const auto defaultColor = toColorStruct(getColorValue(latest.table(), DEFAULT_SECTION, key.c_str(), {}));
+            const toml::table color{ { "rgb", toml::array{ red.value_or(defaultColor.red), green.value_or(defaultColor.green), blue.value_or(defaultColor.blue) } } };
+            if (latest.set({ DEFAULT_SECTION, key }, color)) {
+                logger::info("Migrated the {} beam color into {}", location, key);
+            } else {
+                logger::warn("Failed to migrate the {} beam color into {}: {}", location, key, latest.error());
+            }
+        }
     }
 }

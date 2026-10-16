@@ -196,9 +196,9 @@ namespace ImFl
         light->fade = *flashlightFade;
         light->data.radius = *flashlightRadius;
         light->data.fov = *flashlightFov;
-        light->data.color.red = static_cast<std::uint8_t>(*flashlightColorRed);
-        light->data.color.green = static_cast<std::uint8_t>(*flashlightColorGreen);
-        light->data.color.blue = static_cast<std::uint8_t>(*flashlightColorBlue);
+        light->data.color.red = flashlightColor->red;
+        light->data.color.green = flashlightColor->green;
+        light->data.color.blue = flashlightColor->blue;
         light->goboTexture.textureName = *flashlightGoboPath;
         Utils::loadGoboTexture(*flashlightGoboPath);
     }
@@ -388,9 +388,7 @@ namespace ImFl
             flashlightFade = &g_config.flashlightOnHeadFade;
             flashlightRadius = &g_config.flashlightOnHeadRadius;
             flashlightFov = &g_config.flashlightOnHeadFov;
-            flashlightColorRed = &g_config.flashlightOnHeadColorRed;
-            flashlightColorGreen = &g_config.flashlightOnHeadColorGreen;
-            flashlightColorBlue = &g_config.flashlightOnHeadColorBlue;
+            flashlightColor = &g_config.flashlightOnHeadColor;
             flashlightGoboPath = &g_config.flashlightOnHeadGoboPath;
             break;
 
@@ -398,9 +396,7 @@ namespace ImFl
             flashlightFade = &g_config.flashlightOnPAHeadFade;
             flashlightRadius = &g_config.flashlightOnPAHeadRadius;
             flashlightFov = &g_config.flashlightOnPAHeadFov;
-            flashlightColorRed = &g_config.flashlightOnPAHeadColorRed;
-            flashlightColorGreen = &g_config.flashlightOnPAHeadColorGreen;
-            flashlightColorBlue = &g_config.flashlightOnPAHeadColorBlue;
+            flashlightColor = &g_config.flashlightOnPAHeadColor;
             flashlightGoboPath = &g_config.flashlightOnPAHeadGoboPath;
             break;
 
@@ -409,9 +405,7 @@ namespace ImFl
             flashlightFade = &g_config.flashlightInHandFade;
             flashlightRadius = &g_config.flashlightInHandRadius;
             flashlightFov = &g_config.flashlightInHandFov;
-            flashlightColorRed = &g_config.flashlightInHandColorRed;
-            flashlightColorGreen = &g_config.flashlightInHandColorGreen;
-            flashlightColorBlue = &g_config.flashlightInHandColorBlue;
+            flashlightColor = &g_config.flashlightInHandColor;
             flashlightGoboPath = &g_config.flashlightInHandGoboPath;
             break;
 
@@ -419,9 +413,7 @@ namespace ImFl
             flashlightFade = &g_config.flashlightOnWeaponFade;
             flashlightRadius = &g_config.flashlightOnWeaponRadius;
             flashlightFov = &g_config.flashlightOnWeaponFov;
-            flashlightColorRed = &g_config.flashlightOnWeaponColorRed;
-            flashlightColorGreen = &g_config.flashlightOnWeaponColorGreen;
-            flashlightColorBlue = &g_config.flashlightOnWeaponColorBlue;
+            flashlightColor = &g_config.flashlightOnWeaponColor;
             flashlightGoboPath = &g_config.flashlightOnWeaponGoboPath;
             break;
         }

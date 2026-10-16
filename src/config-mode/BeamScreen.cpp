@@ -32,31 +32,29 @@ namespace
 
     struct ColorOption
     {
-        std::array<int, 3> rgb;
+        RE::ColorStruct color;
 
         // what the color button calls the preset, short enough not to be shrunk on a 2-unit button
         std::string_view name;
     };
 
     constexpr std::array<ColorOption, 8> COLOR_OPTIONS{ {
-        { .rgb = { 255, 255, 255 }, .name = "FULL WHITE" },
-        { .rgb = { 240, 230, 225 }, .name = "MOSTLY WHITE" },
-        { .rgb = { 235, 224, 190 }, .name = "WARM WHITE" },
-        { .rgb = { 255, 200, 150 }, .name = "WARM DIM" },
-        { .rgb = { 255, 210, 210 }, .name = "RED" },
-        { .rgb = { 210, 255, 210 }, .name = "GREEN" },
-        { .rgb = { 190, 190, 255 }, .name = "BLUE" },
-        { .rgb = { 190, 100, 255 }, .name = "PURPLE" },
+        { .color = { 255, 255, 255 }, .name = "FULL WHITE" },
+        { .color = { 240, 230, 225 }, .name = "MOSTLY WHITE" },
+        { .color = { 235, 224, 190 }, .name = "WARM WHITE" },
+        { .color = { 255, 200, 150 }, .name = "WARM DIM" },
+        { .color = { 255, 210, 210 }, .name = "RED" },
+        { .color = { 210, 255, 210 }, .name = "GREEN" },
+        { .color = { 190, 190, 255 }, .name = "BLUE" },
+        { .color = { 190, 100, 255 }, .name = "PURPLE" },
     } };
 
     int findCurrentColorIndex()
     {
-        const int r = *ImFl::FlashlightState::flashlightColorRed;
-        const int g = *ImFl::FlashlightState::flashlightColorGreen;
-        const int b = *ImFl::FlashlightState::flashlightColorBlue;
+        const auto& current = *ImFl::FlashlightState::flashlightColor;
         for (std::size_t i = 0; i < COLOR_OPTIONS.size(); ++i) {
-            const auto& c = COLOR_OPTIONS[i].rgb;
-            if (c[0] == r && c[1] == g && c[2] == b) {
+            const auto& c = COLOR_OPTIONS[i].color;
+            if (c.red == current.red && c.green == current.green && c.blue == current.blue) {
                 return static_cast<int>(i);
             }
         }
@@ -311,7 +309,7 @@ namespace ImFl::config
             _switchGoboBtn->setBottomText(goboIndex < 0 ? "GOBO" : std::format("GOBO {}/{}", goboIndex + 1, goboTextureFilePaths.size()));
         }
 
-        const auto color = render::Color::rgba(*FlashlightState::flashlightColorRed, *FlashlightState::flashlightColorGreen, *FlashlightState::flashlightColorBlue);
+        const auto color = render::Color::rgba(FlashlightState::flashlightColor->red, FlashlightState::flashlightColor->green, FlashlightState::flashlightColor->blue);
         if (_shownColorTint != color) {
             _shownColorTint = color;
             _switchColorBtn->setImageTint(color);
@@ -349,9 +347,7 @@ namespace ImFl::config
     void BeamScreen::switchBeamColor()
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
-        *FlashlightState::flashlightColorRed = COLOR_OPTIONS[nextColorIndex].rgb[0];
-        *FlashlightState::flashlightColorGreen = COLOR_OPTIONS[nextColorIndex].rgb[1];
-        *FlashlightState::flashlightColorBlue = COLOR_OPTIONS[nextColorIndex].rgb[2];
+        *FlashlightState::flashlightColor = COLOR_OPTIONS[nextColorIndex].color;
 
         FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
