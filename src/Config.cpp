@@ -12,7 +12,7 @@ namespace
 {
     const char* DEFAULT_SECTION = Version::PROJECT.data();
 
-    // Per-sphere INI sections for the activation-sphere gestures (WandActivationConfig).
+    // Per-sphere config sections for the activation-sphere gestures (WandActivationConfig).
     constexpr const char* SECTION_BODY_ACTIVATION_SPHERE = "ImFl_BodyActivationSphere";
     constexpr const char* SECTION_HEAD_ACTIVATION_SPHERE = "ImFl_HeadActivationSphere";
     constexpr const char* SECTION_PRIMARY_HAND_ACTIVATION_SPHERE = "ImFl_PrimaryHandActivationSphere";
@@ -20,9 +20,8 @@ namespace
     // The mod's own activation-sphere icon (resolved under Data\Textures\ImmersiveFlashlightVR\).
     constexpr auto FLASHLIGHT_ICON = "activation-icon-flashlight.dds";
 
-    // Named INI sections for the advanced, per-feature settings (moved out of the main [ImmersiveFlashlightVR]
-    // section in config version 15). Location, beam appearance and the global light/toggle keys stay in the
-    // main section (DEFAULT_SECTION); only the advanced groups are read from these.
+    // Named config sections for the advanced, per-feature settings. Location, beam appearance and the global
+    // light/toggle keys are in the main section (DEFAULT_SECTION); only the advanced groups are read from these.
     constexpr const char* SECTION_BEAM_GLOW = "ImFl_BeamGlow";
     constexpr const char* SECTION_HAND_MOUNT = "ImFl_HandMount";
     constexpr const char* SECTION_HEADGEAR_RESTRICTION = "ImFl_HeadgearRestriction";
@@ -31,7 +30,7 @@ namespace
     constexpr const char* SECTION_NPC_DETECTION = "ImFl_NpcDetection";
 
     /**
-     * Split a comma-separated INI value into trimmed, non-empty tokens.
+     * Split a comma-separated config value into trimmed, non-empty tokens.
      */
     std::vector<std::string> parseCommaList(const std::string& raw)
     {
@@ -105,17 +104,17 @@ namespace ImFl
     {
         if (inPowerArmor) {
             flashlightConfigLocationInPA = location;
-            saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocationInPA", static_cast<int>(location));
+            saveConfigValue(DEFAULT_SECTION, "iFlashlightLocationInPA", static_cast<int>(location));
         } else {
             flashlightConfigLocation = location;
-            saveIniConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(location));
+            saveConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(location));
         }
     }
 
     void Config::setFlashlightFlagsBitmask(const std::string& bitmask)
     {
         flashlightFlagsBitmask = bitmask;
-        saveIniConfigValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", flashlightFlagsBitmask.c_str());
+        saveConfigValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", flashlightFlagsBitmask);
     }
 
     /**
@@ -124,7 +123,7 @@ namespace ImFl
     void Config::setShowAllActivationSpheres(const bool show)
     {
         showAllActivationSpheres = show;
-        saveIniConfigValue(DEFAULT_SECTION, "bShowAllActivationSpheres", show);
+        saveConfigValue(DEFAULT_SECTION, "bShowAllActivationSpheres", show);
     }
 
     /**
@@ -133,7 +132,7 @@ namespace ImFl
     void Config::setShowFlashlightOnBody(const bool show)
     {
         showFlashlightOnBody = show;
-        saveIniConfigValue(SECTION_BODY_STOW, "bShowFlashlightOnBody", show);
+        saveConfigValue(SECTION_BODY_STOW, "bShowFlashlightOnBody", show);
     }
 
     /**
@@ -143,7 +142,7 @@ namespace ImFl
     void Config::setFlashlightHeadgearRequirement(const FlashlightHeadgearRequirement requirement)
     {
         flashlightHeadgearRequirement = requirement;
-        saveIniConfigValue(SECTION_HEADGEAR_RESTRICTION, "iFlashlightHeadgearRequirement", static_cast<int>(requirement));
+        saveConfigValue(SECTION_HEADGEAR_RESTRICTION, "iFlashlightHeadgearRequirement", static_cast<int>(requirement));
     }
 
     /**
@@ -154,7 +153,7 @@ namespace ImFl
     void Config::setWeaponFlashlightMeshRequirement(const FlashlightWeaponMeshRequirement requirement)
     {
         weaponFlashlightMeshRequirement = requirement;
-        saveIniConfigValue(SECTION_WEAPON_MOUNT, "iWeaponFlashlightMeshRequired", static_cast<int>(requirement));
+        saveConfigValue(SECTION_WEAPON_MOUNT, "iWeaponFlashlightMeshRequired", static_cast<int>(requirement));
     }
 
     /**
@@ -164,7 +163,7 @@ namespace ImFl
     void Config::setDisableVanillaFlashlightToggle(const bool disabled)
     {
         disableVanillaFlashlightToggle = disabled;
-        saveIniConfigValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", disabled);
+        saveConfigValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", disabled);
     }
 
     /**
@@ -173,7 +172,7 @@ namespace ImFl
     void Config::setNpcDetectionEnabled(const bool enabled)
     {
         npcDetectionEnabled = enabled;
-        saveIniConfigValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", enabled);
+        saveConfigValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", enabled);
     }
 
     /**
@@ -220,57 +219,65 @@ namespace ImFl
         return inPowerArmor ? flashlightBodyTransformPA : flashlightBodyTransform;
     }
 
+    /**
+     * Persist the beam values of the given location, all in one write of the config file.
+     */
     void Config::saveFlashlightValues(const FlashlightLocation location)
     {
-        CSimpleIniA ini;
-        if (!loadIniFromFile(ini)) {
-            return;
-        }
-
         switch (location) {
         case FlashlightLocation::OnHead:
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", flashlightOnHeadFade);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadRadius", flashlightOnHeadRadius);
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFov", flashlightOnHeadFov);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorRed", flashlightOnHeadColorRed);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorGreen", flashlightOnHeadColorGreen);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorBlue", flashlightOnHeadColorBlue);
-            ini.SetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath.c_str());
+            saveConfigValues(DEFAULT_SECTION,
+                {
+                    { "fFlashlightOnHeadFade", flashlightOnHeadFade },
+                    { "iFlashlightOnHeadRadius", flashlightOnHeadRadius },
+                    { "fFlashlightOnHeadFov", flashlightOnHeadFov },
+                    { "iFlashlightOnHeadColorRed", flashlightOnHeadColorRed },
+                    { "iFlashlightOnHeadColorGreen", flashlightOnHeadColorGreen },
+                    { "iFlashlightOnHeadColorBlue", flashlightOnHeadColorBlue },
+                    { "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath },
+                });
             break;
 
         case FlashlightLocation::OnPAHead:
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnPAHeadFade);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadRadius", flashlightOnPAHeadRadius);
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFov", flashlightOnPAHeadFov);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorRed", flashlightOnPAHeadColorRed);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorGreen", flashlightOnPAHeadColorGreen);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorBlue", flashlightOnPAHeadColorBlue);
-            ini.SetValue(DEFAULT_SECTION, "sFlashlightOnPAHeadGoboPath", flashlightOnPAHeadGoboPath.c_str());
+            saveConfigValues(DEFAULT_SECTION,
+                {
+                    { "fFlashlightOnPAHeadFade", flashlightOnPAHeadFade },
+                    { "iFlashlightOnPAHeadRadius", flashlightOnPAHeadRadius },
+                    { "fFlashlightOnPAHeadFov", flashlightOnPAHeadFov },
+                    { "iFlashlightOnPAHeadColorRed", flashlightOnPAHeadColorRed },
+                    { "iFlashlightOnPAHeadColorGreen", flashlightOnPAHeadColorGreen },
+                    { "iFlashlightOnPAHeadColorBlue", flashlightOnPAHeadColorBlue },
+                    { "sFlashlightOnPAHeadGoboPath", flashlightOnPAHeadGoboPath },
+                });
             break;
 
         case FlashlightLocation::InOffhand:
         case FlashlightLocation::InPrimaryHand:
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", flashlightInHandFade);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandRadius", flashlightInHandRadius);
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFov", flashlightInHandFov);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorRed", flashlightInHandColorRed);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorGreen", flashlightInHandColorGreen);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorBlue", flashlightInHandColorBlue);
-            ini.SetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", flashlightInHandGoboPath.c_str());
+            saveConfigValues(DEFAULT_SECTION,
+                {
+                    { "fFlashlightInHandFade", flashlightInHandFade },
+                    { "iFlashlightInHandRadius", flashlightInHandRadius },
+                    { "fFlashlightInHandFov", flashlightInHandFov },
+                    { "iFlashlightInHandColorRed", flashlightInHandColorRed },
+                    { "iFlashlightInHandColorGreen", flashlightInHandColorGreen },
+                    { "iFlashlightInHandColorBlue", flashlightInHandColorBlue },
+                    { "sFlashlightInHandGoboPath", flashlightInHandGoboPath },
+                });
             break;
 
         case FlashlightLocation::OnWeapon:
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", flashlightOnWeaponFade);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius);
-            ini.SetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFov", flashlightOnWeaponFov);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorRed", flashlightOnWeaponColorRed);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorGreen", flashlightOnWeaponColorGreen);
-            ini.SetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorBlue", flashlightOnWeaponColorBlue);
-            ini.SetValue(DEFAULT_SECTION, "sFlashlightOnWeaponGoboPath", flashlightOnWeaponGoboPath.c_str());
+            saveConfigValues(DEFAULT_SECTION,
+                {
+                    { "fFlashlightOnWeaponFade", flashlightOnWeaponFade },
+                    { "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius },
+                    { "fFlashlightOnWeaponFov", flashlightOnWeaponFov },
+                    { "iFlashlightOnWeaponColorRed", flashlightOnWeaponColorRed },
+                    { "iFlashlightOnWeaponColorGreen", flashlightOnWeaponColorGreen },
+                    { "iFlashlightOnWeaponColorBlue", flashlightOnWeaponColorBlue },
+                    { "sFlashlightOnWeaponGoboPath", flashlightOnWeaponGoboPath },
+                });
             break;
         }
-
-        saveIniToFile(ini);
     }
 
     /**
@@ -322,76 +329,78 @@ namespace ImFl
         }
     }
 
-    void Config::loadIniConfigInternal(const CSimpleIniA& ini)
+    void Config::loadConfigInternal(const toml::table& config)
     {
         // Flashlight location, separate for out of / in power armor. In-PA defaults to head (PA helmet lamp).
-        flashlightConfigLocation = static_cast<FlashlightConfigLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocation", 0));
-        flashlightConfigLocationInPA = static_cast<FlashlightConfigLocation>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightLocationInPA", 0));
+        flashlightConfigLocation = static_cast<FlashlightConfigLocation>(config[DEFAULT_SECTION]["iFlashlightLocation"].value_or(0));
+        flashlightConfigLocationInPA = static_cast<FlashlightConfigLocation>(config[DEFAULT_SECTION]["iFlashlightLocationInPA"].value_or(0));
 
         // Head-mounted flashlight defaults
-        flashlightOnHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFade", 1.1));
-        flashlightOnHeadRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadRadius", 2400));
-        flashlightOnHeadFov = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnHeadFov", 100.0));
-        flashlightOnHeadColorRed = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorRed", 235));
-        flashlightOnHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorGreen", 224));
-        flashlightOnHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnHeadColorBlue", 190));
-        flashlightOnHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnHeadGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
-        flashlightOnHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnHeadTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
+        flashlightOnHeadFade = config[DEFAULT_SECTION]["fFlashlightOnHeadFade"].value_or(1.1f);
+        flashlightOnHeadRadius = config[DEFAULT_SECTION]["iFlashlightOnHeadRadius"].value_or(2400);
+        flashlightOnHeadFov = config[DEFAULT_SECTION]["fFlashlightOnHeadFov"].value_or(100.0f);
+        flashlightOnHeadColorRed = config[DEFAULT_SECTION]["iFlashlightOnHeadColorRed"].value_or(235);
+        flashlightOnHeadColorGreen = config[DEFAULT_SECTION]["iFlashlightOnHeadColorGreen"].value_or(224);
+        flashlightOnHeadColorBlue = config[DEFAULT_SECTION]["iFlashlightOnHeadColorBlue"].value_or(190);
+        flashlightOnHeadGoboPath = config[DEFAULT_SECTION]["sFlashlightOnHeadGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
+        flashlightOnHeadTransform =
+            getTransformValue(config, DEFAULT_SECTION, "tFlashlightOnHeadTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, -5.0f, 0.0f));
 
         // Power armor head-mounted flashlight defaults
-        flashlightOnPAHeadFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFade", flashlightOnHeadFade));
-        flashlightOnPAHeadRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadRadius", flashlightOnHeadRadius));
-        flashlightOnPAHeadFov = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnPAHeadFov", flashlightOnHeadFov));
-        flashlightOnPAHeadColorRed = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorRed", flashlightOnHeadColorRed));
-        flashlightOnPAHeadColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorGreen", flashlightOnHeadColorGreen));
-        flashlightOnPAHeadColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnPAHeadColorBlue", flashlightOnHeadColorBlue));
-        flashlightOnPAHeadGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnPAHeadGoboPath", flashlightOnHeadGoboPath.c_str());
-        flashlightOnPAHeadTransform = getTransformValue(ini, DEFAULT_SECTION, "tFlashlightOnPAHeadTransform", flashlightOnHeadTransform);
+        flashlightOnPAHeadFade = config[DEFAULT_SECTION]["fFlashlightOnPAHeadFade"].value_or(flashlightOnHeadFade);
+        flashlightOnPAHeadRadius = config[DEFAULT_SECTION]["iFlashlightOnPAHeadRadius"].value_or(flashlightOnHeadRadius);
+        flashlightOnPAHeadFov = config[DEFAULT_SECTION]["fFlashlightOnPAHeadFov"].value_or(flashlightOnHeadFov);
+        flashlightOnPAHeadColorRed = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorRed"].value_or(flashlightOnHeadColorRed);
+        flashlightOnPAHeadColorGreen = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorGreen"].value_or(flashlightOnHeadColorGreen);
+        flashlightOnPAHeadColorBlue = config[DEFAULT_SECTION]["iFlashlightOnPAHeadColorBlue"].value_or(flashlightOnHeadColorBlue);
+        flashlightOnPAHeadGoboPath = config[DEFAULT_SECTION]["sFlashlightOnPAHeadGoboPath"].value_or(flashlightOnHeadGoboPath);
+        flashlightOnPAHeadTransform = getTransformValue(config, DEFAULT_SECTION, "tFlashlightOnPAHeadTransform", flashlightOnHeadTransform);
 
         // In hand flashlight defaults
-        flashlightInHandFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFade", 1.3));
-        flashlightInHandRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandRadius", 6000));
-        flashlightInHandFov = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightInHandFov", 65.0));
-        flashlightInHandColorRed = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorRed", 240));
-        flashlightInHandColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorGreen", 230));
-        flashlightInHandColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightInHandColorBlue", 225));
-        flashlightInHandGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightInHandGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
+        flashlightInHandFade = config[DEFAULT_SECTION]["fFlashlightInHandFade"].value_or(1.3f);
+        flashlightInHandRadius = config[DEFAULT_SECTION]["iFlashlightInHandRadius"].value_or(6000);
+        flashlightInHandFov = config[DEFAULT_SECTION]["fFlashlightInHandFov"].value_or(65.0f);
+        flashlightInHandColorRed = config[DEFAULT_SECTION]["iFlashlightInHandColorRed"].value_or(240);
+        flashlightInHandColorGreen = config[DEFAULT_SECTION]["iFlashlightInHandColorGreen"].value_or(230);
+        flashlightInHandColorBlue = config[DEFAULT_SECTION]["iFlashlightInHandColorBlue"].value_or(225);
+        flashlightInHandGoboPath = config[DEFAULT_SECTION]["sFlashlightInHandGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
         flashlightInOffhandTransform =
-            getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightInOffhandTransform", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightInOffhandTransform", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, -30.0f, -85.0f));
         flashlightInPrimaryHandTransform =
-            getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightInPrimaryHandTransform", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightInPrimaryHandTransform", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, -30.0f, -95.0f));
         flashlightInOffhandTransformOverhand =
-            getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightInOffhandTransformOverhand", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightInOffhandTransformOverhand", common::MatrixUtils::getTransform(5.0f, -2.0f, -2.0f, 0.0f, 60.0f, -85.0f));
         flashlightInPrimaryHandTransformOverhand =
-            getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightInPrimaryHandTransformOverhand", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightInPrimaryHandTransformOverhand", common::MatrixUtils::getTransform(5.0f, 2.0f, -2.0f, 0.0f, 60.0f, -95.0f));
 
         // Attached to weapon flashlight defaults
-        flashlightOnWeaponFade = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFade", 1.3));
-        flashlightOnWeaponRadius = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponRadius", 5000));
-        flashlightOnWeaponFov = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightOnWeaponFov", 55.0));
-        flashlightOnWeaponColorRed = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorRed", 240));
-        flashlightOnWeaponColorGreen = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorGreen", 230));
-        flashlightOnWeaponColorBlue = static_cast<int>(ini.GetLongValue(DEFAULT_SECTION, "iFlashlightOnWeaponColorBlue", 225));
-        flashlightOnWeaponGoboPath = ini.GetValue(DEFAULT_SECTION, "sFlashlightOnWeaponGoboPath", R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)");
+        flashlightOnWeaponFade = config[DEFAULT_SECTION]["fFlashlightOnWeaponFade"].value_or(1.3f);
+        flashlightOnWeaponRadius = config[DEFAULT_SECTION]["iFlashlightOnWeaponRadius"].value_or(5000);
+        flashlightOnWeaponFov = config[DEFAULT_SECTION]["fFlashlightOnWeaponFov"].value_or(55.0f);
+        flashlightOnWeaponColorRed = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorRed"].value_or(240);
+        flashlightOnWeaponColorGreen = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorGreen"].value_or(230);
+        flashlightOnWeaponColorBlue = config[DEFAULT_SECTION]["iFlashlightOnWeaponColorBlue"].value_or(225);
+        flashlightOnWeaponGoboPath = config[DEFAULT_SECTION]["sFlashlightOnWeaponGoboPath"].value_or(std::string(R"(data\Textures\Effects\Gobos\FlashlightGobo01.dds)"));
 
         // global to all flashlight locations
-        flashlightNearDistance = static_cast<float>(ini.GetDoubleValue(DEFAULT_SECTION, "fFlashlightNearDistance", 30.0));
-        flashlightFlagsBitmask = ini.GetValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", "0000010000100001");
-        warnAboutFPSStabilizerMod = ini.GetBoolValue(DEFAULT_SECTION, "bWarnAboutFPSStabilizerMod", true);
+        flashlightNearDistance = config[DEFAULT_SECTION]["fFlashlightNearDistance"].value_or(30.0f);
+        flashlightFlagsBitmask = config[DEFAULT_SECTION]["sFlashlightFlagsBitmask"].value_or(std::string("0000010000100001"));
+        warnAboutFPSStabilizerMod = config[DEFAULT_SECTION]["bWarnAboutFPSStabilizerMod"].value_or(true);
 
         // visible beam glow at the hand-held model's lens and the weapon lamp
-        beamGlowBaseIntensity = fmaxf(0.0f, static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowBaseIntensity", 0.2)));
-        beamGlowIntensity = fmaxf(0.0f, static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowIntensity", 0.15)));
-        beamGlowFovOffset = static_cast<float>(ini.GetDoubleValue(SECTION_BEAM_GLOW, "fBeamGlowFovOffset", 5.0));
+        beamGlowBaseIntensity = fmaxf(0.0f, config[SECTION_BEAM_GLOW]["fBeamGlowBaseIntensity"].value_or(0.2f));
+        beamGlowIntensity = fmaxf(0.0f, config[SECTION_BEAM_GLOW]["fBeamGlowIntensity"].value_or(0.15f));
+        beamGlowFovOffset = config[SECTION_BEAM_GLOW]["fBeamGlowFovOffset"].value_or(5.0f);
 
         // flashlight mesh model in hand
-        showFlashlightMesh = ini.GetBoolValue(SECTION_HAND_MOUNT, "bShowFlashlightMesh", true);
-        flashlightMeshTransform = getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightMeshTransform", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
+        showFlashlightMesh = config[SECTION_HAND_MOUNT]["bShowFlashlightMesh"].value_or(true);
+        flashlightMeshTransform =
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightMeshTransform", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 0.0f, 90.0f));
         flashlightMeshTransformOverhand =
-            getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightMeshTransformOverhand", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
+            getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightMeshTransformOverhand", common::MatrixUtils::getTransform(-2.0f, 3.0f, 3.0f, 25.0f, 90.0f, 90.0f));
         // Power-armor variants of the mesh transforms; default to the matching non-PA transform.
-        flashlightMeshTransformPA = getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightMeshTransformPA", flashlightMeshTransform);
-        flashlightMeshTransformOverhandPA = getTransformValue(ini, SECTION_HAND_MOUNT, "tFlashlightMeshTransformOverhandPA", flashlightMeshTransformOverhand);
+        flashlightMeshTransformPA = getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightMeshTransformPA", flashlightMeshTransform);
+        flashlightMeshTransformOverhandPA = getTransformValue(config, SECTION_HAND_MOUNT, "tFlashlightMeshTransformOverhandPA", flashlightMeshTransformOverhand);
 
         static constexpr std::array<float, 22> DEFAULT_HAND_POSE = {
             0.35f,
@@ -417,7 +426,7 @@ namespace ImFl
             0.0f,
             0.0f // palmPitch, palmYaw
         };
-        flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, SECTION_HAND_MOUNT, "hFlashlightHandPose", DEFAULT_HAND_POSE));
+        flashlightHandPose = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(config, SECTION_HAND_MOUNT, "hFlashlightHandPose", DEFAULT_HAND_POSE));
 
         // Overhand grip is a fist around the flashlight body — fingers fully curled by default.
         static constexpr std::array<float, 22> DEFAULT_HAND_POSE_OVERHAND = {
@@ -445,45 +454,45 @@ namespace ImFl
             0.0f // palmPitch, palmYaw
         };
         flashlightHandPoseOverhand =
-            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, SECTION_HAND_MOUNT, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
+            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(config, SECTION_HAND_MOUNT, "hFlashlightHandPoseOverhand", DEFAULT_HAND_POSE_OVERHAND));
 
-        flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, SECTION_HAND_MOUNT, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
+        flashlightHandPosePA = frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(config, SECTION_HAND_MOUNT, "hFlashlightHandPosePA", flashlightHandPose.toFloats()));
         flashlightHandPoseOverhandPA =
-            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(ini, SECTION_HAND_MOUNT, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
+            frik::api::FRIKApi::HandPoseData::fromFloats(getHandPoseValue(config, SECTION_HAND_MOUNT, "hFlashlightHandPoseOverhandPA", flashlightHandPoseOverhand.toFloats()));
 
-        flashlightGripMode = static_cast<FlashlightGripMode>(ini.GetLongValue(SECTION_HAND_MOUNT, "iFlashlightGripMode", 0));
-        flashlightGripOverhandTiltDegrees = static_cast<float>(ini.GetDoubleValue(SECTION_HAND_MOUNT, "fFlashlightGripOverhandTiltDegrees", 120.0));
-        flashlightGripHysteresisDegrees = static_cast<float>(ini.GetDoubleValue(SECTION_HAND_MOUNT, "fFlashlightGripHysteresisDegrees", 30.0));
+        flashlightGripMode = static_cast<FlashlightGripMode>(config[SECTION_HAND_MOUNT]["iFlashlightGripMode"].value_or(0));
+        flashlightGripOverhandTiltDegrees = config[SECTION_HAND_MOUNT]["fFlashlightGripOverhandTiltDegrees"].value_or(120.0f);
+        flashlightGripHysteresisDegrees = config[SECTION_HAND_MOUNT]["fFlashlightGripHysteresisDegrees"].value_or(30.0f);
 
-        flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(ini.GetLongValue(SECTION_HEADGEAR_RESTRICTION, "iFlashlightHeadgearRequirement", 0));
-        headLightKeywordNames = parseCommaList(ini.GetValue(SECTION_HEADGEAR_RESTRICTION, "sHeadLightKeywords", ""));
-        headLightAllowList = parseFormPluginList(ini.GetValue(SECTION_HEADGEAR_RESTRICTION, "sHeadLightAllowList", ""));
-        headLightDenyList = parseFormPluginList(ini.GetValue(SECTION_HEADGEAR_RESTRICTION, "sHeadLightDenyList", ""));
+        flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(config[SECTION_HEADGEAR_RESTRICTION]["iFlashlightHeadgearRequirement"].value_or(0));
+        headLightKeywordNames = parseCommaList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightKeywords"].value_or(std::string()));
+        headLightAllowList = parseFormPluginList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightAllowList"].value_or(std::string()));
+        headLightDenyList = parseFormPluginList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightDenyList"].value_or(std::string()));
 
-        weaponFlashlightMeshRequirement = static_cast<FlashlightWeaponMeshRequirement>(ini.GetLongValue(SECTION_WEAPON_MOUNT, "iWeaponFlashlightMeshRequired", 0));
-        weaponFlashlightAutoDetectPlugins = parseCommaList(ini.GetValue(SECTION_WEAPON_MOUNT, "sWeaponFlashlightAutoDetectPlugins", ""));
-        weaponFlashlightMountBeamToMesh = ini.GetBoolValue(SECTION_WEAPON_MOUNT, "bWeaponFlashlightMountBeamToMesh", true);
-        weaponFlashlightAnchorPrimaryHandSphereToMesh = ini.GetBoolValue(SECTION_WEAPON_MOUNT, "bWeaponFlashlightAnchorPrimaryHandSphereToMesh", true);
-        weaponFlashlightMeshNodes = parseCommaList(ini.GetValue(SECTION_WEAPON_MOUNT, "sWeaponFlashlightMeshNodes", ""));
+        weaponFlashlightMeshRequirement = static_cast<FlashlightWeaponMeshRequirement>(config[SECTION_WEAPON_MOUNT]["iWeaponFlashlightMeshRequired"].value_or(0));
+        weaponFlashlightAutoDetectPlugins = parseCommaList(config[SECTION_WEAPON_MOUNT]["sWeaponFlashlightAutoDetectPlugins"].value_or(std::string()));
+        weaponFlashlightMountBeamToMesh = config[SECTION_WEAPON_MOUNT]["bWeaponFlashlightMountBeamToMesh"].value_or(true);
+        weaponFlashlightAnchorPrimaryHandSphereToMesh = config[SECTION_WEAPON_MOUNT]["bWeaponFlashlightAnchorPrimaryHandSphereToMesh"].value_or(true);
+        weaponFlashlightMeshNodes = parseCommaList(config[SECTION_WEAPON_MOUNT]["sWeaponFlashlightMeshNodes"].value_or(std::string()));
         weaponFlashlightMountTransform =
-            getTransformValue(ini, SECTION_WEAPON_MOUNT, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));
+            getTransformValue(config, SECTION_WEAPON_MOUNT, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));
 
         // Stowed flashlight on the body (grab to turn on into a hand, put back to turn off).
-        showFlashlightOnBody = ini.GetBoolValue(SECTION_BODY_STOW, "bShowFlashlightOnBody", true);
+        showFlashlightOnBody = config[SECTION_BODY_STOW]["bShowFlashlightOnBody"].value_or(true);
         // Placeholder offset; tune in-game via live-reload. Scale matches the in-hand model.
         RE::NiTransform bodyTransformDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         bodyTransformDefault.scale = 1.3f;
-        flashlightBodyTransform = getTransformValue(ini, SECTION_BODY_STOW, "tFlashlightBodyTransform", bodyTransformDefault);
-        flashlightBodyTransformPA = getTransformValue(ini, SECTION_BODY_STOW, "tFlashlightBodyTransformPA", flashlightBodyTransform);
+        flashlightBodyTransform = getTransformValue(config, SECTION_BODY_STOW, "tFlashlightBodyTransform", bodyTransformDefault);
+        flashlightBodyTransformPA = getTransformValue(config, SECTION_BODY_STOW, "tFlashlightBodyTransformPA", flashlightBodyTransform);
 
         // Activation-sphere gestures, each grouped in its own INI section (see WandActivationConfig). The
         // suppress flag is a per-binding token in the binding string; the default binding literals set
         // .suppress = true so the shipped gestures still intercept their button even if the INI omits it.
-        showAllActivationSpheres = ini.GetBoolValue(DEFAULT_SECTION, "bShowAllActivationSpheres", false);
+        showAllActivationSpheres = config[DEFAULT_SECTION]["bShowAllActivationSpheres"].value_or(false);
 
         RE::NiTransform grabSphereDefault = common::MatrixUtils::getTransform(0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         grabSphereDefault.scale = 20.0f;
-        bodyActivation = loadWandActivationConfig(ini,
+        bodyActivation = loadWandActivationConfig(config,
             SECTION_BODY_ACTIVATION_SPHERE,
             f4vr::WandActivationConfig{
                 .zone = grabSphereDefault,
@@ -494,7 +503,7 @@ namespace ImFl
 
         RE::NiTransform headSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         headSphereDefault.scale = 24.0f;
-        headActivation = loadWandActivationConfig(ini,
+        headActivation = loadWandActivationConfig(config,
             SECTION_HEAD_ACTIVATION_SPHERE,
             f4vr::WandActivationConfig{
                 .zone = headSphereDefault,
@@ -505,7 +514,7 @@ namespace ImFl
 
         RE::NiTransform primaryHandSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         primaryHandSphereDefault.scale = 20.0f;
-        primaryHandActivation = loadWandActivationConfig(ini,
+        primaryHandActivation = loadWandActivationConfig(config,
             SECTION_PRIMARY_HAND_ACTIVATION_SPHERE,
             f4vr::WandActivationConfig{
                 .zone = primaryHandSphereDefault,
@@ -513,57 +522,35 @@ namespace ImFl
                 .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .iconStyle = { .texture = FLASHLIGHT_ICON },
             });
-        toggleWeaponFlashlightTwoHandedBinding = getInputBindingValue(ini,
+        toggleWeaponFlashlightTwoHandedBinding = getInputBindingValue(config,
             SECTION_WEAPON_MOUNT,
-            "sToggleWeaponFlashlightTwoHandedBinding",
+            "kToggleWeaponFlashlightTwoHandedBinding",
             vrcf::InputBinding{ .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger });
 
-        disableVanillaFlashlightToggle = ini.GetBoolValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", false);
-        keepFlashlightOnInPipboy = ini.GetBoolValue(DEFAULT_SECTION, "bKeepFlashlightOnInPipboy", true);
+        disableVanillaFlashlightToggle = config[DEFAULT_SECTION]["bDisableVanillaFlashlightToggle"].value_or(false);
+        keepFlashlightOnInPipboy = config[DEFAULT_SECTION]["bKeepFlashlightOnInPipboy"].value_or(true);
 
         // NPC light detection (NpcDetectionHandler)
-        npcDetectionEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", true);
-        npcDetectionOnlyWhenSneaking = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionOnlyWhenSneaking", false);
-        npcDetectionOnlyHostileNpcs = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionOnlyHostileNpcs", true);
-        npcDetectionIntervalMs = static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionIntervalMs", 500));
-        npcDetectionDirectEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionDirectEnabled", true);
-        npcDetectionDirectSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionDirectSoundLevel", 100)), 0, 500);
-        npcDetectionLitSpotEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionLitSpotEnabled", true);
-        npcDetectionLitSpotSoundLevel = std::clamp(static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionLitSpotSoundLevel", 40)), 0, 500);
-        npcDetectionMaxRange = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionMaxRange", 2000.0));
-        npcDetectionFovMult = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionFovMult", 0.75));
-        npcDetectionSpottedEventLevel = static_cast<int>(ini.GetLongValue(SECTION_NPC_DETECTION, "iNpcDetectionSpottedEventLevel", 100));
-        npcDetectionLosCollisionFilter = parseCollisionFilter(ini.GetValue(SECTION_NPC_DETECTION, "sNpcDetectionLosCollisionFilter", ""), DEFAULT_LOS_COLLISION_FILTER);
-        npcDetectionLightLevelEnabled = ini.GetBoolValue(SECTION_NPC_DETECTION, "bNpcDetectionLightLevelEnabled", true);
-        npcDetectionLightLevelBaseline = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelBaseline", 40.0));
-        npcDetectionLightLevelMin = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMin", 70.0));
-        npcDetectionLightLevelMax = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelMax", 220.0));
-        npcDetectionLightLevelCurve = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelCurve", 1.0));
-        npcDetectionLightLevelDecayMs = static_cast<float>(ini.GetDoubleValue(SECTION_NPC_DETECTION, "fNpcDetectionLightLevelDecayMs", 1000.0));
+        npcDetectionEnabled = config[SECTION_NPC_DETECTION]["bNpcDetectionEnabled"].value_or(true);
+        npcDetectionOnlyWhenSneaking = config[SECTION_NPC_DETECTION]["bNpcDetectionOnlyWhenSneaking"].value_or(false);
+        npcDetectionOnlyHostileNpcs = config[SECTION_NPC_DETECTION]["bNpcDetectionOnlyHostileNpcs"].value_or(true);
+        npcDetectionIntervalMs = config[SECTION_NPC_DETECTION]["iNpcDetectionIntervalMs"].value_or(500);
+        npcDetectionDirectEnabled = config[SECTION_NPC_DETECTION]["bNpcDetectionDirectEnabled"].value_or(true);
+        npcDetectionDirectSoundLevel = std::clamp(config[SECTION_NPC_DETECTION]["iNpcDetectionDirectSoundLevel"].value_or(100), 0, 500);
+        npcDetectionLitSpotEnabled = config[SECTION_NPC_DETECTION]["bNpcDetectionLitSpotEnabled"].value_or(true);
+        npcDetectionLitSpotSoundLevel = std::clamp(config[SECTION_NPC_DETECTION]["iNpcDetectionLitSpotSoundLevel"].value_or(40), 0, 500);
+        npcDetectionMaxRange = config[SECTION_NPC_DETECTION]["fNpcDetectionMaxRange"].value_or(2000.0f);
+        npcDetectionFovMult = config[SECTION_NPC_DETECTION]["fNpcDetectionFovMult"].value_or(0.75f);
+        npcDetectionSpottedEventLevel = config[SECTION_NPC_DETECTION]["iNpcDetectionSpottedEventLevel"].value_or(100);
+        npcDetectionLosCollisionFilter =
+            parseCollisionFilter(config[SECTION_NPC_DETECTION]["sNpcDetectionLosCollisionFilter"].value_or(std::string()), DEFAULT_LOS_COLLISION_FILTER);
+        npcDetectionLightLevelEnabled = config[SECTION_NPC_DETECTION]["bNpcDetectionLightLevelEnabled"].value_or(true);
+        npcDetectionLightLevelBaseline = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelBaseline"].value_or(40.0f);
+        npcDetectionLightLevelMin = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelMin"].value_or(70.0f);
+        npcDetectionLightLevelMax = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelMax"].value_or(220.0f);
+        npcDetectionLightLevelCurve = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelCurve"].value_or(1.0f);
+        npcDetectionLightLevelDecayMs = config[SECTION_NPC_DETECTION]["fNpcDetectionLightLevelDecayMs"].value_or(1000.0f);
 
         _valuesReloaded = true;
-    }
-
-    /**
-     * Custom migration for what the generic ConfigBase pass can't carry over correctly.
-     * Runs after the generic migration, so it can also correct what the generic pass copied.
-     *
-     * Everything here landed in v15, so a config already at v15 must be left alone by any later migration.
-     * Note the log pattern reset below reads the new config, so without this gate it would keep firing on
-     * every future version bump and undo a deliberate choice of the old pattern.
-     */
-    void Config::updateIniConfigToLatestVersionCustom(const int currentVersion, int, const CSimpleIniA&, CSimpleIniA& newIni) const
-    {
-        if (currentVersion >= 15) {
-            return;
-        }
-
-        // The log pattern gained the "%k" logging-class column, but the generic migration copies the old
-        // pattern over it. Reset it to the current default unless the player customized it.
-        const auto* logPattern = newIni.GetValue(INI_SECTION_DEBUG, "sLogPattern", nullptr);
-        if (logPattern && (logPattern == "%H:%M:%S.%e %l: %v"sv || logPattern == "%H:%M:%S.%e %L: %v"sv)) {
-            logger::info("Migrating {}.sLogPattern to the current default", INI_SECTION_DEBUG);
-            newIni.SetValue(INI_SECTION_DEBUG, "sLogPattern", "%H:%M:%S.%e %l [%-20!k] %v");
-        }
     }
 }

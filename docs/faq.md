@@ -19,7 +19,7 @@ Click a question to expand its answer.
   <summary>The flashlight won't turn on, or my old flashlight button does nothing</summary>
 &#10240;
 
-The vanilla long-press of the off-hand trigger still toggles the light **by default**, alongside this mod's gestures. If that button does nothing, the vanilla-toggle disable has been switched on — turn it back off on the misc config screen, or set `bDisableVanillaFlashlightToggle = false` in the INI. Either way you can always turn the light on by grabbing the model off your chest, or with the head / hand gestures — see [Moving the Light](README.md#moving-the-light-gestures).
+The vanilla long-press of the off-hand trigger still toggles the light **by default**, alongside this mod's gestures. If that button does nothing, the vanilla-toggle disable has been switched on — turn it back off on the misc config screen, or set `bDisableVanillaFlashlightToggle = false` in the config file. Either way you can always turn the light on by grabbing the model off your chest, or with the head / hand gestures — see [Moving the Light](README.md#moving-the-light-gestures).
 
 If the light turns on but not where you expect it, a restriction may be blocking that location — see [Head and Weapon Light](#head-and-weapon-light).
 
@@ -37,7 +37,7 @@ The mod waits until you've picked up the **Pip-Boy**. Before that, the game only
   <summary>How do I move the light between hand, head, and weapon?</summary>
 &#10240;
 
-All location changes are physical VR gestures (grab from your body, offhand-to-head, offhand-to-primary-hand, two-handed toggle). The full reference and the configurable [default bindings](README.md#default-control-bindings) are in the Usage Guide. Any gesture can be rebound or disabled (`none`) in the INI.
+All location changes are physical VR gestures (grab from your body, offhand-to-head, offhand-to-primary-hand, two-handed toggle). The full reference and the configurable [default bindings](README.md#default-control-bindings) are in the Usage Guide. Any gesture can be rebound or disabled (`none`) in the config file.
 
 </details>
 
@@ -97,11 +97,11 @@ When no modeled flashlight is detected the beam sits at a generic offset near th
   <summary>How do I hide the icon that shows when my hand is near the flashlight on my chest?</summary>
 &#10240;
 
-The icon marks the **grab zone** of the flashlight stowed on your chest. By default it's drawn only while a hand is inside the zone, as a hint that a trigger press will grab or stow the light. To hide it, set `sShowIcon = never` in the `[ImFl_BodyActivationSphere]` section of the INI. The grab keeps working exactly the same, and the haptic tick still tells you when your hand is in the zone. The change applies live.
+The icon marks the **grab zone** of the flashlight stowed on your chest. By default it's drawn only while a hand is inside the zone, as a hint that a trigger press will grab or stow the light. To hide it, set `sShowIcon = "never"` in the `[ImFl_BodyActivationSphere]` section of the config file. The grab keeps working exactly the same, and the haptic tick still tells you when your hand is in the zone. The change applies live.
 
-If a sphere shows around it, the global **show all activation spheres** toggle is on (misc config screen, or `bShowAllActivationSpheres` in the INI). It forces every sphere visible at its full size, so turn it off.
+If a sphere shows around it, the global **show all activation spheres** toggle is on (misc config screen, or `bShowAllActivationSpheres` in the config file). It forces every sphere visible at its full size, so turn it off.
 
-If you'd rather keep the hint but make it less intrusive, lower `fIconSize` in the same section — it draws a smaller icon without shrinking the actual grab zone. To mark the zone with a glowing sphere instead (or as well), set `sShowSphere = wheninside`; `fSphereScale` sizes it.
+If you'd rather keep the hint but make it less intrusive, lower `fIconSize` in the same section — it draws a smaller icon without shrinking the actual grab zone. To mark the zone with a glowing sphere instead (or as well), set `sShowSphere = "wheninside"`; `fSphereScale` sizes it.
 
 </details>
 
@@ -127,7 +127,7 @@ The mod adds shadows for immersion, but they only render well when the game's **
   <summary>Enemies notice me as soon as I turn the flashlight on</summary>
 &#10240;
 
-That's NPC light detection. Vanilla ignores flashlights for stealth completely — you can put a beam on a raider's chest from the dark and they won't react — and this mod makes the beam count. Carrying a lit flashlight makes you somewhat visible on its own, and putting the beam on someone makes you a lot more visible; catch a hostile full in the face at close range and they've simply seen you. Everything about it is tunable, and `bNpcDetectionEnabled = false` in the INI turns it off entirely. See [NPC Light Detection](npc-detection.md).
+That's NPC light detection. Vanilla ignores flashlights for stealth completely — you can put a beam on a raider's chest from the dark and they won't react — and this mod makes the beam count. Carrying a lit flashlight makes you somewhat visible on its own, and putting the beam on someone makes you a lot more visible; catch a hostile full in the face at close range and they've simply seen you. Everything about it is tunable, and `bNpcDetectionEnabled = false` in the config file turns it off entirely. See [NPC Light Detection](npc-detection.md).
 
 </details>
 
@@ -179,19 +179,19 @@ One known limitation: while ROCK fires from your left hand, the mod's primary-ha
   <summary>Why do I get a VR FPS Stabilizer warning?</summary>
 &#10240;
 
-The mod detects [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) because it can degrade flashlight shadows, and shows a notification every 5 minutes while the light is on. The warning does not appear if flashlight shadows are disabled. If you've handled it another way, silence the warning with `bWarnAboutFPSStabilizerMod = false` in the INI.
+The mod detects [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) because it can degrade flashlight shadows, and shows a notification every 5 minutes while the light is on. The warning does not appear if flashlight shadows are disabled. If you've handled it another way, silence the warning with `bWarnAboutFPSStabilizerMod = false` in the config file.
 
 </details>
 
 ## Settings and Customization
 
 <details>
-  <summary>Where are the settings, INI file, and logs?</summary>
+  <summary>Where are the settings, config file, and logs?</summary>
 &#10240;
 
-Most options are on the in-game beam and misc config screens (open the FRIK configuration UI, then select Immersive Flashlight). Everything else lives in the INI and is live-reloaded into the running game when you save:
+Most options are on the in-game beam and misc config screens (open the FRIK configuration UI, then select Immersive Flashlight). Everything else lives in the config file and is live-reloaded into the running game when you save:
 
-- INI: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.ini`
+- Config file: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
 - Logs: `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`
 
 The full settings reference is in the [Usage and Configuration Guide](README.md#advanced-configuration).
@@ -202,6 +202,6 @@ The full settings reference is in the [Usage and Configuration Guide](README.md#
   <summary>My helmet should count as light-capable but doesn't</summary>
 &#10240;
 
-The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `sDumpDataOnceNames = headgear` in the INI's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `sHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `sHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
+The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `aDumpDataOnce = ["headgear"]` in the config file's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `sHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `sHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
 
 </details>

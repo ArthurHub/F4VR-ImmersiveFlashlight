@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 4.2)
 # >>> Project
 set(NAME "ImmersiveFlashlightVR")
 set(FRIENDLY_NAME "Immersive Flashlight VR")
-set(VERSION 1.3.1)
+set(VERSION 1.3.2)
 
 message(">>> Start build for '${NAME}' v${VERSION}")
 
@@ -69,7 +69,7 @@ set(F4CF_WITH_IMGUI_UI OFF)
 add_subdirectory(${F4VR_COMMON_FRAMEWORK_PATH_SELECTED} "F4VR-CommonFramework" EXCLUDE_FROM_ALL)
 # >>> IMPORTANT:
 # For CommonLibF4 to build successfully you must satisfy it's vcpkg dependencies
-# AND specify <"builtin-baseline": "b4a3d89125e45bc8f80fb94bef9761d4f4e14fb9"> as it will fail to build with latests"
+# AND specify <"builtin-baseline": "5cd4931b18d49c77074703cf293a7837ac7506fa">, the baseline the framework is built and tested against
 
 
 # >>> Version & resource files
@@ -86,7 +86,7 @@ source_group(TREE ${ROOT_DIR} FILES ${headers} ${sources} ${inls})
 
 # >>> Resource files
 list(APPEND resource_files
-  "${ROOT_DIR}/data/config/${NAME}.ini"
+  "${ROOT_DIR}/data/config/${NAME}.toml"
 )
 # NOTE: Additional resources added here
 

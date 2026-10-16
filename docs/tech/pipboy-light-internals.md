@@ -141,7 +141,7 @@ writing either way, and restores the original call when the option is turned off
 
 `FlashlightState::refreshLightValues(mode)` writes the config onto the form (`setLightValues()`) and
 stops there when no value changed or the light is off. An on light is re-created by default (see
-"When it re-creates" below). Location changes and INI hot-reload take that path: it only runs engine
+"When it re-creates" below). Location changes and config hot-reload take that path: it only runs engine
 code, and a light that moves hides the swap. A location change also plays the light-on sound the
 vanilla toggle plays (`UIUtils::PlayMenuSound("UIPipBoyLightOn")`, 1227993, `0x14133d7d0`); a
 hot-reload stays silent. Only the beam screen's tuning passes
@@ -190,7 +190,7 @@ beam changes apply to the light that is on. Re-check these after touching either
   off. Widening the FOV or the radius doesn't leave a hard edge where the old beam ended.
 - Toggling shadows on the misc screen re-creates the light without the toggle sound.
 - **Not tested in game yet:** moving the light between locations with different beam values
-  re-creates it with the light-on sound only; saving an INI beam change re-creates it silently. An INI
+  re-creates it with the light-on sound only; saving a config beam change re-creates it silently. A config
   save that changes no beam value, or a move between locations with the same values, leaves the light
   alone.
 - The log has no `Renderer kept refusing to rebuild the flashlight light volume`.

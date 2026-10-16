@@ -10,7 +10,7 @@ namespace ImFl::config
 {
     /**
      * Top-level config screen and coordinator for the in-game VR config UI. Shows the main menu (open
-     * the beam / misc config screens, open the INI for advanced editing, open the wiki, exit) and owns
+     * the beam / misc config screens, open the config file for advanced editing, open the wiki, exit) and owns
      * the BeamScreen / MiscScreen, switching between them. FlashlightMod drives this one object: open it
      * from the FRIK menu, close it on session load, and frame-update it each frame.
      *
@@ -43,7 +43,7 @@ namespace ImFl::config
         void closeActiveScreen();
         void processPendingNavigation();
         void createMenuUI();
-        static void openIniFileForAdvancedEditing();
+        static void openConfigFileForAdvancedEditing();
         static void openWiki();
 
         std::shared_ptr<vrui::UIContainer> _menuUI;

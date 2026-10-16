@@ -897,7 +897,7 @@ namespace ImFl
      * beam origin to the lit NPC, orange = lit-spot on geometry), and a watch table (framework default
      * HUD in front of the HMD) reporting the cone, next tick, last event, and — key for tuning — WHY
      * the last tick did or didn't post an event ("npc why"). All draws are tagged with the
-     * "NPC-DETECTION" channel so they can be silenced via sDebugDrawDisabledChannels without turning
+     * "NPC-DETECTION" channel so they can be silenced via aDebugDrawDisabledChannels without turning
      * the overlay off.
      */
     void NpcDetectionHandler::DebugState::draw()

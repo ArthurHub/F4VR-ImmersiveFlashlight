@@ -310,7 +310,7 @@ namespace ImFl::devbench
 
         /**
          * light: switch the configured location and/or turn the light on / off, the way the gestures do (a location
-         * switch is saved to the INI as theirs is).
+         * switch is saved to the config file as theirs is).
          */
         json runLight(const json& args)
         {
@@ -398,13 +398,13 @@ namespace ImFl::devbench
             "Immersive Flashlight VR: the VR flashlight - where the light is mounted (head, power-armor head, offhand, primary hand, weapon), each "
             "mount's beam (fade, radius, FOV, color, gobo, shadows), the flashlight stowed on the chest and the gestures that move the light (body "
             "grab, offhand to head, offhand to primary hand, two-handed weapon toggle), the headgear and weapon-lamp restrictions, ROCK / FRIK "
-            "weapon grips, NPCs noticing the beam, and the in-game config UI. Advanced INI sections are [ImFl_*] (set/config take section)");
+            "weapon grips, NPCs noticing the beam, and the in-game config UI. Advanced config sections are [ImFl_*] (set/config take section)");
 
         f4cf::devbench::setStateProvider<FlashlightDevState>(stateDescription(), &captureState, &stateToJson);
 
         f4cf::devbench::addAction({
             .name = "light",
-            .description = "switch the configured location and/or turn the light on/off, the way the gestures do (the location is saved to the INI "
+            .description = "switch the configured location and/or turn the light on/off, the way the gestures do (the location is saved to the config "
                            "as theirs is); returns lightOn, location, configLocation",
             .arguments = {
                 { "op", arg("string", "light: on|off|toggle (omit to only switch location); ui: open (default)|close") },

@@ -109,7 +109,8 @@ namespace ImFl::config
             f4vr::showNotification("Player has to wear ANY headgear for the flashlight to be on the head");
             break;
         case FlashlightHeadgearRequirement::Immersive:
-            f4vr::showNotification("Player has to wear appropriate headgear (full helmets) for the flashlight to be on the head\nSee ini for controlling allowed headgear");
+            f4vr::showNotification(
+                "Player has to wear appropriate headgear (full helmets) for the flashlight to be on the head\nSee the config file for controlling allowed headgear");
             break;
         }
     }

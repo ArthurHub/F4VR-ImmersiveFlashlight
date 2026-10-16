@@ -108,9 +108,9 @@ place.
 
 ## Configuration
 
-INI-only for now — there's no in-game screen for these yet. Changes are live-reloaded into the running game
+Only in the config file for now — there's no in-game screen for these yet. Changes are live-reloaded into the running game
 when you save the file, so you can tune while playing. See
-[Advanced Configuration](README.md#advanced-configuration) for the INI location.
+[Advanced Configuration](README.md#advanced-configuration) for the config file location.
 
 All keys live in the `[ImFl_NpcDetection]` section.
 

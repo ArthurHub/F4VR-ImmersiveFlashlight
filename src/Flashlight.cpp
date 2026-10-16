@@ -124,10 +124,10 @@ namespace ImFl
     {
         F4CF_PERF_FUNCTION();
 
-        // The config values were loaded again (an INI hot-reload on the file watcher's thread, or a session override):
+        // The config values were loaded again (a hot-reload on the file watcher's thread, or a session override):
         // applied here, on the game thread.
         if (g_config.consumeValuesReloaded()) {
-            applyIniChange();
+            applyConfigChange();
         }
         LiveLight::onFrameUpdate();
 
@@ -177,10 +177,10 @@ namespace ImFl
     }
 
     /**
-     * Apply a hot-reloaded INI change. Runs from onFrameUpdate() on the game thread rather than from the file
+     * Apply a config reload (a hot-reload from disk, a session override). Runs from onFrameUpdate() on the game thread rather than from the file
      * watcher's thread, since refreshing the light and patching the game call into the engine.
      */
-    void Flashlight::applyIniChange()
+    void Flashlight::applyConfigChange()
     {
         F4CF_PERF_FUNCTION();
         RestrictionHandler::invalidate();
@@ -215,7 +215,7 @@ namespace ImFl
                 _inHandFlashlightMesh.invalidate(); // skeleton changed — force re-attach next frame
             }
         }
-        _flashlightOnRecentlyFrames = Utils::isFlashlightOn() ? 5 : max(0, _flashlightOnRecentlyFrames - 1);
+        _flashlightOnRecentlyFrames = Utils::isFlashlightOn() ? 5 : (std::max)(0, _flashlightOnRecentlyFrames - 1);
     }
 
     /**

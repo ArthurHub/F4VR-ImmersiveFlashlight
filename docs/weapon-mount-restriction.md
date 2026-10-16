@@ -35,7 +35,7 @@ It applies the same in and out of power armor — the gun is the gun either way.
 
 ## How it works
 
-`iWeaponFlashlightMeshRequired` has three settings, changed on the misc config screen or in the INI:
+`iWeaponFlashlightMeshRequired` has three settings, changed on the misc config screen or in the config file:
 
 | Mode | Meaning |
 | --- | --- |
@@ -96,7 +96,7 @@ weapon's author called them. `sWeaponFlashlightMeshNodes` ships with a single en
 covers the supported packs. For anything else you'll need to add the right name.
 
 To find it, open the weapon's mesh in NifSkope and look for the node the flashlight model hangs from. Add its
-name to the list (comma-separated, first match wins), save the INI, then holster and re-draw to force a
+name to the list (comma-separated, first match wins), save the config file, then holster and re-draw to force a
 re-scan.
 
 The log tells you what happened. At
@@ -114,7 +114,7 @@ The log tells you what happened. At
   flashlight fitted, or its node isn't in your list. This one is logged at debug level, so set
   `iLogLevel = 1` in the `[Debug]` section to see it.
 
-Edits to `sWeaponFlashlightAutoDetectPlugins` are picked up when you save the INI, so you can add a weapon
+Edits to `sWeaponFlashlightAutoDetectPlugins` are picked up when you save the config file, so you can add a weapon
 pack's plugin and see AutoDetect flip without restarting the game.
 
 Note that the gate and the beam rooting are the same feature: detection only runs while the requirement is
@@ -123,8 +123,8 @@ mod looking for a lamp at all, and every weapon goes back to the generic barrel 
 
 ## Configuration
 
-The in-game misc screen cycles the mode; everything else is INI-only. All keys live in the
-`[ImFl_WeaponMount]` section. See [Advanced Configuration](README.md#advanced-configuration) for the INI
+The in-game misc screen cycles the mode; everything else is only in the config file. All keys live in the
+`[ImFl_WeaponMount]` section. See [Advanced Configuration](README.md#advanced-configuration) for the config file
 location.
 
 | Setting | Default | Meaning |
@@ -134,8 +134,8 @@ location.
 | `sWeaponFlashlightMeshNodes` | `AddOnNode` | Node names searched for on the weapon, in priority order. |
 | `bWeaponFlashlightMountBeamToMesh` | `true` | Root the beam at the detected lamp instead of the generic barrel offset. |
 | `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` | `true` | Move the offhand-to-primary-hand gesture zone onto the lamp. Needs beam rooting on. |
-| `tWeaponFlashlightMountTransform` | `0,0,0;0,0,0;1` | Light offset from the lamp when rooted there. Live-reloaded, so you can tune it in-game. |
-| `sToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger` | The two-handed weapon-light toggle. Documented with the other gestures in the [Usage Guide](README.md#toggle-the-weapon-light-two-handed). |
+| `tWeaponFlashlightMountTransform` | `{ pos = [0.0, 0.0, 0.0], scale = 1.0 }` | Light offset from the lamp when rooted there. Live-reloaded, so you can tune it in-game. |
+| `kToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger` | The two-handed weapon-light toggle. Documented with the other gestures in the [Usage Guide](README.md#toggle-the-weapon-light-two-handed). |
 
 ## Common adjustments
 

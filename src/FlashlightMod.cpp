@@ -5,7 +5,6 @@
 #include "api/FRIKApi.h"
 #include "api/FRIKApiV2.h"
 #include "devbench/FlashlightDevBench.h"
-#include "vrui/UIManager.h"
 
 // This is the entry point to the mod.
 extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info)
@@ -23,37 +22,6 @@ using namespace frik::api;
 
 namespace ImFl
 {
-    /**
-     * TODO: think about it, is it the best way to handle this dependency indirection.
-     */
-    class FrameUpdateContext : public vrui::UIModAdapter
-    {
-    public:
-        virtual RE::NiPoint3 getInteractionBoneWorldPosition() override
-        {
-            return FRIKApi::inst->getIndexFingerTipPosition(FRIKApi::Hand::Offhand);
-        }
-
-        virtual void setInteractionHandPointing(const bool primaryHand, const bool toPoint) override
-        {
-            constexpr const char* CONFIG_HAND_POSE_TAG = "InFl_Config";
-            const auto hand = primaryHand ? FRIKApi::Hand::Primary : FRIKApi::Hand::Offhand;
-            if (!toPoint) {
-                FRIKApi::inst->clearHandPose(CONFIG_HAND_POSE_TAG, hand);
-                return;
-            }
-            if (FRIKApiV2::inst) {
-                FRIKApiV2::inst->setHandPose(CONFIG_HAND_POSE_TAG,
-                    static_cast<FRIKApiV2::Hand>(hand),
-                    FRIKApiV2::HandPoseKind::Pointing,
-                    FRIKApiV2::HAND_POSE_PRIORITY_DEFAULT + 10);
-            } else {
-                // v1 has no priority, so the hold pose can win the tie; only reachable without FRIK API v2, where there is no hold pose either.
-                FRIKApi::inst->setHandPoseCustomFingerPositions(CONFIG_HAND_POSE_TAG, hand, 0, 1, 0, 0, 0);
-            }
-        }
-    };
-
     bool FlashlightMod::isConfigOpen() const
     {
         return _config->isConfigOpen();
@@ -113,9 +81,6 @@ namespace ImFl
             logger::sample(3000, "no player data - noop");
             return;
         }
-
-        FrameUpdateContext context{};
-        vrui::g_uiManager->onFrameUpdate(&context);
 
         _flashlight->onFrameUpdate();
 

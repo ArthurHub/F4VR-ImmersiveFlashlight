@@ -53,7 +53,7 @@ namespace ImFl
         void onGameSessionLoaded();
 
     private:
-        static void applyIniChange();
+        static void applyConfigChange();
         void handlePowerArmorTransition();
         void updateBodyStow();
         bool checkBodyGrab(bool enabled);

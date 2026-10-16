@@ -2,7 +2,7 @@
 
 How the mod makes NPCs actually notice the player's flashlight beam, natively (no ESP, no perk,
 no Papyrus), directionally (only what the beam touches matters), and LOS-gated (no pings through
-walls). Implemented in `src/NpcDetectionHandler.{h,cpp}`, configured by the `NpcDetection*` INI keys.
+walls). Implemented in `src/NpcDetectionHandler.{h,cpp}`, configured by the `NpcDetection*` config keys.
 
 Reference material: `Modding-Reference/F4VR/knowledge-base/flashlight_npc_detection_mechanics.md`.
 
@@ -482,7 +482,7 @@ place, by watching the engine's own value while walking under different lighting
   alerts them. That's accepted as realistic-enough (light on your back scatters onto surfaces in
   front of you) and much cheaper than a facing + peripheral-vision model.
 - **In-game config UI toggle.** `MiscScreen` toggles need a bespoke button NIF; until that asset
-  exists the feature is INI-only (hot-reload applies changes live).
+  exists the feature is only in the config file (hot-reload applies changes live).
 
 ### Beam axis derivation
 

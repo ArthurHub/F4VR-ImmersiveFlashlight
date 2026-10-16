@@ -4,16 +4,16 @@
 #include <utility>
 #include <vector>
 
-#include "ConfigBase.h"
 #include "Resources.h"
 #include "api/FRIKApi.h"
+#include "config/ConfigBase.h"
 #include "f4vr/WandActivationSphere.h"
 #include "vrcf/VRControllersManager.h"
 
 namespace ImFl
 {
     static const auto BASE_MOD_PATH = BASE_PATH + "\\" + std::string(Version::PROJECT);
-    static const auto INI_PATH = BASE_MOD_PATH + "\\" + std::string(Version::PROJECT) + ".ini";
+    static const auto CONFIG_PATH = BASE_MOD_PATH + "\\" + std::string(Version::PROJECT) + ".toml";
 
     /**
      * The possible flashlight locations in-game.
@@ -88,7 +88,7 @@ namespace ImFl
     {
     public:
         explicit Config()
-            : ConfigBase(Version::PROJECT, INI_PATH, IDR_CONFIG_INI)
+            : ConfigBase(Version::PROJECT, CONFIG_PATH, IDR_CONFIG)
         {}
 
         void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
@@ -110,8 +110,9 @@ namespace ImFl
 
         /**
          * Whether the typed values were loaded again since the last call, clearing it: a hot-reload from disk, a session
-         * override set or cleared (the devbench tool's set / clear), or ConfigBase::reload(). Only the hot-reload
-         * notifies the INI-changed subscribers, so this is what catches all of them. Any thread.
+         * override set or cleared (the devbench tool's set / clear), ConfigBase::reload(), or ConfigBase::load(). Polled by
+         * Flashlight at the point of its own frame where it applies them, which a config-changed subscriber (called
+         * before the mod's frame) can't choose. Any thread.
          */
         bool consumeValuesReloaded()
         {
@@ -363,11 +364,10 @@ namespace ImFl
         float npcDetectionLightLevelDecayMs = 1000.0f;
 
     protected:
-        virtual void loadIniConfigInternal(const CSimpleIniA& ini) override;
-        virtual void updateIniConfigToLatestVersionCustom(int currentVersion, int latestVersion, const CSimpleIniA& oldIni, CSimpleIniA& newIni) const override;
+        virtual void loadConfigInternal(const toml::table& config) override;
 
     private:
-        // Set by every loadIniConfigInternal(), which runs on the file watcher's thread for a hot-reload.
+        // Set by every loadConfigInternal(), which runs on the file watcher's thread for a hot-reload.
         std::atomic<bool> _valuesReloaded = false;
     };
 

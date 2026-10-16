@@ -32,7 +32,7 @@ works no matter how this is set.
 
 ## How it works
 
-`iFlashlightHeadgearRequirement` has three settings, changed on the misc config screen or in the INI:
+`iFlashlightHeadgearRequirement` has three settings, changed on the misc config screen or in the config file:
 
 | Mode | Meaning |
 | --- | --- |
@@ -53,7 +53,7 @@ The **Immersive** rule decides light-capable in this order:
 Deny beats allow, allow beats keywords. All three lists ship filled in and are yours to edit — see
 [Choosing what counts](#choosing-what-counts).
 
-The requirement is checked live, every frame, so changing it (in-game or in the INI) takes effect
+The requirement is checked live, every frame, so changing it (in-game or in the config file) takes effect
 immediately, and so does putting a helmet on or taking one off.
 
 ## When you're not wearing eligible headgear
@@ -78,7 +78,7 @@ offhand.
 
 ## Choosing what counts
 
-The Immersive rule is driven by three lists in the `[ImFl_HeadgearRestriction]` INI section. They are
+The Immersive rule is driven by three lists in the `[ImFl_HeadgearRestriction]` config section. They are
 live-reloaded, so you can edit and save the file while the game runs and see the result immediately.
 
 **`sHeadLightKeywords`** — comma-separated keyword **editor IDs** (the names you see in xEdit or the Creation
@@ -106,10 +106,10 @@ you want a deliberately narrower rule.
 
 ## Checking what qualifies in your load order
 
-Rather than guessing which of your helmets pass, ask the mod. In the `[Debug]` section of the INI:
+Rather than guessing which of your helmets pass, ask the mod. In the `[Debug]` section of the config file:
 
 ```
-sDumpDataOnceNames = headgear
+aDumpDataOnce = ["headgear"]
 ```
 
 Save the file and the mod writes every head-slot armor in your load order into the log, split into two
@@ -129,9 +129,9 @@ save, and dump again.
 
 ## Configuration
 
-The in-game misc screen cycles the mode; the lists are INI-only. All keys live in the
+The in-game misc screen cycles the mode; the lists are only in the config file. All keys live in the
 `[ImFl_HeadgearRestriction]` section. See [Advanced Configuration](README.md#advanced-configuration) for the
-INI location.
+config file location.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -149,5 +149,5 @@ INI location.
 | Make one more helmet eligible | Add its `localFormID\|plugin` to `sHeadLightAllowList` |
 | Stop a soft hat from qualifying | Add it to `sHeadLightDenyList` |
 | Qualify a whole mod's helmets at once | Add that mod's helmet keyword editor ID to `sHeadLightKeywords` |
-| See exactly what qualifies right now | `[Debug] sDumpDataOnceNames = headgear`, then read the log |
+| See exactly what qualifies right now | `[Debug] aDumpDataOnce = ["headgear"]`, then read the log |
 | Tighten the rule to a hand-picked set | Empty `sHeadLightKeywords` and list only what you want in `sHeadLightAllowList` |

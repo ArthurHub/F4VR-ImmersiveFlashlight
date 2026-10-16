@@ -12,7 +12,7 @@ namespace ImFl::config
      * Misc config screen: a collection of global toggle settings (beam shadows, debug spheres, stowed
      * body model, headgear requirement, weapon-flashlight requirement, NPC light detection,
      * vanilla-toggle disable, more to come). Reached from the main config screen; a Back button returns to
-     * it. Each toggle persists to the INI immediately and applies live.
+     * it. Each toggle persists to the config file immediately and applies live.
      */
     class MiscScreen
     {

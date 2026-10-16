@@ -99,17 +99,17 @@ When you grip a weapon **two-handed** your offhand is on the foregrip and can't 
 
 ## Default Control Bindings
 
-All bindings use the format `<hand> <type> <button> [duration] [suppress] [+modifier]` (e.g. `offhand tap trigger`, `primary longpress A`, `none`). The three proximity gestures are grouped into per-gesture INI **sections** (each with a `sPrimaryBinding` / `sSecondaryBinding` plus its zone and haptics); the full guide is in the [framework input-binding & activation-sphere docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
+A binding is a table, `{ hand = "offhand", type = "tap", button = "trigger" }`, with an optional `duration`, `suppress` and `modifier`; `{ type = "none" }` turns a gesture off. The three proximity gestures are grouped into per-gesture config **sections** (each with a `kPrimaryBinding` / `kSecondaryBinding` plus its zone and haptics); the full guide is in the [framework input-binding & activation-sphere docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
 
-| Gesture                             | INI section → key                                                | Default                     |
+| Gesture                             | Config section → key                                             | Default                     |
 | ----------------------------------- | ---------------------------------------------------------------- | --------------------------- |
-| Grab/stow with offhand              | `[ImFl_BodyActivationSphere]` → `sPrimaryBinding`                | `offhand tap trigger`       |
-| Grab/stow with primary hand         | `[ImFl_BodyActivationSphere]` → `sSecondaryBinding`              | `primary tap trigger`       |
-| Put light on head / toggle off      | `[ImFl_HeadActivationSphere]` → `sPrimaryBinding`                | `offhand tap trigger`       |
-| Pull head light to offhand          | `[ImFl_HeadActivationSphere]` → `sSecondaryBinding`              | `offhand longpress trigger` |
-| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `sPrimaryBinding`         | `offhand tap trigger`       |
-| Pull weapon light to offhand        | `[ImFl_PrimaryHandActivationSphere]` → `sSecondaryBinding`       | `offhand longpress trigger` |
-| Toggle weapon light (two-handed)    | `[ImFl_WeaponMount]` → `sToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger`       |
+| Grab/stow with offhand              | `[ImFl_BodyActivationSphere]` → `kPrimaryBinding`                | `offhand tap trigger`       |
+| Grab/stow with primary hand         | `[ImFl_BodyActivationSphere]` → `kSecondaryBinding`              | `primary tap trigger`       |
+| Put light on head / toggle off      | `[ImFl_HeadActivationSphere]` → `kPrimaryBinding`                | `offhand tap trigger`       |
+| Pull head light to offhand          | `[ImFl_HeadActivationSphere]` → `kSecondaryBinding`              | `offhand longpress trigger` |
+| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `kPrimaryBinding`         | `offhand tap trigger`       |
+| Pull weapon light to offhand        | `[ImFl_PrimaryHandActivationSphere]` → `kSecondaryBinding`       | `offhand longpress trigger` |
+| Toggle weapon light (two-handed)    | `[ImFl_WeaponMount]` → `kToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger`       |
 
 The same `offhand tap trigger` is shared by several gestures on purpose — they apply in mutually exclusive situations (near your head vs. near your hand vs. gripping two-handed), and only the relevant one fires while suppressing the button from the game.
 
@@ -134,7 +134,7 @@ Power armor swaps the skeleton and poses the hands differently, so most spatial 
 
 Open the FRIK configuration UI (hold both thumbsticks for ~2 seconds) and select Immersive Flashlight. The UI is split into three screens:
 
-- **Main menu** — opens the beam and misc screens, opens the INI file for advanced editing, opens the wiki, or exits. Its footer shows the controller button that turns the light on and off at each location.
+- **Main menu** — opens the beam and misc screens, opens the config file for advanced editing, opens the wiki, or exits. Its footer shows the controller button that turns the light on and off at each location.
 - **Beam screen** — location toggles, beam tuning, gobo and color presets, and Save / Reset. The gobo and color buttons show the current gobo texture and beam color. With **beam tuning** on, the primary thumbstick changes intensity (up/down) and distance (left/right) and the offhand thumbstick changes spread (up/down); a panel shows the three values, highlighting the one you just changed, and the lit beam updates as you tune without the light turning off. Unsaved changes are discarded when you close it.
 - **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, NPC light detection, and the vanilla-toggle disable. Each is saved immediately and applied live.
 
@@ -152,15 +152,15 @@ Each location stores its own beam profile:
 | **Color** (RGB)         | Beam color.                                    |
 | **Gobo**                | Beam texture / pattern projected by the light. |
 
-The defaults aim for a wide, soft head lamp for tight spaces; a far-reaching, tighter hand flashlight for walking in the dark; and a tighter, "tactical" weapon beam. Tune them per mode in the beam screen or the INI.
+The defaults aim for a wide, soft head lamp for tight spaces; a far-reaching, tighter hand flashlight for walking in the dark; and a tighter, "tactical" weapon beam. Tune them per mode in the beam screen or the config file.
 
 ### Beam glow
 
-The flashlight in your hand, and a weapon's modeled lamp, show a soft glow cone coming out of the lens. It takes the beam's color, its spread follows the beam's spread, and its brightness follows the beam's intensity, updating live as you tune. Adjust it in the INI's `[ImFl_BeamGlow]` section: `fBeamGlowBaseIntensity` and `fBeamGlowIntensity` set how bright it is (both `0` hides it), and `fBeamGlowFovOffset` how much narrower than the beam it is drawn.
+The flashlight in your hand, and a weapon's modeled lamp, show a soft glow cone coming out of the lens. It takes the beam's color, its spread follows the beam's spread, and its brightness follows the beam's intensity, updating live as you tune. Adjust it in the config file's `[ImFl_BeamGlow]` section: `fBeamGlowBaseIntensity` and `fBeamGlowIntensity` set how bright it is (both `0` hides it), and `fBeamGlowFovOffset` how much narrower than the beam it is drawn.
 
 ## Restrictions
 
-Optional gameplay gates, configured on the misc screen or in the INI. When a requirement isn't met the corresponding light is turned off and its activation gesture goes inert until the requirement is met again.
+Optional gameplay gates, configured on the misc screen or in the config file. When a requirement isn't met the corresponding light is turned off and its activation gesture goes inert until the requirement is met again.
 
 ### Headgear requirement (head light)
 
@@ -168,7 +168,7 @@ Optional gameplay gates, configured on the misc screen or in the INI. When a req
 
 - `0` **None** — no restriction.
 - `1` **Any headgear** — any item worn in the head slot is enough.
-- `2` **Immersive** — only "light-capable" headgear (helmets / hard hats, not soft hats), decided by a keyword set plus allow/deny lists you can extend in the INI.
+- `2` **Immersive** — only "light-capable" headgear (helmets / hard hats, not soft hats), decided by a keyword set plus allow/deny lists you can extend in the config file.
 
 See **[Headgear Requirement](headgear-restriction.md)** for the full rule, how to make your own helmets count, and the in-game dump that lists what qualifies.
 
@@ -190,7 +190,7 @@ See **[Weapon Flashlight Requirement](weapon-mount-restriction.md)** for what de
 
 Vanilla ignores flashlights for stealth entirely — the beam points away from you, so the game never counts it against you. This mod makes it count, and makes it **directional**: carrying a lit flashlight makes you somewhat visible, putting the beam on someone makes you much more so, and a bright beam in a hostile's face at close range means they've seen you. Line of sight is checked, so nothing is alerted through a wall.
 
-It's on by default and switched on the misc config screen; the tuning lives in the INI (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
+It's on by default and switched on the misc config screen; the tuning lives in the config file (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
 
 ## Vanilla Flashlight Toggle
 
@@ -198,13 +198,13 @@ It's on by default and switched on the misc config screen; the tuning lives in t
 
 ## Pip-Boy
 
-The flashlight stays on while you use the Pip-Boy. The vanilla game turns it off while the Pip-Boy is open (except in power armor) and back on when it closes; set `bKeepFlashlightOnInPipboy = false` in the INI to get that back.
+The flashlight stays on while you use the Pip-Boy. The vanilla game turns it off while the Pip-Boy is open (except in power armor) and back on when it closes; set `bKeepFlashlightOnInPipboy = false` in the config file to get that back.
 
 ## Advanced Configuration
 
-Many settings beyond the in-game UI live in the INI, and any change is live-loaded into the running game so you can tune and immediately see the effect.
+Many settings beyond the in-game UI live in the config file, and any change is live-loaded into the running game so you can tune and immediately see the effect.
 
-Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.ini`
+Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
 
 Logs are written to `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`.
 

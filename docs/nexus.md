@@ -14,7 +14,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [\*][size=3]Wear it on your head: Bring your off-hand close to your head until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Move it to your hand or weapon: Bring your off-hand close to your primary hand (or to the flashlight on your gun) until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Two-handed weapons: Tap the off-hand trigger while gripping the weapon to toggle the weapon-mounted light.[/size][*]
-[\*][size=3]Classic toggle: The vanilla long-press of the off-hand trigger still turns the flashlight on/off. Turn it off in the config (misc screen, or [b]bDisableVanillaFlashlightToggle[/b] in the INI) so only the physical gestures control the light, for full immersion.[/size][*]
+[\*][size=3]Classic toggle: The vanilla long-press of the off-hand trigger still turns the flashlight on/off. Turn it off in the config (misc screen, or [b]bDisableVanillaFlashlightToggle[/b] in the config file) so only the physical gestures control the light, for full immersion.[/size][*]
 [\*][size=3]Configure settings: Open via FRIK configuration UI (hold both thumbsticks for 2 seconds).[/size][*]
 [\*][size=3]Every gesture and binding is configurable, and any gesture can be disabled.[/size][*]
 [\*][size=3][b]Important: [/b]Set game "Shadows Quality" to "HIGH" to prevent corrupted shadows ([url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md#visuals]details and how to disable shadows[/url]﻿).[/size][*]
@@ -69,15 +69,15 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [/list]
 
 [size=4][b]Advanced Configuration[/b][/size]
-Most configuration is stored in "ImmersiveFlashlightVR.ini" file.
+Most configuration is stored in the "ImmersiveFlashlightVR.toml" file.
 Much more than can be configured via in-game configuration interface.
-Any changes made in the INI file will be live loaded into the running game to experience the effects.
+Any changes made in the config file will be live loaded into the running game to experience the effects.
 Location:
 [code]%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR[/code]
 
 [size=4][b]Documentation[/b][/size]
 [list]
-[\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/README.md]Usage and Configuration Guide[/url]﻿ — full gesture reference, default bindings, beam settings, restrictions, and advanced INI configuration.[/size][*]
+[\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/README.md]Usage and Configuration Guide[/url]﻿ — full gesture reference, default bindings, beam settings, restrictions, and advanced configuration.[/size][*]
 [\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md]FAQ and Troubleshooting[/url]﻿[/size][*]
 [\*][size=3][url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/changelog.md]Changelog[/url]﻿[/size][*]
 [/list]

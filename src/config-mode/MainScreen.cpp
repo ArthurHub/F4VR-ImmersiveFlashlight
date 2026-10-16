@@ -194,14 +194,14 @@ namespace ImFl::config
     }
 
     /**
-     * Open the config INI in the default editor for advanced hand-editing; the config hot-reload applies
+     * Open the config file in the default editor for advanced hand-editing; the config hot-reload applies
      * saved changes live.
      */
-    void MainScreen::openIniFileForAdvancedEditing()
+    void MainScreen::openConfigFileForAdvancedEditing()
     {
-        logger::info("Open config INI for advanced editing: {}", INI_PATH);
-        ShellExecuteA(nullptr, "open", "notepad.exe", INI_PATH.c_str(), nullptr, SHELL_SW_SHOWNORMAL);
-        f4vr::showNotification("Config INI opened in Notepad on your PC.\nSwitch to your monitor to edit advanced settings.\nSaved changes apply live.");
+        logger::info("Open config file for advanced editing: {}", CONFIG_PATH);
+        ShellExecuteA(nullptr, "open", "notepad.exe", CONFIG_PATH.c_str(), nullptr, SHELL_SW_SHOWNORMAL);
+        f4vr::showNotification("Config file opened in Notepad on your PC.\nSwitch to your monitor to edit advanced settings.\nSaved changes apply live.");
     }
 
     /**
@@ -239,8 +239,8 @@ namespace ImFl::config
         const auto advancedConfigBtn = std::make_shared<UIButtonPanel>("ImFl_AdvancedConfigButton");
         advancedConfigBtn->setTopText("OPEN");
         advancedConfigBtn->setImage("f4cf\\vrui\\advanced-config.DDS");
-        advancedConfigBtn->setBottomText("INI CONFIG");
-        advancedConfigBtn->setOnPressHandler([](UIButtonPanel*) { openIniFileForAdvancedEditing(); });
+        advancedConfigBtn->setBottomText("CONFIG FILE");
+        advancedConfigBtn->setOnPressHandler([](UIButtonPanel*) { openConfigFileForAdvancedEditing(); });
 
         const auto wikiBtn = std::make_shared<UIButtonPanel>("ImFl_HelpWikiButton");
         wikiBtn->setTopText("OPEN");
