@@ -193,23 +193,41 @@ fFlashlightGripHysteresisDegrees = 60.0
 #   0 = None       - no restriction (the head is always available)
 #   1 = AnyHeadGear- any headgear in the head slot is enough
 #   2 = Immersive  - only "light-capable" headgear: helmets/hard hats, not soft hats. The rule is:
-#                    !inDenyList && ( inAllowList || hasAnyKeyword(sHeadLightKeywords) )
+#                    !inDenyList && ( inAllowList || hasAnyKeyword(aHeadLightKeywords) )
 iFlashlightHeadgearRequirement = 2
 
-# Immersive rule, keyword set: comma-separated base-game keyword EDITOR IDs (keywords keep their editor
+# Immersive rule, keyword set: base-game keyword EDITOR IDs (keywords keep their editor
 # IDs at runtime). Any headgear carrying one of these counts as light-capable.
-sHeadLightKeywords = "ArmorBodyPartHead, ObjectTypeArmor, ArmorTypePower, PowerArmorHelmetLightOverride"
+aHeadLightKeywords = ["ArmorBodyPartHead", "ObjectTypeArmor", "ArmorTypePower", "PowerArmorHelmetLightOverride"]
 
-# Immersive rule, force-INCLUDE list: light-worthy headgear the keywords miss. Comma-separated
+# Immersive rule, force-INCLUDE list: light-worthy headgear the keywords miss, as
 # "localFormID|plugin" entries (local FormID as shown in xEdit, hex, no load-order prefix). Resolved
 # load-order-independently, so entries for plugins you don't have are simply ignored.
-# Add your own, e.g. SS2 security/gas-mask helms: 0026D8|SS2Extended.esp, 0026DA|SS2Extended.esp, 004544|SS2Extended.esp
-sHeadLightAllowList = "0F6D86|Fallout4.esm, 0CEAC4|Fallout4.esm, 115AEB|Fallout4.esm, 04FA89|DLCCoast.esm, 0540FC|DLCCoast.esm, 0296B8|DLCNukaWorld.esm, 029C0D|DLCNukaWorld.esm, 02770C|DLCNukaWorld.esm, 02770D|DLCNukaWorld.esm, 02770E|DLCNukaWorld.esm, 027419|DLCNukaWorld.esm, 02740F|DLCNukaWorld.esm, 03B557|DLCNukaWorld.esm, 026BB0|DLCNukaWorld.esm, 026BB5|DLCNukaWorld.esm, 026BB6|DLCNukaWorld.esm, 026BB7|DLCNukaWorld.esm"
+# Add your own, e.g. SS2 security/gas-mask helms: "0026D8|SS2Extended.esp", "0026DA|SS2Extended.esp", "004544|SS2Extended.esp"
+aHeadLightAllowList = [
+    "0F6D86|Fallout4.esm",
+    "0CEAC4|Fallout4.esm",
+    "115AEB|Fallout4.esm",
+    "04FA89|DLCCoast.esm",
+    "0540FC|DLCCoast.esm",
+    "0296B8|DLCNukaWorld.esm",
+    "029C0D|DLCNukaWorld.esm",
+    "02770C|DLCNukaWorld.esm",
+    "02770D|DLCNukaWorld.esm",
+    "02770E|DLCNukaWorld.esm",
+    "027419|DLCNukaWorld.esm",
+    "02740F|DLCNukaWorld.esm",
+    "03B557|DLCNukaWorld.esm",
+    "026BB0|DLCNukaWorld.esm",
+    "026BB5|DLCNukaWorld.esm",
+    "026BB6|DLCNukaWorld.esm",
+    "026BB7|DLCNukaWorld.esm",
+]
 
 # Immersive rule, force-EXCLUDE list: headgear that carries a helmet keyword but where a light is silly
 # (soft hats). Same "localFormID|plugin" format; the deny list wins over keywords and the allow list.
-# Add your own, e.g. SS2 hats: 0A506D|SS2.esm, 02F990|SS2_XPAC_Chapter2.esm, 0026DD|SS2Extended.esp
-sHeadLightDenyList = "0316D4|Fallout4.esm"
+# Add your own, e.g. SS2 hats: "0A506D|SS2.esm", "02F990|SS2_XPAC_Chapter2.esm", "0026DD|SS2Extended.esp"
+aHeadLightDenyList = ["0316D4|Fallout4.esm"]
 
 
 # -------------------------------------------------------------------------------------------------
@@ -226,7 +244,7 @@ sHeadLightDenyList = "0316D4|Fallout4.esm"
 iWeaponFlashlightMeshRequired = 2
 
 # Plugins that turn the requirement on under AutoDetect (mode 2).
-sWeaponFlashlightAutoDetectPlugins = "VRCP_DOOMMerged.esp, TacticalMods.esp"
+aWeaponFlashlightAutoDetectPlugins = ["VRCP_DOOMMerged.esp", "TacticalMods.esp"]
 
 # Move the weapon beam onto the modeled flashlight mesh instead of the generic barrel position.
 bWeaponFlashlightMountBeamToMesh = true
@@ -235,8 +253,8 @@ bWeaponFlashlightMountBeamToMesh = true
 # wand) so the move/toggle gesture is reached by bringing the offhand to the gun's lamp.
 bWeaponFlashlightAnchorPrimaryHandSphereToMesh = true
 
-# Flashlight mesh node names to search for under the equipped weapon, comma-separated, in priority order.
-sWeaponFlashlightMeshNodes = "AddOnNode"
+# Flashlight mesh node names to search for under the equipped weapon, in priority order.
+aWeaponFlashlightMeshNodes = ["AddOnNode"]
 
 # Light-node offset relative to the found flashlight mesh node, when the beam is rooted there.
 tWeaponFlashlightMountTransform = { pos = [0.0, 0.0, 0.0], scale = 1.0 }

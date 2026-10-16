@@ -81,18 +81,18 @@ offhand.
 The Immersive rule is driven by three lists in the `[ImFl_HeadgearRestriction]` config section. They are
 live-reloaded, so you can edit and save the file while the game runs and see the result immediately.
 
-**`sHeadLightKeywords`** — comma-separated keyword **editor IDs** (the names you see in xEdit or the Creation
+**`aHeadLightKeywords`** — an array of keyword **editor IDs** (the names you see in xEdit or the Creation
 Kit, e.g. `ArmorTypePower`). Any headgear carrying one of them is light-capable. This is the broad stroke:
 one keyword can qualify a whole mod's worth of helmets at once.
 
-**`sHeadLightAllowList`** — headgear the keywords miss. Comma-separated `localFormID|plugin` entries, where
+**`aHeadLightAllowList`** — headgear the keywords miss. An array of `"localFormID|plugin"` entries, where
 the local FormID is the hex ID as shown in xEdit **without** the load-order prefix:
 
 ```
-sHeadLightAllowList = 0F6D86|Fallout4.esm, 0026D8|SS2Extended.esp
+aHeadLightAllowList = ["0F6D86|Fallout4.esm", "0026D8|SS2Extended.esp"]
 ```
 
-**`sHeadLightDenyList`** — the opposite: headgear that carries a qualifying keyword but where a mounted light
+**`aHeadLightDenyList`** — the opposite: headgear that carries a qualifying keyword but where a mounted light
 would be silly. Same format, and it wins over everything else.
 
 Both lists are resolved load-order-independently, and **entries for plugins you don't have are simply
@@ -136,9 +136,9 @@ config file location.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `iFlashlightHeadgearRequirement` | `2` (Immersive) | `0` none, `1` any headgear, `2` light-capable headgear only. |
-| `sHeadLightKeywords` | base-game head/armor/power keywords | Keyword **editor IDs**; any headgear carrying one is light-capable. |
-| `sHeadLightAllowList` | curated base-game + DLC helmets | Force-include, as `localFormID\|plugin` pairs. |
-| `sHeadLightDenyList` | one base-game soft hat | Force-exclude. Wins over the allow list and the keywords. |
+| `aHeadLightKeywords` | base-game head/armor/power keywords | Keyword **editor IDs**; any headgear carrying one is light-capable. |
+| `aHeadLightAllowList` | curated base-game + DLC helmets | Force-include, as `localFormID\|plugin` pairs. |
+| `aHeadLightDenyList` | one base-game soft hat | Force-exclude. Wins over the allow list and the keywords. |
 
 ## Common adjustments
 
@@ -146,8 +146,8 @@ config file location.
 | --- | --- |
 | Turn the restriction off | `iFlashlightHeadgearRequirement = 0` |
 | Any hat is enough | `iFlashlightHeadgearRequirement = 1` |
-| Make one more helmet eligible | Add its `localFormID\|plugin` to `sHeadLightAllowList` |
-| Stop a soft hat from qualifying | Add it to `sHeadLightDenyList` |
-| Qualify a whole mod's helmets at once | Add that mod's helmet keyword editor ID to `sHeadLightKeywords` |
+| Make one more helmet eligible | Add its `localFormID\|plugin` to `aHeadLightAllowList` |
+| Stop a soft hat from qualifying | Add it to `aHeadLightDenyList` |
+| Qualify a whole mod's helmets at once | Add that mod's helmet keyword editor ID to `aHeadLightKeywords` |
 | See exactly what qualifies right now | `[Debug] aDumpDataOnce = ["headgear"]`, then read the log |
-| Tighten the rule to a hand-picked set | Empty `sHeadLightKeywords` and list only what you want in `sHeadLightAllowList` |
+| Tighten the rule to a hand-picked set | Empty `aHeadLightKeywords` and list only what you want in `aHeadLightAllowList` |

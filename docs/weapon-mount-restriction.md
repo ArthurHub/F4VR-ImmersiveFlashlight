@@ -45,12 +45,12 @@ It applies the same in and out of power armor — the gun is the gun either way.
 
 **AutoDetect** is the default because the requirement only makes sense if you can actually satisfy it.
 Without a weapon pack that models flashlights, *no* gun would ever qualify and the weapon mount would just
-stop working. So it checks your load order for the plugins listed in `sWeaponFlashlightAutoDetectPlugins`
+stop working. So it checks your load order for the plugins listed in `aWeaponFlashlightAutoDetectPlugins`
 (`VRCP_DOOMMerged.esp`, `TacticalMods.esp` by default) and turns the requirement on only if one is present.
 Toggling the setting on the misc screen tells you which way it resolved.
 
 **Finding the lamp.** Whenever your equipped weapon changes — drawing, holstering, or swapping — the mod
-searches the weapon's 3D model for the first node named in `sWeaponFlashlightMeshNodes` (list order is
+searches the weapon's 3D model for the first node named in `aWeaponFlashlightMeshNodes` (list order is
 priority) and remembers what it found. The node has to be present *and* visible, so a lamp that's modeled in
 the mesh but not fitted on your particular gun doesn't count.
 
@@ -92,11 +92,11 @@ With the requirement on and no lamp detected:
 ## Making it work with your weapon mods
 
 The node names are the whole mechanism, and node names inside a NIF aren't a standard — they're whatever the
-weapon's author called them. `sWeaponFlashlightMeshNodes` ships with a single entry, `AddOnNode`, which
+weapon's author called them. `aWeaponFlashlightMeshNodes` ships with a single entry, `AddOnNode`, which
 covers the supported packs. For anything else you'll need to add the right name.
 
 To find it, open the weapon's mesh in NifSkope and look for the node the flashlight model hangs from. Add its
-name to the list (comma-separated, first match wins), save the config file, then holster and re-draw to force a
+name to the list (`["AddOnNode", "YourNode"]`, first match wins), save the config file, then holster and re-draw to force a
 re-scan.
 
 The log tells you what happened. At
@@ -114,7 +114,7 @@ The log tells you what happened. At
   flashlight fitted, or its node isn't in your list. This one is logged at debug level, so set
   `iLogLevel = 1` in the `[Debug]` section to see it.
 
-Edits to `sWeaponFlashlightAutoDetectPlugins` are picked up when you save the config file, so you can add a weapon
+Edits to `aWeaponFlashlightAutoDetectPlugins` are picked up when you save the config file, so you can add a weapon
 pack's plugin and see AutoDetect flip without restarting the game.
 
 Note that the gate and the beam rooting are the same feature: detection only runs while the requirement is
@@ -130,8 +130,8 @@ location.
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `iWeaponFlashlightMeshRequired` | `2` (AutoDetect) | `0` disabled, `1` always require a lamp, `2` require one only if a supported weapon mod is installed. |
-| `sWeaponFlashlightAutoDetectPlugins` | `VRCP_DOOMMerged.esp, TacticalMods.esp` | Plugins that switch AutoDetect on. Add your own weapon packs here. |
-| `sWeaponFlashlightMeshNodes` | `AddOnNode` | Node names searched for on the weapon, in priority order. |
+| `aWeaponFlashlightAutoDetectPlugins` | `["VRCP_DOOMMerged.esp", "TacticalMods.esp"]` | Plugins that switch AutoDetect on. Add your own weapon packs here. |
+| `aWeaponFlashlightMeshNodes` | `["AddOnNode"]` | Node names searched for on the weapon, in priority order. |
 | `bWeaponFlashlightMountBeamToMesh` | `true` | Root the beam at the detected lamp instead of the generic barrel offset. |
 | `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` | `true` | Move the offhand-to-primary-hand gesture zone onto the lamp. Needs beam rooting on. |
 | `tWeaponFlashlightMountTransform` | `{ pos = [0.0, 0.0, 0.0], scale = 1.0 }` | Light offset from the lamp when rooted there. Live-reloaded, so you can tune it in-game. |
@@ -143,8 +143,8 @@ location.
 | --- | --- |
 | Every gun gets a weapon light | `iWeaponFlashlightMeshRequired = 0` |
 | Only guns with a fitted flashlight | `iWeaponFlashlightMeshRequired = 1` |
-| Support another weapon pack's lamp | Add its node name to `sWeaponFlashlightMeshNodes` |
-| Auto-enable for another weapon pack | Add its plugin to `sWeaponFlashlightAutoDetectPlugins` |
+| Support another weapon pack's lamp | Add its node name to `aWeaponFlashlightMeshNodes` |
+| Auto-enable for another weapon pack | Add its plugin to `aWeaponFlashlightAutoDetectPlugins` |
 | Beam comes out at the wrong spot | Tune `tWeaponFlashlightMountTransform` while the light is on |
 | Keep the gesture on your hand, not the gun | `bWeaponFlashlightAnchorPrimaryHandSphereToMesh = false` |
 | Keep the gate, drop the beam rooting | `bWeaponFlashlightMountBeamToMesh = false` |

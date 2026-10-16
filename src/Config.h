@@ -362,6 +362,7 @@ namespace ImFl
 
     private:
         static void migrateBeamColorsToTables(const toml::table& old, common::TomlEditor& latest);
+        static void migrateCommaListsToArrays(const toml::table& old, common::TomlEditor& latest);
 
         // Set by every loadConfigInternal(), which runs on the file watcher's thread for a hot-reload.
         std::atomic<bool> _valuesReloaded = false;

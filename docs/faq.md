@@ -79,7 +79,7 @@ A two-handed grip occupies your offhand, so a light held there has to go somewhe
   <summary>My gun has a flashlight attachment but the mod doesn't see it</summary>
 &#10240;
 
-The weapon is scanned only when it changes, so **holster and re-draw** first — that's usually all it takes. If it still isn't recognised, the mod is looking for node names it doesn't know: open the weapon in NifSkope, find the node the lamp hangs from, and add its name to `sWeaponFlashlightMeshNodes`. The log records the scan result either way. See [Making it work with your weapon mods](weapon-mount-restriction.md#making-it-work-with-your-weapon-mods).
+The weapon is scanned only when it changes, so **holster and re-draw** first — that's usually all it takes. If it still isn't recognised, the mod is looking for node names it doesn't know: open the weapon in NifSkope, find the node the lamp hangs from, and add its name to `aWeaponFlashlightMeshNodes`. The log records the scan result either way. See [Making it work with your weapon mods](weapon-mount-restriction.md#making-it-work-with-your-weapon-mods).
 
 </details>
 
@@ -202,6 +202,6 @@ The full settings reference is in the [Usage and Configuration Guide](README.md#
   <summary>My helmet should count as light-capable but doesn't</summary>
 &#10240;
 
-The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `aDumpDataOnce = ["headgear"]` in the config file's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `sHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `sHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
+The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `aDumpDataOnce = ["headgear"]` in the config file's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `aHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `aHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
 
 </details>

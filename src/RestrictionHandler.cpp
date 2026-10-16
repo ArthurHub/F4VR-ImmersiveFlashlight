@@ -279,7 +279,7 @@ namespace ImFl
     /**
      * Search the equipped weapon 3D for the first configured, visible flashlight mesh node (config order is
      * priority). Returns nullptr when the weapon node isn't visible or no configured node is present and
-     * visible. The node names are user config (sWeaponFlashlightMeshNodes) — NIF names aren't contractual.
+     * visible. The node names are user config (aWeaponFlashlightMeshNodes) — NIF names aren't contractual.
      */
     RE::NiAVObject* RestrictionHandler::findWeaponFlashlightNode(RE::NiAVObject* weaponNode)
     {

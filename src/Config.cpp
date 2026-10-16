@@ -35,7 +35,7 @@ namespace
     constexpr const char* SECTION_NPC_DETECTION = "ImFl_NpcDetection";
 
     /**
-     * Split a comma-separated config value into trimmed, non-empty tokens.
+     * Split a list as the INI had it, comma-separated text, into trimmed, non-empty items.
      */
     std::vector<std::string> parseCommaList(const std::string& raw)
     {
@@ -52,14 +52,14 @@ namespace
     }
 
     /**
-     * Parse a comma-separated list of "localFormID|plugin" entries into (local FormID, plugin) pairs.
+     * Parse "localFormID|plugin" entries into (local FormID, plugin) pairs.
      * The FormID is the local id as shown in xEdit (hex, with or without "0x", load-order prefix dropped).
      * Malformed entries (missing '|' or unparsable id) are skipped with a warning.
      */
-    std::vector<std::pair<std::uint32_t, std::string>> parseFormPluginList(const std::string& raw)
+    std::vector<std::pair<std::uint32_t, std::string>> parseFormPluginList(const std::vector<std::string>& entries)
     {
         std::vector<std::pair<std::uint32_t, std::string>> out;
-        for (const auto& entry : parseCommaList(raw)) {
+        for (const auto& entry : entries) {
             const auto pipe = entry.find('|');
             if (pipe == std::string::npos) {
                 logger::warn("Ignoring malformed form list entry (expected 'formID|plugin'): '{}'", entry);
@@ -468,15 +468,15 @@ namespace ImFl
         flashlightGripHysteresisDegrees = config[SECTION_HAND_MOUNT]["fFlashlightGripHysteresisDegrees"].value_or(30.0f);
 
         flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(config[SECTION_HEADGEAR_RESTRICTION]["iFlashlightHeadgearRequirement"].value_or(0));
-        headLightKeywordNames = parseCommaList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightKeywords"].value_or(std::string()));
-        headLightAllowList = parseFormPluginList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightAllowList"].value_or(std::string()));
-        headLightDenyList = parseFormPluginList(config[SECTION_HEADGEAR_RESTRICTION]["sHeadLightDenyList"].value_or(std::string()));
+        headLightKeywordNames = getStringListValue(config, SECTION_HEADGEAR_RESTRICTION, "aHeadLightKeywords", {});
+        headLightAllowList = parseFormPluginList(getStringListValue(config, SECTION_HEADGEAR_RESTRICTION, "aHeadLightAllowList", {}));
+        headLightDenyList = parseFormPluginList(getStringListValue(config, SECTION_HEADGEAR_RESTRICTION, "aHeadLightDenyList", {}));
 
         weaponFlashlightMeshRequirement = static_cast<FlashlightWeaponMeshRequirement>(config[SECTION_WEAPON_MOUNT]["iWeaponFlashlightMeshRequired"].value_or(0));
-        weaponFlashlightAutoDetectPlugins = parseCommaList(config[SECTION_WEAPON_MOUNT]["sWeaponFlashlightAutoDetectPlugins"].value_or(std::string()));
+        weaponFlashlightAutoDetectPlugins = getStringListValue(config, SECTION_WEAPON_MOUNT, "aWeaponFlashlightAutoDetectPlugins", {});
         weaponFlashlightMountBeamToMesh = config[SECTION_WEAPON_MOUNT]["bWeaponFlashlightMountBeamToMesh"].value_or(true);
         weaponFlashlightAnchorPrimaryHandSphereToMesh = config[SECTION_WEAPON_MOUNT]["bWeaponFlashlightAnchorPrimaryHandSphereToMesh"].value_or(true);
-        weaponFlashlightMeshNodes = parseCommaList(config[SECTION_WEAPON_MOUNT]["sWeaponFlashlightMeshNodes"].value_or(std::string()));
+        weaponFlashlightMeshNodes = getStringListValue(config, SECTION_WEAPON_MOUNT, "aWeaponFlashlightMeshNodes", {});
         weaponFlashlightMountTransform =
             getTransformValue(config, SECTION_WEAPON_MOUNT, "tWeaponFlashlightMountTransform", common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 90.0f, 0.0f, -90.0f));
 
@@ -563,12 +563,46 @@ namespace ImFl
      * with the player's values set in it.
      * - Version 1 (from the INI, imported as version 0): each beam color is one table key,
      *   cFlashlight<location>Color = { rgb = [r, g, b] }, in place of the INI's three integer keys
-     *   iFlashlight<location>ColorRed / Green / Blue.
+     *   iFlashlight<location>ColorRed / Green / Blue; and each list is an array (aHeadLightKeywords, ...) in place of
+     *   the INI's comma-separated text (sHeadLightKeywords, ...).
      */
     void Config::updateConfigToLatestVersionCustom(const int currentVersion, int, const toml::table& old, common::TomlEditor& latest) const
     {
         if (currentVersion < 1) {
             migrateBeamColorsToTables(old, latest);
+            migrateCommaListsToArrays(old, latest);
+        }
+    }
+
+    /**
+     * Move each list from the INI's comma-separated text into its array. The INI import matches the INI's key
+     * (sHeadLightKeywords) to the array's (aHeadLightKeywords) by its other type prefix, but can't read the text as an
+     * array, so it writes the text under the array's name, which the generic migration leaves, as its type differs.
+     */
+    void Config::migrateCommaListsToArrays(const toml::table& old, common::TomlEditor& latest)
+    {
+        constexpr std::pair<const char*, const char*> LISTS[] = {
+            { SECTION_HEADGEAR_RESTRICTION, "aHeadLightKeywords" },
+            { SECTION_HEADGEAR_RESTRICTION, "aHeadLightAllowList" },
+            { SECTION_HEADGEAR_RESTRICTION, "aHeadLightDenyList" },
+            { SECTION_WEAPON_MOUNT, "aWeaponFlashlightAutoDetectPlugins" },
+            { SECTION_WEAPON_MOUNT, "aWeaponFlashlightMeshNodes" },
+        };
+        for (const auto& [section, key] : LISTS) {
+            const auto text = old[section][key].value<std::string>();
+            if (!text) {
+                continue;
+            }
+
+            toml::array items;
+            for (const auto& item : parseCommaList(*text)) {
+                items.push_back(item);
+            }
+            if (latest.set({ section, key }, items)) {
+                logger::info("Migrated {}.{} into an array", section, key);
+            } else {
+                logger::warn("Failed to migrate {}.{} into an array: {}", section, key, latest.error());
+            }
         }
     }
 
