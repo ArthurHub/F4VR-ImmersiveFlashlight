@@ -142,8 +142,6 @@ namespace ImFl
     {
         if (aMsg->type == 15) {
             g_imFl._config->openConfigMode();
-        } else {
-            logger::error("ImmersiveFlashlight received unknown FRIK message type: {}!", aMsg->type);
         }
     }
 }
