@@ -6,7 +6,7 @@ Guidance for Claude Code in this repository.
 
 A C++23 F4SE plugin for Fallout 4 VR that replaces the Pip-Boy flashlight. The light mounts on the head, the power-armor head, either hand or the weapon, and each mount has its own beam (intensity, radius, FOV, color, gobo).
 
-- **Gestures:** a flashlight model stowed on the chest is grabbed into a hand and put back to turn it off. The offhand near the HMD puts it on the head. The offhand near the primary hand moves it between the hands and onto the weapon.
+- **Gestures:** a flashlight model stowed on the belt is grabbed into a hand and put back to turn it off. The offhand near the HMD puts it on the head. The offhand near the primary hand moves it between the hands and onto the weapon.
 - **Optional gates:** the head light can require headgear, and the weapon light a modeled lamp on the weapon.
 - **NPCs** notice the beam.
 - **Config:** Mods Config FO4 VR edits the settings. Its Beam page opens an in-world beam tuning screen.
@@ -47,7 +47,7 @@ cmake --build --preset package  # versioned .7z of the DLL + data/mod in build/p
 | [FlashlightState](src/FlashlightState.cpp) | Static runtime state: the location, grip style and active beam values. Location switching and `refreshLightValues(mode)`. |
 | [Utils](src/Utils.cpp) | Raw light on/off, gobo cache, menu gating, the vanilla-toggle disable and the keep-on-in-Pip-Boy patch. |
 | [LiveLight](src/LiveLight.cpp) | Refreshes the live engine light in place, or re-creates it. See [pipboy-light-internals.md](docs/tech/pipboy-light-internals.md). |
-| [FlashlightMesh](src/FlashlightMesh.cpp) / [BodyFlashlightMesh](src/BodyFlashlightMesh.cpp) / [OnWeaponBeamMesh](src/OnWeaponBeamMesh.cpp) / [BeamGlowMesh](src/BeamGlowMesh.cpp) | Node lifecycles: the in-hand model (roots the light at its lens), the stowed chest model, the glow at the weapon's lamp, and the visible beam cone. |
+| [FlashlightMesh](src/FlashlightMesh.cpp) / [BodyFlashlightMesh](src/BodyFlashlightMesh.cpp) / [OnWeaponBeamMesh](src/OnWeaponBeamMesh.cpp) / [BeamGlowMesh](src/BeamGlowMesh.cpp) | Node lifecycles: the in-hand model (roots the light at its lens), the stowed belt model, the glow at the weapon's lamp, and the visible beam cone. |
 | [RestrictionHandler](src/RestrictionHandler.cpp) | The headgear and weapon-lamp gates, Pip-Boy availability, and `enforceRestrictions()` turning the light off. |
 | [WeaponGripHandler](src/WeaponGripHandler.cpp) | Which hand holds the weapon (FRIK / ROCK), ROCK's post-solve callback and trigger remap. The ROCK SDK headers in [src/api/ROCK/](src/api/ROCK/) are copied as-is. |
 | [NpcDetectionHandler](src/NpcDetectionHandler.cpp) | NPCs react to the beam. See [npc-light-detection.md](docs/tech/npc-light-detection.md). |

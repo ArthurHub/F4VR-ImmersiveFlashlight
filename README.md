@@ -5,7 +5,7 @@
 
 > A Fallout 4 VR F4SE plugin that replaces the Pip-Boy flashlight with a light you hold in either hand, wear on your head, or mount on your weapon.
 
-The flashlight is a physical object: grab it off your chest, bring it to your head, or move it onto your gun. Each mount has its own beam, every setting applies live, and NPCs notice where you point it. It is an F4SE plugin (`ImmersiveFlashlightVR.dll`) built on the [F4VR Common Framework](external/F4VR-CommonFramework).
+The flashlight is a physical object: grab it off your belt, bring it to your head, or move it onto your gun. Each mount has its own beam, every setting applies live, and NPCs notice where you point it. It is an F4SE plugin (`ImmersiveFlashlightVR.dll`) built on the [F4VR Common Framework](external/F4VR-CommonFramework).
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ The flashlight is a physical object: grab it off your chest, bring it to your he
 
 - **Five mounts:** either hand, the head, the power-armor helmet, and the weapon. A drawn ranged weapon takes the light onto the gun, and a two-handed grip moves it there from the offhand.
 - **A beam per mount:** intensity, distance, spread, color and gobo, with a glow cone at the lens that matches the beam.
-- **Gestures:** a flashlight on your chest to grab and put back, the offhand to your head for a cap lamp, and the offhand to your primary hand for the hand or the weapon.
+- **Gestures:** a flashlight on your belt to grab and put back, the offhand to your head for a cap lamp, and the offhand to your primary hand for the hand or the weapon.
 - **Optional restrictions:** the head light can need a helmet, and the weapon light a gun with a modeled flashlight.
 - **NPC light detection:** the beam makes you visible and draws NPCs, depending on where you aim.
 - **In-game settings** in Mods Config FO4 VR, with an in-world beam tuning panel. All of it applies live.
@@ -48,7 +48,7 @@ Install the [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) package 
 
 ## Usage
 
-Reach to the flashlight on your chest and tap the trigger to take it. Bring your offhand to your head to wear it, or to your primary hand to move it there or onto your weapon. Open Mods Config FO4 VR (hold both thumbsticks pressed in) for the settings. Set the game's Shadow Quality to **HIGH**.
+Reach to the flashlight on your belt and tap the trigger to take it. Bring your offhand to your head to wear it, or to your primary hand to move it there or onto your weapon. Open Mods Config FO4 VR (hold both thumbsticks pressed in) for the settings. Set the game's Shadow Quality to **HIGH**.
 
 - [Usage and Configuration Guide](docs/README.md): gestures, bindings, settings and restrictions
 - [FAQ and Troubleshooting](docs/faq.md)

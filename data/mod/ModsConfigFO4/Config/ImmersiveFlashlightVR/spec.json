@@ -32,10 +32,11 @@
       "content": [
         {
           "type": "text",
-          "text": "Immersive Flashlight puts the Pip-Boy light where you want it: on your head, in either hand, or on your weapon. Reach for it to take it, move it, or turn it on and off. Each place has its own beam."
+          "text": "A VR replacement for the Pip-Boy flashlight that you handle like a real one: grab it off your belt, hold it in either hand, bring it to your head, or mount it on your weapon. Put it back on your belt to turn it off. Each place has its own beam, and changes apply live."
         }
       ]
     },
+    { "type": "spacer" },
     {
       "type": "section",
       "text": "Help",
@@ -49,6 +50,52 @@
             "type": "OpenURL",
             "url": "https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/README.md"
           }
+        },
+        { "type": "spacer" },
+        {
+          "type": "text",
+          "text": "<font color='#FFBF33'>Take it:</font> reach to the flashlight on your belt and tap the trigger. Put it back the same way to turn it off.<br><font color='#FFBF33'>On your head:</font> bring your offhand near your head until you feel a tick, then tap the trigger. Long-press to pull it back to your hand.<br><font color='#FFBF33'>Between hands and onto the weapon:</font> bring your offhand near your primary hand and tap the trigger.<br><br><font color='#FFBF33'>Auto switch:</font> A light in your primary hand moves onto a drawn gun and turns off for melee. A light in your offhand moves onto the gun while you grip it two-handed. Each place keeps its own beam, set on the Beam page.<br><br><font color='#FFBF33'>Requirements:</font> by default the head light needs a helmet or hard hat, and with some weapon mods a gun needs a modeled lamp to take the light. Both are on the General page.<br><br><font color='#FFBF33'>Enemies see your beam:</font> hostile NPCs in the beam, or near the spot it lights, come to look.",
+          "html": true
+        }
+      ]
+    },
+    { "type": "spacer" },
+    {
+      "type": "section",
+      "text": "Developer",
+      "isCollapsible": true,
+      "collapsed": true,
+      "content": [
+        {
+          "type": "stepper",
+          "valueType": "int",
+          "text": "Log level",
+          "help": "How much the mod writes to its log.",
+          "default": 2,
+          "valueOptions": {
+            "options": [
+              { "value": 2, "text": "Info", "help": "The basic log." },
+              { "value": 1, "text": "Debug", "help": "More logs, to find a problem." },
+              { "value": 0, "text": "Trace", "help": "A lot of logs, every frame. Slows the game." }
+            ]
+          },
+          "storage": { "path": ["Debug", "iLogLevel"] }
+        },
+        {
+          "type": "switcher",
+          "valueType": "bool",
+          "text": "Debug draw",
+          "help": "Draws the mod's debug overlay in the world: what the NPCs around you see of the beam.",
+          "default": false,
+          "storage": { "path": ["Debug", "bDebugDrawEnabled"] }
+        },
+        {
+          "type": "switcher",
+          "valueType": "bool",
+          "text": "VR UI dev layout",
+          "help": "Tunes the placement of the in-world UI through a dev layout file while the game runs.",
+          "default": false,
+          "storage": { "path": ["Debug", "bVRUIDevLayout"] }
         }
       ]
     }
@@ -968,14 +1015,6 @@
               "valueOptions": { "min": 0.0, "max": 5000.0, "step": 100.0 },
               "enabledWhen": { "setting": "npcLightLevel", "equals": true },
               "storage": { "path": ["ImFl_NpcDetection", "fNpcDetectionLightLevelDecayMs"] }
-            },
-            {
-              "type": "textinput",
-              "valueType": "string",
-              "text": "Line of sight filter",
-              "help": "The collision filter, in hex, of the check that the beam reaches someone. The game's own item picker uses 02420028.",
-              "default": "02420028",
-              "storage": { "path": ["ImFl_NpcDetection", "sNpcDetectionLosCollisionFilter"] }
             }
           ]
         }

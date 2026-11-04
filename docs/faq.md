@@ -26,12 +26,12 @@ See [Settings](README.md#settings).
 </details>
 
 <details>
-  <summary>The gestures do nothing, and there's no flashlight on my chest</summary>
+  <summary>The gestures do nothing, and there's no flashlight on my belt</summary>
 &#10240;
 
 The mod waits until you've picked up the **Pip-Boy**. Before that the game only has the vanilla wrist light, which the mod can't move. Once the Pip-Boy is on your wrist, or you're in power armor, everything switches on.
 
-The gestures also pause while a menu that takes the controllers is open (workbench, container, terminal, dialogue). If the chest flashlight is missing with the Pip-Boy on, check **Grab flashlight from the body** on the General page.
+The gestures also pause while a menu that takes the controllers is open (workbench, container, terminal, dialogue). If the belt flashlight is missing with the Pip-Boy on, check **Grab flashlight from the body** on the General page.
 
 </details>
 
@@ -39,7 +39,7 @@ The gestures also pause while a menu that takes the controllers is open (workben
   <summary>The flashlight won't turn on, or my old flashlight button does nothing</summary>
 &#10240;
 
-The vanilla long-press of the offhand trigger toggles the light by default. If it does nothing, **Disable the game's flashlight toggle** is on (General page). You can always turn the light on with a gesture: grab it off your chest, or use the head or hand gesture. See [Gestures](README.md#gestures).
+The vanilla long-press of the offhand trigger toggles the light by default. If it does nothing, **Disable the game's flashlight toggle** is on (General page). You can always turn the light on with a gesture: grab it off your belt, or use the head or hand gesture. See [Gestures](README.md#gestures).
 
 If it turns on but not where you expect, a restriction may be blocking that location. See [Head and Weapon Light](#head-and-weapon-light).
 
@@ -122,7 +122,7 @@ They only render well with the game's **Shadow Quality** on **HIGH**. The Genera
 </details>
 
 <details>
-  <summary>How do I hide the icon near the flashlight on my chest?</summary>
+  <summary>How do I hide the icon near the flashlight on my belt?</summary>
 &#10240;
 
 It marks the grab zone, and shows only while a hand is inside it. On the Gestures page, set **Body grab**'s **Show icon** to Never, or make it smaller with **Icon size**. The grab works the same, and the haptic tick still marks the zone. If a sphere shows too, turn off **Show all activation spheres**.

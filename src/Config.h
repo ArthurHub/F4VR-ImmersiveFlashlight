@@ -262,7 +262,7 @@ namespace ImFl
         RE::NiTransform flashlightBodyTransform{};
         RE::NiTransform flashlightBodyTransformPA{};
 
-        // Body grab activation sphere (Flashlight::checkBodyGrab): reach a hand into the chest-stowed model's
+        // Body grab activation sphere (Flashlight::checkBodyGrab): reach a hand into the belt-stowed model's
         // grab zone and fire its binding to take/return the light. `primary` is the offhand grab, `secondary`
         // the primary-hand grab. `zone` is the grab-sphere transform (offset from the stowed model,
         // auto-mirrored when left-handed); `zonePA` is its optional power-armor variant (selected via

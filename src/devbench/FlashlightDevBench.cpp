@@ -396,7 +396,7 @@ namespace ImFl::devbench
     {
         f4cf::devbench::setToolDescription(
             "Immersive Flashlight VR: the VR flashlight - where the light is mounted (head, power-armor head, offhand, primary hand, weapon), each "
-            "mount's beam (fade, radius, FOV, color, gobo, shadows), the flashlight stowed on the chest and the gestures that move the light (body "
+            "mount's beam (fade, radius, FOV, color, gobo, shadows), the flashlight stowed on the belt and the gestures that move the light (body "
             "grab, offhand to head, offhand to primary hand, two-handed weapon toggle), the headgear and weapon-lamp restrictions, ROCK / FRIK "
             "weapon grips, NPCs noticing the beam, and the in-game config UI. Advanced config sections are [ImFl_*] (set/config take section)");
 

@@ -29,7 +29,7 @@ iFlashlightLocationInPA = 0
 # -------------------------------------------------------------------------------------------------
 # Beam appearance per mount location
 #
-# Controls the characteristics of the flashlight light separate for when it a head lamp, hand flashlight, or weapon attachment.
+# Controls the characteristics of the flashlight light separate for when it is a head lamp, hand flashlight, or weapon attachment.
 # The idea is to have wide and soft light when it's a head lamp for tight places and more of far seeing but tight
 # hand flashlight for walking in the dark, and more "tactical" light for weapon attachment.
 #
@@ -41,7 +41,7 @@ iFlashlightLocationInPA = 0
 # Transform tilts the light node (see the transform format at the top).
 #
 
-# Head. Default: 1.1, 2000, 90, 235, 224, 190, 7_Round_Small.DDS
+# Head. Default: 1.1, 2000, 90, 235, 224, 190, 6_Incandescent.DDS
 fFlashlightOnHeadFade = 1.1
 iFlashlightOnHeadRadius = 2000
 fFlashlightOnHeadFov = 90.0
@@ -65,7 +65,7 @@ fFlashlightInHandFov = 60.0
 cFlashlightInHandColor = { rgb = [240, 230, 225] }
 sFlashlightInHandGoboPath = 'data\Textures\ImmersiveFlashlightVR\Gobos\6_Incandescent.DDS'
 
-# On weapon. Default: 1.8, 3500, 45, 210, 255, 210, 4_F4_PA_Dim
+# On weapon. Default: 1.8, 3500, 45, 255, 255, 255, 4_F4_PA_Dim
 # The weapon-mount rules and beam position are ADVANCED - see [ImFl_WeaponMount] below.
 fFlashlightOnWeaponFade = 1.8
 iFlashlightOnWeaponRadius = 3500
@@ -373,7 +373,7 @@ fNpcDetectionLightLevelDecayMs = 1000.0
 # https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md
 #
 
-# Body grab: reach a hand into the chest-stowed model's grab zone and fire to take/return the light.
+# Body grab: reach a hand into the belt-stowed model's grab zone and fire to take/return the light.
 # kPrimaryBinding = offhand grab, kSecondaryBinding = primary-hand grab. Zone auto-mirrored when left-handed;
 # tZonePA is the power-armor variant (defaults to tZone).
 [ImFl_BodyActivationSphere]
@@ -465,6 +465,9 @@ sDebugDrawHudPlacement = "center-top-left"
 # Mark the fingertip that presses the VR UI buttons with a small sphere.
 # Without it the sphere is shown only while no hand is drawn at the controller (no FRIK).
 bVRUIShowFingerTip = false
+
+# Tune the placement of the attached VR UI through a dev layout file of its own while the game runs.
+bVRUIDevLayout = false
 
 # Internal use for versioning
 iVersion = 1

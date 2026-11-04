@@ -16,7 +16,7 @@ namespace ImFl
      *
      * Available transitions:
      *
-     * - Body grab (offhand / primary-hand button at the chest stow): grabs the light into that hand — on
+     * - Body grab (offhand / primary-hand button at the belt stow): grabs the light into that hand — on
      *   from off, or moved there from the head (and, for the offhand only, from the weapon). Firing it again
      *   while the light is already held in that hand returns it (off). The primary hand can neither grab nor
      *   return while it holds a drawn weapon. Hand-to-hand moves are not done here — use the primary-hand

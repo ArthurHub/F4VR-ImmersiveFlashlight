@@ -241,7 +241,7 @@ namespace ImFl
     }
 
     /**
-     * Body-stow grab/return for both hands against the chest-stowed model: firing a hand's grab binding
+     * Body-stow grab/return for both hands against the belt-stowed model: firing a hand's grab binding
      * returns the light (off) when it is already held in that hand, otherwise grabs it into that hand
      * (turning it on). Each binding is fed only in states where it acts — and never for the hand that holds
      * the drawn weapon — so its button is suppressed (with a one-shot entry haptic) only then. Bindings go

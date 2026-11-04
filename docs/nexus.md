@@ -4,13 +4,13 @@ A highly versatile and configurable Pip-Boy flashlight replacement mod. Physical
 
 # Full description
 
-[size=3]A VR replacement for the Pip-Boy flashlight: hold it in either hand, wear it on your head, or mount it on your weapon, each with its own beam intensity, distance, spread, color and gobo. The flashlight is a physical object: grab it off your chest, bring it to your head for a cap lamp, or move it onto your gun. Every setting is changed in game, in Mods Config FO4 VR, and applies live.[/size]
+[size=3]A VR replacement for the Pip-Boy flashlight: hold it in either hand, wear it on your head, or mount it on your weapon, each with its own beam intensity, distance, spread, color and gobo. The flashlight is a physical object: grab it off your belt, bring it to your head for a cap lamp, or move it onto your gun. Every setting is changed in game, in Mods Config FO4 VR, and applies live.[/size]
 [size=3]
 Explore the wasteland at night with a powerful, long-range flashlight for visibility at a distance, then switch to a soft, wide head-mounted beam for close-quarters exploration and looting. And watch your back, because now the raiders can see your light too.[/size]
 
 [size=4][b]Usage[/b][/size]
 [list]
-[\*][size=3]Take the flashlight: Reach your hand to the flashlight model stowed on your chest and press trigger. Put it back the same way to turn it off.[/size][*]
+[\*][size=3]Take the flashlight: Reach your hand to the flashlight model stowed on your belt and press trigger. Put it back the same way to turn it off.[/size][*]
 [\*][size=3]Wear it on your head: Bring your off-hand close to your head until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Move it to your hand or weapon: Bring your off-hand close to your primary hand (or to the flashlight on your gun) until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Two-handed weapons: Tap the off-hand trigger while gripping the weapon to toggle the weapon-mounted light.[/size][*]
@@ -44,7 +44,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [/list]
 [size=3]Immersion & Behavior:[/size]
 [list]
-[\*][size=3]A physical flashlight model stowed on your chest that you grab into your hand and put back.[/size][*]
+[\*][size=3]A physical flashlight model stowed on your belt that you grab into your hand and put back.[/size][*]
 [\*][size=3]Physical, gesture-driven switching between head, hand, and weapon locations, with haptic feedback.[/size][*]
 [\*][size=3]Two hand grip styles, forward (thumb-up) and overhand (ice-pick), detected automatically or locked to one.[/size][*]
 [\*][size=3]The flashlight stays on while the Pip-Boy is open, where vanilla turns it off.[/size][*]

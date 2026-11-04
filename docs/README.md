@@ -19,7 +19,7 @@ Install and requirements: [main README](../README.md). Problems: [FAQ](faq.md). 
 
 ## Quick Start
 
-- **Take the light:** reach a hand to the flashlight on your chest and tap the trigger. Do the same again to put it back and turn it off.
+- **Take the light:** reach a hand to the flashlight on your belt and tap the trigger. Do the same again to put it back and turn it off.
 - **Wear it on your head:** bring your offhand near your head until you feel the haptic tick, then tap the trigger.
 - **Move it to your hand or weapon:** bring your offhand near your primary hand (or the flashlight on your gun), then tap the trigger.
 - **Two-handed weapons:** tap the offhand trigger while gripping the weapon to toggle the weapon light.
@@ -37,10 +37,10 @@ Settings are edited in game with [Mods Config FO4 VR](https://www.nexusmods.com/
 
 | Page | What's there |
 | --- | --- |
-| **General** | Where the light goes in and out of power armor, shadows, keeping the light on in the Pip-Boy, the vanilla toggle, the chest flashlight, the headgear and weapon-flashlight requirements, and enemy light detection. |
+| **General** | Where the light goes in and out of power armor, shadows, keeping the light on in the Pip-Boy, the vanilla toggle, the belt flashlight, the headgear and weapon-flashlight requirements, and enemy light detection. |
 | **Beam** | Each location's intensity, distance, spread, color and gobo, and the head light's angle. The beam glow. **Tune the beams in the world** opens the in-world tuning. |
 | **Gestures** | Each gesture's zone, buttons, haptics, icon and sphere, and the two-handed weapon toggle. **Show all activation spheres** draws every zone at its true size. |
-| **Advanced** | Grip detection, the flashlight model's and the light's placement in the hand, the chest model's placement, the weapon-lamp mount, and the NPC detection tuning. |
+| **Advanced** | Grip detection, the flashlight model's and the light's placement in the hand, the belt model's placement, the weapon-lamp mount, and the NPC detection tuning. |
 
 ### Tuning the beam in the world
 
@@ -79,7 +79,7 @@ The location is remembered separately in and out of power armor.
 
 ### Power armor
 
-Power armor poses the hands differently, so the model placement, hand poses and chest model have their own power-armor values. The beams are shared, except the head, which uses the helmet lamp and ignores the headgear requirement.
+Power armor poses the hands differently, so the model placement, hand poses and belt model have their own power-armor values. The beams are shared, except the head, which uses the helmet lamp and ignores the headgear requirement.
 
 ### Weapons in the offhand (ROCK)
 
@@ -89,7 +89,7 @@ With [ROCK](https://github.com/brunocatani/ROCK) v0.9 or newer handling your wea
 - **Pistol fired from the offhand:** the light goes to your free primary hand.
 - **Rifle carried by the offhand without firing:** the light stays on the weapon, unless you put it into the free hand with a gesture.
 
-While the offhand holds the weapon, your primary hand takes over the head gesture and the chest grab. The move-to-hand gesture is off then, and so is the two-handed toggle while the offhand fires.
+While the offhand holds the weapon, your primary hand takes over the head gesture and the belt grab. The move-to-hand gesture is off then, and so is the two-handed toggle while the offhand fires.
 
 Known limitation: while ROCK fires from the left hand, the mod's primary-hand haptics are felt in the offhand.
 
@@ -99,9 +99,9 @@ Known limitation: while ROCK fires from the left hand, the mod's primary-hand ha
 
 Each gesture has a zone. A haptic tick tells you when your hand enters it, and the button is taken from the game only while the gesture can do something. Every gesture can be rebound or turned off on the Gestures page.
 
-### Chest flashlight
+### Belt flashlight
 
-The flashlight sits on your chest while the light is off, on your head or on your weapon.
+The flashlight sits on your belt while the light is off, on your head or on your weapon.
 
 - **Grab:** a hand in its zone, then a tap of the trigger, takes the light into that hand, turned on.
 - **Put back:** the same with the hand holding it turns it off.
