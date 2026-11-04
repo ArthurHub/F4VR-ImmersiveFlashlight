@@ -1,153 +1,76 @@
 # Headgear Requirement
 
-A head lamp has to clip to something. Out of power armor, the light only goes on your head while you're
-wearing headgear it could plausibly be mounted on — and it ships requiring a proper helmet or hard hat, not
-a baseball cap.
+Out of power armor, the head light only goes on while you wear headgear it could clip to. By default that means a helmet or hard hat, not a baseball cap. In power armor the helmet lamp always works.
 
-For how the light itself works see the [Usage and Configuration Guide](README.md); for install and
-requirements see the [main README](../README.md).
+How the light works: [Usage and Configuration Guide](README.md). Settings and the config file: [Settings](README.md#settings).
 
 ## Contents
 
-- [Why this exists](#why-this-exists)
-- [How it works](#how-it-works)
+- [Modes](#modes)
 - [When you're not wearing eligible headgear](#when-youre-not-wearing-eligible-headgear)
 - [Choosing what counts](#choosing-what-counts)
-- [Checking what qualifies in your load order](#checking-what-qualifies-in-your-load-order)
-- [Configuration](#configuration)
-- [Common adjustments](#common-adjustments)
+- [Checking what qualifies](#checking-what-qualifies)
+- [Settings](#settings)
 
-## Why this exists
+## Modes
 
-The head-mounted light is the most convenient mount in the mod: hands-free, always pointing where you look,
-and free to use while both hands are on a weapon. Without a gate, it's also the mount with no cost — you can
-be bare-headed in a vault suit and still have a cap lamp.
+**Require headgear for flashlight on head**, on the General page (`iFlashlightHeadgearRequirement`):
 
-The requirement puts a price on it. Wear a helmet and you get the hands-free light; take it off and the
-light goes back to your hands. It's a self-imposed rule, so it has an off switch, but it's on by default
-because "the light is attached to your helmet" is the reading that makes the head mount make sense.
-
-Power armor is exempt entirely. The helmet lamp is part of the suit, so in power armor the head light always
-works no matter how this is set.
-
-## How it works
-
-`iFlashlightHeadgearRequirement` has three settings, changed on the misc config screen or in the config file:
-
-| Mode | Meaning |
+| Option | Meaning |
 | --- | --- |
-| `0` **None** | No restriction. The head is always available. |
-| `1` **Any headgear** | Anything worn in the head slot is enough — a cap, a bandana, a helmet. |
-| `2` **Immersive** *(default)* | Only "light-capable" headgear: helmets and hard hats, not soft hats. |
+| **Not required** (`0`) | The head is always available. |
+| **Any headgear** (`1`) | Anything in the head slot: a cap, a bandana, a helmet. |
+| **Helmets only** (`2`, default) | Light-capable headgear: helmets and hard hats, not soft hats. |
 
-What you're wearing is read from the head armor slot — biped slot 30, where every hat and helmet in the game
-sits. Only armor counts, so a hat-shaped miscellaneous item won't satisfy it.
+The head slot is biped slot 30, and only armor counts. The requirement is checked every frame, so a change applies at once, and so does putting a helmet on or taking it off.
 
-The **Immersive** rule decides light-capable in this order:
-
-1. If the item is on the **deny list**, it never counts. (This is how a soft hat that happens to carry a
-   helmet keyword is excluded.)
-2. If the item is on the **allow list**, it counts.
-3. Otherwise it counts if it carries **any of the configured keywords**.
-
-Deny beats allow, allow beats keywords. All three lists ship filled in and are yours to edit — see
-[Choosing what counts](#choosing-what-counts).
-
-The requirement is checked live, every frame, so changing it (in-game or in the config file) takes effect
-immediately, and so does putting a helmet on or taking one off.
+The head light is the most convenient mount: hands-free and pointing where you look. The requirement gives it a cost, as it makes sense when the light is clipped to your helmet. Set it to **Not required** if you'd rather not have it.
 
 ## When you're not wearing eligible headgear
 
-Two things happen, both aimed at "the light can't be there" rather than "you did something wrong":
+- **The head gesture won't put the light on your head.** No haptic, and the trigger reaches the game. A light already on your head can still be turned off.
+- **A head light turns off** once the requirement stops being met. Take the helmet off and the light goes out. It doesn't move to a hand.
 
-- **The put-it-on-your-head gesture goes inert.** Bringing your offhand to your head does nothing — no
-  haptic, and the button passes straight through to the game as a normal trigger press. Turning an
-  *already* head-mounted light off with the same gesture still works, so you can never get stuck.
-- **A head-mounted light turns off** as soon as the requirement stops being met. Take your helmet off while
-  the cap lamp is on and the light goes out; it does not silently relocate to a hand.
-
-Everything else is unaffected — grabbing the light into a hand, mounting it on a weapon, and the beam
-settings all behave the same.
-
-One interaction is worth knowing: when your light is in your **offhand** and you take a **two-handed grip**
-on a weapon, the offhand is busy, so the light normally moves onto the weapon. If the
-[weapon-flashlight requirement](weapon-mount-restriction.md) is on and your gun has no lamp, it falls back
-to your **head** instead of being lost — and that fallback is then subject to *this* requirement. Bare-headed
-with a lampless gun, gripping two-handed turns the light off. Releasing the grip brings it back to your
-offhand.
+With the light in your offhand and a two-handed grip on a gun without a lamp, the light falls back to your head (see [Weapon Flashlight Requirement](weapon-mount-restriction.md#when-the-weapon-has-no-lamp)). This requirement then applies, so bare-headed the light turns off.
 
 ## Choosing what counts
 
-The Immersive rule is driven by three lists in the `[ImFl_HeadgearRestriction]` config section. They are
-live-reloaded, so you can edit and save the file while the game runs and see the result immediately.
+**Helmets only** decides in this order:
 
-**`aHeadLightKeywords`** — an array of keyword **editor IDs** (the names you see in xEdit or the Creation
-Kit, e.g. `ArmorTypePower`). Any headgear carrying one of them is light-capable. This is the broad stroke:
-one keyword can qualify a whole mod's worth of helmets at once.
+1. On the **deny list**: it never counts.
+2. On the **allow list**: it counts.
+3. Otherwise it counts if it carries **one of the keywords**.
 
-**`aHeadLightAllowList`** — headgear the keywords miss. An array of `"localFormID|plugin"` entries, where
-the local FormID is the hex ID as shown in xEdit **without** the load-order prefix:
+The three lists are in the config file's `[ImFl_HeadgearRestriction]` section, and reload as you save:
 
-```
-aHeadLightAllowList = ["0F6D86|Fallout4.esm", "0026D8|SS2Extended.esp"]
-```
+- **`aHeadLightKeywords`:** keyword editor IDs, as xEdit shows them (e.g. `ArmorTypePower`). One keyword can qualify a whole mod's helmets.
+- **`aHeadLightAllowList`:** headgear the keywords miss, as `"localFormID|plugin"`. The FormID is hex, without the load-order prefix:
 
-**`aHeadLightDenyList`** — the opposite: headgear that carries a qualifying keyword but where a mounted light
-would be silly. Same format, and it wins over everything else.
+  ```toml
+  aHeadLightAllowList = ["0F6D86|Fallout4.esm", "0026D8|SS2Extended.esp"]
+  ```
 
-Both lists are resolved load-order-independently, and **entries for plugins you don't have are simply
-skipped** — no errors, no wasted slots. That means a list can be shared or copied wholesale between setups
-regardless of which mods each person runs.
+- **`aHeadLightDenyList`:** headgear that carries a keyword but shouldn't count. It has the same form, and it wins over everything.
 
-The shipped defaults cover the base game and its DLC: a keyword set for the broad armor categories, a
-curated allow list of base-game, Far Harbor and Nuka-World helmets the keywords miss, and a deny entry for a
-base-game soft hat that sneaks through on keywords. Add your own entries rather than replacing them, unless
-you want a deliberately narrower rule.
+An entry for a plugin you don't have is skipped, so a list can be shared between setups. The defaults cover the base game and its DLC. Add to them rather than replacing them.
 
-## Checking what qualifies in your load order
+## Checking what qualifies
 
-Rather than guessing which of your helmets pass, ask the mod. In the `[Debug]` section of the config file:
+Set this in the config file's `[Debug]` section and save:
 
-```
+```toml
 aDumpDataOnce = ["headgear"]
 ```
 
-Save the file and the mod writes every head-slot armor in your load order into the log, split into two
-lists — **allowed (light-capable)** and **blocked** — using the resolved keyword/allow/deny lists exactly as
-the game is running them. It's one-shot: the token is removed after it runs, so it never fires again on its
-own.
+The log (`%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`) then lists every head-slot armor in your load order, as allowed or blocked. It uses the Helmets only rule whatever mode is selected, so you can tune the lists first. It runs once, and the entry is removed.
 
-The log is at:
-
-```
-%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log
-```
-
-The dump always applies the **Immersive** rule, whatever mode is currently selected, so you can tune the
-lists before switching to it. Copy the FormID of anything on the wrong side into the allow or deny list,
-save, and dump again.
-
-## Configuration
-
-The in-game misc screen cycles the mode; the lists are only in the config file. All keys live in the
-`[ImFl_HeadgearRestriction]` section. See [Advanced Configuration](README.md#advanced-configuration) for the
-config file location.
+## Settings
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `iFlashlightHeadgearRequirement` | `2` (Immersive) | `0` none, `1` any headgear, `2` light-capable headgear only. |
-| `aHeadLightKeywords` | base-game head/armor/power keywords | Keyword **editor IDs**; any headgear carrying one is light-capable. |
-| `aHeadLightAllowList` | curated base-game + DLC helmets | Force-include, as `localFormID\|plugin` pairs. |
-| `aHeadLightDenyList` | one base-game soft hat | Force-exclude. Wins over the allow list and the keywords. |
+| `iFlashlightHeadgearRequirement` | `2` | `0` not required, `1` any headgear, `2` helmets only. |
+| `aHeadLightKeywords` | base-game armor keywords | Keyword editor IDs that make headgear count. |
+| `aHeadLightAllowList` | base-game and DLC helmets | Always counts, as `localFormID\|plugin`. |
+| `aHeadLightDenyList` | one base-game soft hat | Never counts. Wins over the other two. |
 
-## Common adjustments
-
-| Goal | Change |
-| --- | --- |
-| Turn the restriction off | `iFlashlightHeadgearRequirement = 0` |
-| Any hat is enough | `iFlashlightHeadgearRequirement = 1` |
-| Make one more helmet eligible | Add its `localFormID\|plugin` to `aHeadLightAllowList` |
-| Stop a soft hat from qualifying | Add it to `aHeadLightDenyList` |
-| Qualify a whole mod's helmets at once | Add that mod's helmet keyword editor ID to `aHeadLightKeywords` |
-| See exactly what qualifies right now | `[Debug] aDumpDataOnce = ["headgear"]`, then read the log |
-| Tighten the rule to a hand-picked set | Empty `aHeadLightKeywords` and list only what you want in `aHeadLightAllowList` |
+To qualify a whole mod's helmets, add its helmet keyword to `aHeadLightKeywords`. To allow only a hand-picked set, empty `aHeadLightKeywords` and list the helmets in `aHeadLightAllowList`.

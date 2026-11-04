@@ -1,6 +1,6 @@
 # Development
 
-Build and contribution notes for the Immersive Flashlight VR F4SE plugin. For an overview of the components and architecture, see [CLAUDE.md](../CLAUDE.md).
+Build and contribution notes for the Immersive Flashlight VR F4SE plugin. For the components and architecture, see [CLAUDE.md](../CLAUDE.md) and [tech/architecture.md](tech/architecture.md).
 
 ## Requirements
 

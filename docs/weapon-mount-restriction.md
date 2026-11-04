@@ -1,151 +1,74 @@
 # Weapon Flashlight Requirement
 
-Mount the light on your gun only when the gun actually has a lamp modeled on it — and when it does, put the
-beam exactly where that lamp is instead of floating it off the barrel.
+The weapon light goes only on guns that carry a modeled flashlight, and the beam comes from that lamp instead of floating beside the barrel. It applies the same in and out of power armor.
 
-For how the light itself works see the [Usage and Configuration Guide](README.md); for install and
-requirements see the [main README](../README.md).
+How the light works: [Usage and Configuration Guide](README.md). Settings and the config file: [Settings](README.md#settings).
 
 ## Contents
 
-- [Why this exists](#why-this-exists)
-- [How it works](#how-it-works)
+- [Modes](#modes)
 - [What changes when a lamp is found](#what-changes-when-a-lamp-is-found)
 - [When the weapon has no lamp](#when-the-weapon-has-no-lamp)
 - [Making it work with your weapon mods](#making-it-work-with-your-weapon-mods)
-- [Configuration](#configuration)
-- [Common adjustments](#common-adjustments)
+- [Settings](#settings)
 
-## Why this exists
+## Modes
 
-Weapon mounting is a guess by default. The mod knows where your gun is, so it puts the beam at a tuned
-offset near the barrel and that reads fine for most weapons — but the light is coming from nothing. There's
-no lamp on the gun; the beam simply starts in mid-air beside it.
+**Require a flashlight on the weapon**, on the General page (`iWeaponFlashlightMeshRequired`):
 
-Several weapon packs (Tactical Weapon Mods and the merged DOOMBASED weapons pack among them) ship
-attachments that actually model a flashlight on the weapon. If you have one of those, the mod can do much better: find the
-lamp on the gun and root the beam at *it*. Now the light comes out of a real object, moves with it, and
-turning it on lights the lamp itself up.
-
-The flip side is the requirement. Once the mod knows how to find a real lamp, it can also insist on one: no
-lamp on the gun, no weapon light. Guns you've fitted with a flashlight get one, guns you haven't don't, and
-the weapon light becomes a piece of kit you attach rather than something every weapon has.
-
-It applies the same in and out of power armor — the gun is the gun either way.
-
-## How it works
-
-`iWeaponFlashlightMeshRequired` has three settings, changed on the misc config screen or in the config file:
-
-| Mode | Meaning |
+| Option | Meaning |
 | --- | --- |
-| `0` **Disabled** | No restriction. The weapon light always applies, at the generic barrel position. |
-| `1` **Enabled** | Always require a modeled flashlight on the equipped weapon. |
-| `2` **AutoDetect** *(default)* | Require it only if a supported weapon mod is in your load order. |
+| **Not required** (`0`) | Every weapon gets the light, at a general offset near the barrel. |
+| **Required** (`1`) | Only a weapon with a modeled flashlight. |
+| **Required with a weapon mod** (`2`, default) | Required only while a supported weapon mod is installed. |
 
-**AutoDetect** is the default because the requirement only makes sense if you can actually satisfy it.
-Without a weapon pack that models flashlights, *no* gun would ever qualify and the weapon mount would just
-stop working. So it checks your load order for the plugins listed in `aWeaponFlashlightAutoDetectPlugins`
-(`VRCP_DOOMMerged.esp`, `TacticalMods.esp` by default) and turns the requirement on only if one is present.
-Toggling the setting on the misc screen tells you which way it resolved.
+The default makes sense because without a pack that models flashlights, no gun could qualify. Its plugins are listed in `aWeaponFlashlightAutoDetectPlugins`, by default `VRCP_DOOMMerged.esp` and `TacticalMods.esp`. The General page says whether one was found.
 
-**Finding the lamp.** Whenever your equipped weapon changes — drawing, holstering, or swapping — the mod
-searches the weapon's 3D model for the first node named in `aWeaponFlashlightMeshNodes` (list order is
-priority) and remembers what it found. The node has to be present *and* visible, so a lamp that's modeled in
-the mesh but not fitted on your particular gun doesn't count.
+The mod finds the lamp by looking through the weapon's model for the first node named in `aWeaponFlashlightMeshNodes` (the list order is the priority). The node has to be visible, so a lamp that isn't fitted on your gun doesn't count. It looks only when the equipped weapon changes, so if a lamp is missed, **holster and draw the weapon again**.
 
-The search runs only on that weapon change, not every frame. That keeps it cheap, but it means a lamp whose
-model attaches a moment late isn't noticed until the next change — **holster and re-draw** if a gun you know
-has a flashlight isn't being recognised.
+The requirement and the lamp detection are one feature. With **Not required**, the mod doesn't look for a lamp at all, and every gun uses the general offset.
 
 ## What changes when a lamp is found
 
-Three things, all on by default:
+These are all on by default, under Weapon mount on the Advanced page:
 
-- **The beam roots at the lamp.** Instead of the generic barrel offset, the light is positioned relative to
-  the actual flashlight node and follows it exactly, including when the weapon animates.
-  `bWeaponFlashlightMountBeamToMesh` turns this off; `tWeaponFlashlightMountTransform` fine-tunes the offset
-  from the lamp, live, while you watch.
-- **The lamp glows.** While the light is on, a glow cone comes out of the lamp, so the flashlight on your
-  gun visibly emits rather than sitting dark with a beam beside it. It matches the weapon beam's spread,
-  color, and brightness, and `tWeaponFlashlightMountTransform` moves it along with the light. See
-  [Beam glow](README.md#beam-glow) to adjust it.
-- **The move-to-weapon gesture moves onto the lamp.** The offhand-to-primary-hand zone normally sits at your
-  primary hand; with a lamp detected, it anchors to the lamp instead, so you reach for the flashlight on the
-  gun to move or toggle the light. `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` turns this off. It needs
-  beam rooting on as well — with `bWeaponFlashlightMountBeamToMesh` off, the zone stays on your hand.
+- **The beam comes from the lamp** and follows it as the weapon moves. Turn this off with **Beam from the weapon's flashlight** (`bWeaponFlashlightMountBeamToMesh`). **Beam on the flashlight** (`tWeaponFlashlightMountTransform`) fine-tunes the offset from the lamp, live.
+- **The lamp glows** while the light is on, matching the weapon beam. See [Beam](README.md#beam).
+- **The hand-or-weapon gesture moves to the lamp**, so you reach for the flashlight on the gun. Turn this off with **Gesture at the weapon's flashlight** (`bWeaponFlashlightAnchorPrimaryHandSphereToMesh`). It also needs the beam to come from the lamp.
 
 ## When the weapon has no lamp
 
-With the requirement on and no lamp detected:
+With the requirement on:
 
-- **An on-weapon light turns off.** Drawing a lampless gun while the light is on the weapon puts it out.
-- **The move-to-weapon gesture goes inert.** Bringing your offhand to your primary hand does nothing, and
-  the button passes through to the game as a normal press.
-- **The two-handed toggle does nothing.** The dedicated toggle for two-handed grips also needs a real lamp.
-- **A two-handed grip falls back to your head.** This is the one case that doesn't just turn off: if your
-  light is in your **offhand** and you take a two-handed grip, the offhand is occupied, so rather than lose
-  the light it moves to your **head** — and is then subject to the
-  [headgear requirement](headgear-restriction.md), which can turn it off in turn if you're bare-headed.
-  Releasing the grip returns it to your offhand.
+- **A light on the weapon turns off.**
+- **The hand-or-weapon gesture won't put it on the weapon**, and the two-handed toggle does nothing.
+- **A two-handed grip sends the light to your head.** With the light in your offhand, the grip occupies that hand, so the light goes to your head instead of turning off. There the [headgear requirement](headgear-restriction.md) applies. Letting go of the grip brings it back.
 
 ## Making it work with your weapon mods
 
-The node names are the whole mechanism, and node names inside a NIF aren't a standard — they're whatever the
-weapon's author called them. `aWeaponFlashlightMeshNodes` ships with a single entry, `AddOnNode`, which
-covers the supported packs. For anything else you'll need to add the right name.
+Node names are whatever the weapon's author called them. The default `["AddOnNode"]` covers the supported packs. For another pack:
 
-To find it, open the weapon's mesh in NifSkope and look for the node the flashlight model hangs from. Add its
-name to the list (`["AddOnNode", "YourNode"]`, first match wins), save the config file, then holster and re-draw to force a
-re-scan.
+1. Open the weapon's mesh in NifSkope and find the node the flashlight hangs from.
+2. Add its name to `aWeaponFlashlightMeshNodes` (e.g. `["AddOnNode", "YourNode"]`), and the pack's plugin to `aWeaponFlashlightAutoDetectPlugins`.
+3. Save the config file, then holster and draw the weapon again.
 
-The log tells you what happened. At
-`%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`:
+The log (`%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`) tells you what happened:
 
-- `AutoDetect: supported weapon mod '<plugin>' found — weapon-flashlight-mesh requirement on` — AutoDetect
-  resolved to on, and which plugin did it.
-- `AutoDetect: no supported weapon mod found — weapon-flashlight-mesh requirement off` — nothing matched, so
-  the requirement is inert.
-- `Found visible weapon-mounted flashlight node: <name>` — a lamp was detected on the equipped weapon, and
-  which name matched.
-- `Equipped weapon has no flashlight mesh — turning the weapon flashlight off` — the requirement was
-  enforced against your current gun.
-- `No visible weapon-mounted flashlight node found` — the scan ran and came up empty. Either the gun has no
-  flashlight fitted, or its node isn't in your list. This one is logged at debug level, so set
-  `iLogLevel = 1` in the `[Debug]` section to see it.
+- `AutoDetect: supported weapon mod '<plugin>' found` or `no supported weapon mod found`: whether the requirement is on.
+- `Found visible weapon-mounted flashlight node: <name>`: a lamp was found on the weapon.
+- `Equipped weapon has no flashlight mesh — turning the weapon flashlight off`: the requirement turned the light off.
+- `No visible weapon-mounted flashlight node found`: no lamp was found. It is logged at debug level, so set `iLogLevel = 1` in `[Debug]` to see it.
 
-Edits to `aWeaponFlashlightAutoDetectPlugins` are picked up when you save the config file, so you can add a weapon
-pack's plugin and see AutoDetect flip without restarting the game.
+## Settings
 
-Note that the gate and the beam rooting are the same feature: detection only runs while the requirement is
-on. Setting `iWeaponFlashlightMeshRequired = 0` doesn't keep the rooting and drop the gate — it stops the
-mod looking for a lamp at all, and every weapon goes back to the generic barrel position.
-
-## Configuration
-
-The in-game misc screen cycles the mode; everything else is only in the config file. All keys live in the
-`[ImFl_WeaponMount]` section. See [Advanced Configuration](README.md#advanced-configuration) for the config file
-location.
+All in the `[ImFl_WeaponMount]` section:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `iWeaponFlashlightMeshRequired` | `2` (AutoDetect) | `0` disabled, `1` always require a lamp, `2` require one only if a supported weapon mod is installed. |
-| `aWeaponFlashlightAutoDetectPlugins` | `["VRCP_DOOMMerged.esp", "TacticalMods.esp"]` | Plugins that switch AutoDetect on. Add your own weapon packs here. |
-| `aWeaponFlashlightMeshNodes` | `["AddOnNode"]` | Node names searched for on the weapon, in priority order. |
-| `bWeaponFlashlightMountBeamToMesh` | `true` | Root the beam at the detected lamp instead of the generic barrel offset. |
-| `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` | `true` | Move the offhand-to-primary-hand gesture zone onto the lamp. Needs beam rooting on. |
-| `tWeaponFlashlightMountTransform` | `{ pos = [0.0, 0.0, 0.0], scale = 1.0 }` | Light offset from the lamp when rooted there. Live-reloaded, so you can tune it in-game. |
-| `kToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger` | The two-handed weapon-light toggle. Documented with the other gestures in the [Usage Guide](README.md#toggle-the-weapon-light-two-handed). |
-
-## Common adjustments
-
-| Goal | Change |
-| --- | --- |
-| Every gun gets a weapon light | `iWeaponFlashlightMeshRequired = 0` |
-| Only guns with a fitted flashlight | `iWeaponFlashlightMeshRequired = 1` |
-| Support another weapon pack's lamp | Add its node name to `aWeaponFlashlightMeshNodes` |
-| Auto-enable for another weapon pack | Add its plugin to `aWeaponFlashlightAutoDetectPlugins` |
-| Beam comes out at the wrong spot | Tune `tWeaponFlashlightMountTransform` while the light is on |
-| Keep the gesture on your hand, not the gun | `bWeaponFlashlightAnchorPrimaryHandSphereToMesh = false` |
-| Keep the gate, drop the beam rooting | `bWeaponFlashlightMountBeamToMesh = false` |
-| A gun with a lamp isn't recognised | Holster and re-draw, then check the log for the scan result |
+| `iWeaponFlashlightMeshRequired` | `2` | `0` not required, `1` required, `2` required with a weapon mod. |
+| `aWeaponFlashlightAutoDetectPlugins` | `["VRCP_DOOMMerged.esp", "TacticalMods.esp"]` | Plugins that turn the requirement on. |
+| `aWeaponFlashlightMeshNodes` | `["AddOnNode"]` | Lamp node names, in priority order. |
+| `bWeaponFlashlightMountBeamToMesh` | `true` | The beam comes from the lamp. |
+| `bWeaponFlashlightAnchorPrimaryHandSphereToMesh` | `true` | The hand-or-weapon gesture is at the lamp. Needs the one above. |
+| `tWeaponFlashlightMountTransform` | `{ pos = [0.0, 0.0, 0.0], scale = 1.0 }` | The light's offset from the lamp. |
+| `kToggleWeaponFlashlightTwoHandedBinding` | offhand tap trigger | The [two-handed toggle](README.md#two-handed-toggle). |

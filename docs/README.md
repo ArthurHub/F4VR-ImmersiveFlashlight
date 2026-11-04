@@ -1,216 +1,195 @@
 # Usage and Configuration Guide
 
-A VR-first replacement for the Pip-Boy flashlight supporting in-hand, head-mounted, and weapon-mounted use. Each mode is independently configurable for beam intensity, distance, spread, color, and gobo. Moving the light between locations is physical and gesture-driven, with sensible, context-aware restrictions, and all configuration is performed in-game and applied live — no reloads, restarts, or re-installs.
+A VR replacement for the Pip-Boy flashlight: hold it in either hand, wear it on your head, or mount it on your weapon, each with its own beam. You move it with physical gestures, and every setting applies live.
 
-Explore the wasteland at night with a powerful, long-range flashlight to see into the distance, then switch to a soft, wide head-mounted beam for close-quarters exploration and looting.
-
-For installation, requirements, and credits see the [main README](../README.md). For shadows, the VR FPS Stabilizer warning, and other troubleshooting see the [FAQ](faq.md). For what changed in each release see the [Changelog](changelog.md).
+Install and requirements: [main README](../README.md). Problems: [FAQ](faq.md). Release notes: [Changelog](changelog.md).
 
 ## Contents
 
+- [Quick Start](#quick-start)
+- [Settings](#settings)
 - [Flashlight Locations](#flashlight-locations)
-- [Moving the Light (Gestures)](#moving-the-light-gestures)
-- [Default Control Bindings](#default-control-bindings)
+- [Gestures](#gestures)
+- [Default Bindings](#default-bindings)
+- [Beam](#beam)
 - [Grip Styles](#grip-styles)
-- [Power Armor](#power-armor)
-- [In-Game Configuration](#in-game-configuration)
-- [Beam Settings](#beam-settings)
 - [Restrictions](#restrictions)
 - [NPC Light Detection](#npc-light-detection)
-- [Vanilla Flashlight Toggle](#vanilla-flashlight-toggle)
-- [Pip-Boy](#pip-boy)
-- [Advanced Configuration](#advanced-configuration)
 - [Mod Recommendations](#mod-recommendations)
+
+## Quick Start
+
+- **Take the light:** reach a hand to the flashlight on your chest and tap the trigger. Do the same again to put it back and turn it off.
+- **Wear it on your head:** bring your offhand near your head until you feel the haptic tick, then tap the trigger.
+- **Move it to your hand or weapon:** bring your offhand near your primary hand (or the flashlight on your gun), then tap the trigger.
+- **Two-handed weapons:** tap the offhand trigger while gripping the weapon to toggle the weapon light.
+- **Vanilla toggle:** the game's long-press of the offhand trigger still turns the light on and off, unless you disable it.
+- **Settings:** open [Mods Config FO4 VR](#settings) and pick Immersive Flashlight VR.
+- **Shadows:** set the game's Shadow Quality to **HIGH**, or the beam's shadows look broken (see the [FAQ](faq.md#visuals)).
+
+The gestures start working once you've picked up the Pip-Boy. They also pause while a menu that takes the controllers is open: workbench, container, terminal, dialogue. The Pip-Boy, scopes and VATS don't pause them.
+
+## Settings
+
+![configuration](assets/config-mode.jpg)
+
+Settings are edited in game with [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945). Press in both thumbsticks and hold them to open it, then pick **Immersive Flashlight VR**. Changes apply as you make them. Save keeps them, and Discard undoes them.
+
+| Page | What's there |
+| --- | --- |
+| **General** | Where the light goes in and out of power armor, shadows, keeping the light on in the Pip-Boy, the vanilla toggle, the chest flashlight, the headgear and weapon-flashlight requirements, and enemy light detection. |
+| **Beam** | Each location's intensity, distance, spread, color and gobo, and the head light's angle. The beam glow. **Tune the beams in the world** opens the in-world tuning. |
+| **Gestures** | Each gesture's zone, buttons, haptics, icon and sphere, and the two-handed weapon toggle. **Show all activation spheres** draws every zone at its true size. |
+| **Advanced** | Grip detection, the flashlight model's and the light's placement in the hand, the chest model's placement, the weapon-lamp mount, and the NPC detection tuning. |
+
+### Tuning the beam in the world
+
+**Tune the beams in the world**, on the Beam page, sets the menu aside and opens a panel on your primary hand:
+
+- **Location buttons:** light the beam at that location, so you tune it against the real scene. The on-weapon beam can be tuned without a weapon in hand.
+- **Beam tuning:** the primary thumbstick changes intensity (up/down) and distance (left/right), and the offhand thumbstick changes spread (up/down). A panel shows the three values.
+- **Gobo and color:** step through the presets.
+- **Reset:** returns the location to the mod's defaults.
+- **Exit:** brings the menu back with your changes pending there. Save or Discard them in the menu.
+
+### The config file
+
+Everything is also in the config file, which the game reloads as soon as you save it:
+
+- Config: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
+- Log: `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`
+
+The file is TOML: text in quotes, Windows paths in single quotes. A transform is `{ pos = [x, y, z], rot = [heading, roll, attitude], scale = s }`, a color is `{ rgb = [r, g, b] }`, and a list is `["a", "b"]`. The common settings are in `[ImmersiveFlashlightVR]`, and each advanced feature has its own `[ImFl_*]` section.
 
 ## Flashlight Locations
 
 ![locations](assets/flashlight-locations.jpg)
 
-The light can sit in one of several locations, each with its own beam settings:
+- **In hand:** in either hand, pointing where the controller points, with a flashlight model in the hand.
+- **On head:** a cap lamp that follows where you look.
+- **On weapon:** on a drawn ranged weapon, aligned with the barrel, including two-handed grips. On a gun with a modeled flashlight, the beam comes from that lamp.
+- **Power-armor head:** the helmet lamp in power armor. It has its own beam, brighter and longer-range by default.
 
-- **In hand** — held in your offhand or primary hand, pointed wherever you point the controller, like a handheld flashlight. A visible flashlight model appears in the hand.
-- **On head (cap lamp)** — mounted on your head and following where you look, ideal for hands-free close-quarters work.
-- **On weapon** — mounted on a drawn non-melee weapon and aligned with the barrel, including two-handed grips. When a supported weapon mod provides a modeled flashlight, the beam roots at that lamp.
-- **Power-armor head** — the helmet lamp while in power armor, tuned separately (and brighter/longer-range by default).
-
-The mod tracks your chosen location separately in and out of power armor, so switching the light in power armor doesn't change your out-of-PA choice.
+The location is remembered separately in and out of power armor.
 
 ### Automatic switching
 
-When the light is set to a hand, the runtime adapts to what that hand is doing:
+- **Light in the primary hand:** it moves onto a drawn ranged weapon, and turns off with a melee or unarmed weapon drawn, as the hand is busy.
+- **Light in the offhand:** it moves onto the weapon while you grip it two-handed, and comes back when you let go. If the [weapon-flashlight requirement](weapon-mount-restriction.md) is on and the gun has no lamp, it goes to your head instead.
 
-- **Primary hand, empty** → light sits in the hand.
-- **Primary hand, ranged weapon drawn** → light moves onto the weapon.
-- **Primary hand, melee/unarmed drawn** → the hand is occupied, so the light turns off (it can't sit there).
-- **Offhand, two-handed grip** → the offhand is on the foregrip, so the light routes onto the weapon. If the weapon-flashlight requirement is on and the weapon has no modeled lamp, it falls back to your head instead of being lost; releasing the grip returns it to the offhand.
+### Power armor
+
+Power armor poses the hands differently, so the model placement, hand poses and chest model have their own power-armor values. The beams are shared, except the head, which uses the helmet lamp and ignores the headgear requirement.
 
 ### Weapons in the offhand (ROCK)
 
-When [ROCK](https://github.com/brunocatani/ROCK) (v0.9 or newer) handles your weapons, it can put the weapon in your offhand, and the light follows how the weapon is actually held:
+With [ROCK](https://github.com/brunocatani/ROCK) v0.9 or newer handling your weapons, the light follows how the weapon is held:
 
-- **Two-handed grip** (from FRIK or ROCK) → the light goes onto the weapon, following ROCK's two-handed weapon pose.
-- **Pistol fired one-handed from the offhand** → your primary hand is free, so the light sits there, whichever hand the light is set to.
-- **Rifle carried by the offhand** (held without firing it) → the light stays on the weapon, unless you put it into the free primary hand with a gesture.
-- While the offhand holds the weapon, your free **primary hand** takes over the head gesture and can grab / stow the light from your chest. The move-to-hand gesture is inactive then, and so is the two-handed toggle while the offhand fires (its button is the fire trigger).
+- **Two-handed grip:** the light goes on the weapon.
+- **Pistol fired from the offhand:** the light goes to your free primary hand.
+- **Rifle carried by the offhand without firing:** the light stays on the weapon, unless you put it into the free hand with a gesture.
+
+While the offhand holds the weapon, your primary hand takes over the head gesture and the chest grab. The move-to-hand gesture is off then, and so is the two-handed toggle while the offhand fires.
 
 Known limitation: while ROCK fires from the left hand, the mod's primary-hand haptics are felt in the offhand.
 
-## Moving the Light (Gestures)
+## Gestures
 
 ![activation zones](assets/activation-zones.jpg)
 
-Locations are changed physically, with haptic feedback when your hand enters an interaction zone. These gestures are the primary way to move and toggle the light — the in-game config UI is only for tuning. All bindings are configurable (see below); set any to `none` to disable that gesture.
+Each gesture has a zone. A haptic tick tells you when your hand enters it, and the button is taken from the game only while the gesture can do something. Every gesture can be rebound or turned off on the Gestures page.
 
-The gestures are inactive until you've picked up the **Pip-Boy** (before that the game only has the vanilla wrist light, which stays under the vanilla toggle), and while a menu that takes controller input is open — workbench, container, terminal, dialogue. The Pip-Boy, scope, and VATS keep them working.
+### Chest flashlight
 
-### Grab from / stow on your body
+The flashlight sits on your chest while the light is off, on your head or on your weapon.
 
-A beam-less flashlight model sits on your chest whenever the light is off, head-mounted, or weapon-mounted.
+- **Grab:** a hand in its zone, then a tap of the trigger, takes the light into that hand, turned on.
+- **Put back:** the same with the hand holding it turns it off.
+- A hand holding a drawn weapon can't grab or put back.
+- A small flashlight icon marks the zone while your hand is inside it.
 
-- **Grab**: reach a hand into the model's grab zone and fire the grab binding to take the light into that hand — the light turns on in that hand.
-- **Stow**: reach the same hand back into the zone and fire again to put the model back — the light turns off.
-- A hand holding a **drawn weapon** can't grab or stow (in practice, your primary hand while holding the gun).
-- While your hand is inside the zone a small flashlight icon marks it as a hint; see the [FAQ](faq.md#visuals) to hide it.
+### Head
 
-### Put the light on your head
+- **Tap** near your head: puts the light on your head, or turns it off when it's already there.
+- **Long-press** near your head: pulls a head light back to your offhand.
 
-- Bring your **offhand** near your head and **tap** to put the light on your head; tap again while it's on your head to turn it off.
-- **Long-press** near your head to pull a head-mounted light back to your offhand.
+### Hand or weapon
 
-### Move the light to your hand or weapon
+Bring your offhand near your primary hand and **tap**:
 
-- Bring your **offhand** near your **primary hand** and **tap** to move the light:
-  - Light on offhand + primary hand empty → moves to the **primary hand**.
-  - Light on offhand + ranged weapon drawn → moves **onto the weapon**.
-  - Light on offhand + melee/unarmed → nothing happens (the hand is occupied).
-  - Light **on weapon** → toggles **off**.
-  - Light **on primary hand** → returns to the **offhand**.
-  - Light **off** + ranged weapon drawn → turns on **onto the weapon**.
-  - Light **off** with no weapon drawn → nothing happens. This gesture only ever turns the light on onto a weapon, never into an empty hand.
-- **Long-press** to pull an on-weapon light back to your offhand.
-- While your offhand is inside the zone and a tap would do something, a small flashlight icon marks it.
-- When the weapon-flashlight requirement has detected a modeled lamp, this zone anchors to the **gun's lamp**, so you reach it by bringing your offhand to the flashlight on the gun.
+| The light is | What happens |
+| --- | --- |
+| In the offhand, primary hand empty | Moves to the primary hand |
+| In the offhand, ranged weapon drawn | Moves onto the weapon |
+| On the weapon | Turns off |
+| In the primary hand | Moves back to the offhand |
+| On the head, ranged weapon drawn | Moves onto the weapon |
+| Off, ranged weapon drawn | Turns on, on the weapon |
 
-### Toggle the weapon light two-handed
+With a melee weapon drawn, or with the light off and no weapon drawn, nothing happens. A **long-press** pulls a weapon light back to your offhand. When a gun's modeled lamp is detected, this zone moves to the lamp, so you reach for the flashlight on the gun.
 
-When you grip a weapon **two-handed** your offhand is on the foregrip and can't reach the primary-hand zone, so there's a dedicated toggle:
+### Two-handed toggle
 
-- While gripping the weapon two-handed, **tap** to toggle the weapon-mounted light on/off. It doesn't change your configured location, so releasing the grip returns the light to wherever your config routes it.
+Gripping a weapon two-handed, your offhand can't reach that zone, so a tap of the offhand trigger toggles the weapon light instead. Your chosen location stays the same.
 
-## Default Control Bindings
+## Default Bindings
 
-A binding is a table, `{ hand = "offhand", type = "tap", button = "trigger" }`, with an optional `duration`, `suppress` and `modifier`; `{ type = "none" }` turns a gesture off. The three proximity gestures are grouped into per-gesture config **sections** (each with a `kPrimaryBinding` / `kSecondaryBinding` plus its zone and haptics); the full guide is in the [framework input-binding & activation-sphere docs](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
+| Gesture | Config section → key | Default |
+| --- | --- | --- |
+| Grab / put back, offhand | `[ImFl_BodyActivationSphere]` → `kPrimaryBinding` | offhand tap trigger |
+| Grab / put back, primary hand | `[ImFl_BodyActivationSphere]` → `kSecondaryBinding` | primary tap trigger |
+| Light on head / off | `[ImFl_HeadActivationSphere]` → `kPrimaryBinding` | offhand tap trigger |
+| Head light to offhand | `[ImFl_HeadActivationSphere]` → `kSecondaryBinding` | offhand long-press trigger |
+| Light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `kPrimaryBinding` | offhand tap trigger |
+| Weapon light to offhand | `[ImFl_PrimaryHandActivationSphere]` → `kSecondaryBinding` | offhand long-press trigger |
+| Weapon light, two-handed | `[ImFl_WeaponMount]` → `kToggleWeaponFlashlightTwoHandedBinding` | offhand tap trigger |
 
-| Gesture                             | Config section → key                                             | Default                     |
-| ----------------------------------- | ---------------------------------------------------------------- | --------------------------- |
-| Grab/stow with offhand              | `[ImFl_BodyActivationSphere]` → `kPrimaryBinding`                | `offhand tap trigger`       |
-| Grab/stow with primary hand         | `[ImFl_BodyActivationSphere]` → `kSecondaryBinding`              | `primary tap trigger`       |
-| Put light on head / toggle off      | `[ImFl_HeadActivationSphere]` → `kPrimaryBinding`                | `offhand tap trigger`       |
-| Pull head light to offhand          | `[ImFl_HeadActivationSphere]` → `kSecondaryBinding`              | `offhand longpress trigger` |
-| Move light to primary hand / weapon | `[ImFl_PrimaryHandActivationSphere]` → `kPrimaryBinding`         | `offhand tap trigger`       |
-| Pull weapon light to offhand        | `[ImFl_PrimaryHandActivationSphere]` → `kSecondaryBinding`       | `offhand longpress trigger` |
-| Toggle weapon light (two-handed)    | `[ImFl_WeaponMount]` → `kToggleWeaponFlashlightTwoHandedBinding` | `offhand tap trigger`       |
+The offhand tap is shared on purpose. The gestures apply in situations that don't overlap, so only one fires. In the file a binding is `{ hand = "offhand", type = "tap", button = "trigger" }`, and `{ type = "none" }` turns it off. The full syntax is in the [framework's input-binding guide](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
 
-The same `offhand tap trigger` is shared by several gestures on purpose — they apply in mutually exclusive situations (near your head vs. near your hand vs. gripping two-handed), and only the relevant one fires while suppressing the button from the game.
+## Beam
+
+Each location has its own beam:
+
+- **Intensity:** how bright it is.
+- **Distance:** how far it lights things.
+- **Spread:** how wide the cone is.
+- **Color:** the light's color.
+- **Gobo:** the texture that shapes the beam: its rings, its edge and its falloff.
+
+By default the head lamp is wide and soft for close spaces, the hand flashlight long and tight, and the weapon beam tighter still.
+
+**Beam glow:** the flashlight in your hand and a gun's modeled lamp show a glow cone that takes the beam's color, spread and brightness as you tune. Its brightness and width are on the Beam page. Setting both brightness values to 0 hides it.
 
 ## Grip Styles
 
 ![hand grip style](assets/flashlight-hand-grip.jpg)
 
-Hand-held modes have two grips, each with its own light angle, model pose, and hand pose:
+A hand-held light has two grips, each with its own light angle, model placement and hand pose:
 
-- **Forward** — thumb-up grip, controller top facing up.
-- **Overhand** — fist / ice-pick grip, controller flipped around its barrel so the top faces down while the beam still points forward.
+- **Forward:** thumb up, controller top up.
+- **Overhand:** fist or ice-pick grip, controller flipped, with the beam still pointing forward.
 
-`iFlashlightGripMode` selects how the grip is chosen: `0` = Auto (detected from controller tilt, with hysteresis so it doesn't flip-flop), `1` = Forward only, `2` = Overhand only. In Auto mode, `fFlashlightGripOverhandTiltDegrees` sets the tilt at which it switches to Overhand and `fFlashlightGripHysteresisDegrees` the band for switching back.
-
-## Power Armor
-
-Power armor swaps the skeleton and poses the hands differently, so most spatial settings have a power-armor variant (`...PA` suffix) — light transforms, mesh transforms, hand poses, and the body/grab zones. PA variants fall back to their non-PA value when omitted. Beam values (intensity/distance/spread/color/gobo) are shared in and out of power armor, except the head, which has a dedicated brighter, longer-range PA-head profile. The head-mounted light in power armor uses the helmet lamp and is never gated by the headgear requirement.
-
-## In-Game Configuration
-
-![configuration](assets/config-mode.jpg)
-
-Open the FRIK configuration UI (hold both thumbsticks for ~2 seconds) and select Immersive Flashlight. The UI is split into three screens:
-
-- **Main menu** — opens the beam and misc screens, opens the config file for advanced editing, opens the wiki, or exits. Its footer shows the controller button that turns the light on and off at each location.
-- **Beam screen** — location toggles, beam tuning, gobo and color presets, and Save / Reset. The gobo and color buttons show the current gobo texture and beam color. With **beam tuning** on, the primary thumbstick changes intensity (up/down) and distance (left/right) and the offhand thumbstick changes spread (up/down); a panel shows the three values, highlighting the one you just changed, and the lit beam updates as you tune without the light turning off. Unsaved changes are discarded when you close it.
-- **Misc screen** — global toggles: beam shadows, show all activation spheres, the stowed body model, the headgear requirement, the weapon-flashlight requirement, NPC light detection, and the vanilla-toggle disable. Each is saved immediately and applied live.
-
-Everything is applied while you watch, so you can tune the beam against the actual scene.
-
-## Beam Settings
-
-Each location stores its own beam profile:
-
-| Setting                 | Meaning                                        |
-| ----------------------- | ---------------------------------------------- |
-| **Intensity** (`fade`)  | Brightness of the beam.                        |
-| **Distance** (`radius`) | How far the light makes objects visible.       |
-| **Spread** (`FOV`)      | How wide or narrow the cone is.                |
-| **Color** (RGB)         | Beam color.                                    |
-| **Gobo**                | Beam texture / pattern projected by the light. |
-
-The defaults aim for a wide, soft head lamp for tight spaces; a far-reaching, tighter hand flashlight for walking in the dark; and a tighter, "tactical" weapon beam. Tune them per mode in the beam screen or the config file.
-
-### Beam glow
-
-The flashlight in your hand, and a weapon's modeled lamp, show a soft glow cone coming out of the lens. It takes the beam's color, its spread follows the beam's spread, and its brightness follows the beam's intensity, updating live as you tune. Adjust it in the config file's `[ImFl_BeamGlow]` section: `fBeamGlowBaseIntensity` and `fBeamGlowIntensity` set how bright it is (both `0` hides it), and `fBeamGlowFovOffset` how much narrower than the beam it is drawn.
+**Auto** (the default) picks the grip from how you tilt the controller. It can also be locked to one grip, on the Advanced page.
 
 ## Restrictions
 
-Optional gameplay gates, configured on the misc screen or in the config file. When a requirement isn't met the corresponding light is turned off and its activation gesture goes inert until the requirement is met again.
+Optional rules. When one isn't met, its light turns off and its gesture does nothing until it is.
 
-### Headgear requirement (head light)
-
-`iFlashlightHeadgearRequirement` gates the head-mounted light **out of power armor** (in power armor the helmet lamp always applies):
-
-- `0` **None** — no restriction.
-- `1` **Any headgear** — any item worn in the head slot is enough.
-- `2` **Immersive** — only "light-capable" headgear (helmets / hard hats, not soft hats), decided by a keyword set plus allow/deny lists you can extend in the config file.
-
-See **[Headgear Requirement](headgear-restriction.md)** for the full rule, how to make your own helmets count, and the in-game dump that lists what qualifies.
-
-### Weapon-flashlight requirement (weapon light)
-
-`iWeaponFlashlightMeshRequired` requires the equipped weapon to actually carry a modeled flashlight before the light may mount on it, and roots the beam at that lamp:
-
-- `0` **Disabled** — no restriction; the weapon light always applies.
-- `1` **Enabled** — always require a modeled flashlight mesh on the weapon.
-- `2` **AutoDetect** — require it only when a supported weapon mod (e.g. Tactical Weapon Mods) is in your load order.
-
-When a lamp is detected, the beam roots at it (`bWeaponFlashlightMountBeamToMesh`) and the move-to-weapon gesture's zone anchors to it (`bWeaponFlashlightAnchorPrimaryHandSphereToMesh`).
-
-See **[Weapon Flashlight Requirement](weapon-mount-restriction.md)** for what detection looks for, what changes when a lamp is found, and how to support another weapon pack.
+- **Headgear for the head light** (out of power armor): not required, any headgear, or only light-capable helmets and hard hats (the default). See [Headgear Requirement](headgear-restriction.md).
+- **A flashlight on the weapon:** the weapon light only goes on guns that carry a modeled flashlight, and comes from that lamp. By default it applies only with a supported weapon mod installed. See [Weapon Flashlight Requirement](weapon-mount-restriction.md).
 
 ## NPC Light Detection
 
 ![npc detection](assets/npc-detection.jpg)
 
-Vanilla ignores flashlights for stealth entirely — the beam points away from you, so the game never counts it against you. This mod makes it count, and makes it **directional**: carrying a lit flashlight makes you somewhat visible, putting the beam on someone makes you much more so, and a bright beam in a hostile's face at close range means they've seen you. Line of sight is checked, so nothing is alerted through a wall.
+The game ignores flashlights for stealth, and this mod makes the beam count:
+- A lit flashlight makes you a little visible.
+- Putting the beam on someone makes you much more visible.
+- A bright beam in a hostile's face up close means they've seen you.
 
-It's on by default and switched on the misc config screen; the tuning lives in the config file (`[ImFl_NpcDetection]`). See **[NPC Light Detection](npc-detection.md)** for the mechanics, the full settings reference, and how it compares to Flashlight Stealth Fix — don't run both.
-
-## Vanilla Flashlight Toggle
-
-`bDisableVanillaFlashlightToggle` (default **off**) disables the game's built-in global Pip-Boy light toggle so only this mod's gestures control the light. Leave it off to keep the vanilla long-press toggle working alongside the gestures.
-
-## Pip-Boy
-
-The flashlight stays on while you use the Pip-Boy. The vanilla game turns it off while the Pip-Boy is open (except in power armor) and back on when it closes; set `bKeepFlashlightOnInPipboy = false` in the config file to get that back.
-
-## Advanced Configuration
-
-Many settings beyond the in-game UI live in the config file, and any change is live-loaded into the running game so you can tune and immediately see the effect.
-
-Location: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
-
-Logs are written to `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`.
-
-Set `bShowAllActivationSpheres = true` to render every grab / head / primary-hand activation sphere at its exact size and position while tuning. Otherwise each gesture marks its zone with an icon and/or a sphere, each with its own setting in its section (`sShowIcon` / `sShowSphere`: `never` / `always` / `wheninside` / `whenavailable`, the last while the gesture can fire). The body grab and primary-hand gestures show their flashlight icon while a hand is inside; the head gesture shows nothing. See the [FAQ](faq.md) for shadow quality and the VR FPS Stabilizer warning.
+Line of sight is checked, so nothing is alerted through a wall. It's on by default, and you can switch it off on the General page. See [NPC Light Detection](npc-detection.md), and don't run it together with Flashlight Stealth Fix.
 
 ## Mod Recommendations
 
-- [Comfort Swim VR](https://www.nexusmods.com/fallout4/mods/94647) — improves Fallout 4 VR swimming mechanics.
-- [Virtual Holsters](https://www.nexusmods.com/fallout4/mods/51224) — realistic body-based holstering.
+- [Comfort Swim VR](https://www.nexusmods.com/fallout4/mods/94647): better swimming in Fallout 4 VR.
+- [Virtual Holsters](https://www.nexusmods.com/fallout4/mods/51224): body-based holstering.

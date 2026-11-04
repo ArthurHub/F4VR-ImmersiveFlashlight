@@ -4,7 +4,7 @@ A highly versatile and configurable Pip-Boy flashlight replacement mod. Physical
 
 # Full description
 
-[size=3]A VR-first replacement for the Pip-Boy flashlight supporting in-hand, head-mounted, and weapon-mounted use. Each mode is independently configurable, providing precise control over beam intensity, distance, spread, color, and gobo. The flashlight is a physical object: grab it off your belt into your hand, bring your hand to your head to wear it as a cap lamp, or to your gun to mount it on the weapon. Location switching is physical and immersive, with sensible, context-aware restrictions. All configuration is performed in-game and applied live, with no reloads, restarts, or re-installs required.[/size]
+[size=3]A VR replacement for the Pip-Boy flashlight: hold it in either hand, wear it on your head, or mount it on your weapon, each with its own beam intensity, distance, spread, color and gobo. The flashlight is a physical object: grab it off your chest, bring it to your head for a cap lamp, or move it onto your gun. Every setting is changed in game, in Mods Config FO4 VR, and applies live.[/size]
 [size=3]
 Explore the wasteland at night with a powerful, long-range flashlight for visibility at a distance, then switch to a soft, wide head-mounted beam for close-quarters exploration and looting. And watch your back, because now the raiders can see your light too.[/size]
 
@@ -14,8 +14,8 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [\*][size=3]Wear it on your head: Bring your off-hand close to your head until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Move it to your hand or weapon: Bring your off-hand close to your primary hand (or to the flashlight on your gun) until haptic feedback is felt, then tap.[/size][*]
 [\*][size=3]Two-handed weapons: Tap the off-hand trigger while gripping the weapon to toggle the weapon-mounted light.[/size][*]
-[\*][size=3]Classic toggle: The vanilla long-press of the off-hand trigger still turns the flashlight on/off. Turn it off in the config (misc screen, or [b]bDisableVanillaFlashlightToggle[/b] in the config file) so only the physical gestures control the light, for full immersion.[/size][*]
-[\*][size=3]Configure settings: Open via FRIK configuration UI (hold both thumbsticks for 2 seconds).[/size][*]
+[\*][size=3]Classic toggle: The vanilla long-press of the off-hand trigger still turns the flashlight on/off. Turn it off ([b]Disable the game's flashlight toggle[/b] on the General page) so only the gestures control the light.[/size][*]
+[\*][size=3]Settings: Open [b]Mods Config FO4 VR[/b] (hold both thumbsticks pressed in) and pick Immersive Flashlight VR. The Beam page opens an in-world panel to tune the beam against the real scene.[/size][*]
 [\*][size=3]Every gesture and binding is configurable, and any gesture can be disabled.[/size][*]
 [\*][size=3][b]Important: [/b]Set game "Shadows Quality" to "HIGH" to prevent corrupted shadows ([url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/faq.md#visuals]details and how to disable shadows[/url]﻿).[/size][*]
 [/list]
@@ -30,7 +30,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [/list]
 [size=3]Beam Customization:[/size]
 [list]
-[\*][size=3]Live, in-game tuning via a simple UI: the lit beam changes as you tune.[/size][*]
+[\*][size=3]Live tuning in Mods Config FO4 VR, or with the thumbsticks on an in-world panel: the lit beam changes as you tune.[/size][*]
 [\*][size=3]Per-mode configuration (+ separate for Power Armor head) allowing each flashlight type to behave differently:[/size]
 [list]
 [\*][size=3]Intensity – brightness of the beam.[/size][*]
@@ -68,10 +68,8 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [\*][size=3]Weapon flashlight requirement: Gate the weapon-mounted light behind a weapon that actually carries a modeled flashlight, and root the beam at that lamp. Auto-detects supported weapon mods such as Tactical Weapon Mods ([url=https://github.com/ArthurHub/F4VR-ImmersiveFlashlight/blob/main/docs/weapon-mount-restriction.md]details[/url]﻿).[/size][*]
 [/list]
 
-[size=4][b]Advanced Configuration[/b][/size]
-Most configuration is stored in the "ImmersiveFlashlightVR.toml" file.
-Much more than can be configured via in-game configuration interface.
-Any changes made in the config file will be live loaded into the running game to experience the effects.
+[size=4][b]Config File[/b][/size]
+Every setting is also in "ImmersiveFlashlightVR.toml", which the running game reloads as you save it.
 Location:
 [code]%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR[/code]
 
@@ -88,6 +86,7 @@ Location:
 [\*][url=https://f4se.silverlock.org/][size=3]F4SEVR[/size][/url][*]
 [\*][url=https://www.nexusmods.com/fallout4/mods/64879][size=3]VR Address Library[/size][/url][*]
 [\*][url=https://www.nexusmods.com/fallout4/mods/53464][size=3]FRIK v77+ (v78 for full experience)[/size][/url][*]
+[\*][url=https://www.nexusmods.com/games/fallout4/mods/110945][size=3]Mods Config FO4 VR[/size][/url][size=3] for the in-game settings[/size][*]
 [/list]
 [size=3]Steps[/size]
 [list]
@@ -98,7 +97,6 @@ Location:
 [list]
 [\*][size=3][url=https://www.nexusmods.com/fallout4/mods/65961]VR FPS Stabilizer[/url]﻿ may cause shadows issues (probably due to lowering shadow quality)[/size][*]
 [\*][size=3][url=https://www.nexusmods.com/fallout4/mods/76586]Flashlight Stealth Fix[/url]﻿ solves the same vanilla problem as NPC Light Detection, so don't run both; uninstall it or turn off NPC Light Detection here.[/size][*]
-[\*][size=3]FRIK v76 and below: no config UI and must manually disable the FRIK flashlight in FRIK.ini (bRemoveFlashlight).[/size][*]
 [\*][size=3]Other flashlight mods: run only one flashlight replacement at a time.[/size][*]
 [/list]
 

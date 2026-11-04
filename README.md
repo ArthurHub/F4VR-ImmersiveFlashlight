@@ -3,13 +3,13 @@
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](LICENSE)
 
-> A Fallout 4 VR F4SE plugin that replaces the Pip-Boy flashlight with a versatile, fully configurable light you can hold in hand, mount on your head, or attach to your weapon.
+> A Fallout 4 VR F4SE plugin that replaces the Pip-Boy flashlight with a light you hold in either hand, wear on your head, or mount on your weapon.
 
-Immersive Flashlight VR turns the flat Pip-Boy light into a physical object you interact with in VR. Carry it in either hand, clip it to your head like a cap lamp, or mount it on your gun, and tune the beam independently for each mode. Location switching is physical and gesture-driven, with sensible, context-aware restrictions, and every setting is configured in-game and applied live. It runs as an F4SE plugin DLL (`ImmersiveFlashlightVR.dll`) and uses [F4VR Common Framework](external/F4VR-CommonFramework) for plugin lifecycle, VR controller input, config hot-reload, VR UI widgets, and shared game utilities.
+The flashlight is a physical object: grab it off your chest, bring it to your head, or move it onto your gun. Each mount has its own beam, every setting applies live, and NPCs notice where you point it. It is an F4SE plugin (`ImmersiveFlashlightVR.dll`) built on the [F4VR Common Framework](external/F4VR-CommonFramework).
 
 ## Table of Contents
 
-- [Background](#background)
+- [Features](#features)
 - [Install](#install)
 - [Usage](#usage)
 - [Development](#development)
@@ -19,17 +19,14 @@ Immersive Flashlight VR turns the flat Pip-Boy light into a physical object you 
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
-## Background
+## Features
 
-Fallout 4 VR ships with a single Pip-Boy flashlight that is awkward to control and fixed in behavior. Immersive Flashlight VR replaces it with a light you physically move between your hand, head, and weapon, with separate beam settings per mode so you can explore the wasteland at night with a powerful long-range beam, then switch to a soft, wide head lamp for close-quarters looting.
-
-What it provides:
-
-- **Five mounting positions** - in either hand, on the head, on the power-armor helmet, and weapon-mounted, with automatic, context-aware switching (a drawn ranged weapon routes the light onto the gun; melee frees the hand).
-- **Per-mode beam tuning** - independent intensity, distance (radius), spread (FOV), RGB color, and gobo texture for every location, with a visible glow cone at the flashlight's lens that matches the beam.
-- **Physical interaction** - a grabbable flashlight model stowed on your body, a bring-offhand-to-head gesture for the head lamp, and an offhand-to-primary-hand gesture to move the light to your hand or weapon.
-- **Optional restrictions** - gate the head lamp behind worn headgear (any, or specific light-capable helmets), and gate the weapon light behind a weapon that actually carries a modeled flashlight, rooting the beam at that mesh.
-- **In-game VR configuration** - a multi-screen VR UI for beam tuning, location toggles, color/gobo presets, and global options, all applied live with no restart.
+- **Five mounts:** either hand, the head, the power-armor helmet, and the weapon. A drawn ranged weapon takes the light onto the gun, and a two-handed grip moves it there from the offhand.
+- **A beam per mount:** intensity, distance, spread, color and gobo, with a glow cone at the lens that matches the beam.
+- **Gestures:** a flashlight on your chest to grab and put back, the offhand to your head for a cap lamp, and the offhand to your primary hand for the hand or the weapon.
+- **Optional restrictions:** the head light can need a helmet, and the weapon light a gun with a modeled flashlight.
+- **NPC light detection:** the beam makes you visible and draws NPCs, depending on where you aim.
+- **In-game settings** in Mods Config FO4 VR, with an in-world beam tuning panel. All of it applies live.
 
 ## Install
 
@@ -37,55 +34,37 @@ What it provides:
 
 - [F4SE VR](https://f4se.silverlock.org/)
 - [VR Address Library for F4SEVR Plugins](https://www.nexusmods.com/fallout4/mods/64879)
-- [FRIK v77+](https://www.nexusmods.com/fallout4/mods/53464)
+- [FRIK v77+](https://www.nexusmods.com/fallout4/mods/53464) (v78+ for the flashlight model in your hand)
+- [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945) for the in-game settings. Without it, the settings are only in the config file.
 
-### Recommended install
-
-Download from [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) and install the published mod package through your mod manager, or extract it directly into the game's `Data` folder. There is no ESP file, so load order does not matter.
+Install the [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) package with your mod manager, or extract it into the game's `Data` folder. There is no ESP, so load order doesn't matter.
 
 ### Compatibility
 
-- **FRIK v76 and below** is not supported - the in-game config UI and the FRIK flashlight integration require FRIK v77+.
-- [ROCK](https://github.com/brunocatani/ROCK) v0.9+ weapon handling is supported alongside FRIK: the light follows two-handed grips and weapons held in the offhand. Older ROCK versions aren't detected.
-- Other flashlight mods that drive the Pip-Boy light may conflict; run only one flashlight replacement at a time.
+- [ROCK](https://github.com/brunocatani/ROCK) v0.9+ is supported: the light follows its two-handed grips and offhand weapons.
+- Run only one flashlight replacement at a time.
+- Don't run [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) together with NPC light detection.
+- [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) lowers the shadow quality, which breaks the beam's shadows.
 
 ## Usage
 
-Move the light physically with VR gestures: reach to the flashlight stowed on your chest and grab it into a hand, bring your offhand near your head to mount it as a cap lamp, or near your primary hand to move it to the hand or the equipped weapon. Beam settings are tuned in-game through the FRIK configuration UI (hold both thumbsticks for ~2 seconds, then select Immersive Flashlight) and applied live, with advanced options in the config file. The vanilla Pip-Boy light toggle keeps working alongside the gestures, and can be disabled so only the mod's gestures control the light.
+Reach to the flashlight on your chest and tap the trigger to take it. Bring your offhand to your head to wear it, or to your primary hand to move it there or onto your weapon. Open Mods Config FO4 VR (hold both thumbsticks pressed in) for the settings. Set the game's Shadow Quality to **HIGH**.
 
-See the **[Usage and Configuration Guide](docs/README.md)** for the full gesture reference, default bindings, beam settings, restrictions, and advanced configuration.
-
-### Documentation
-
-- [Usage and Configuration Guide](docs/README.md)
+- [Usage and Configuration Guide](docs/README.md): gestures, bindings, settings and restrictions
 - [FAQ and Troubleshooting](docs/faq.md)
 - [Changelog](docs/changelog.md)
-- [Development](docs/development.md)
 
 ## Development
-
-### Prerequisites
-
-- `VCPKG_ROOT` environment variable pointing to a [vcpkg](https://github.com/microsoft/vcpkg) installation
-  - `git clone https://github.com/microsoft/vcpkg.git`
-  - run `bootstrap-vcpkg.bat`. Example: `C:\github\vcpkg\bootstrap-vcpkg.bat`
-  - Set environment variable `VCPKG_ROOT`. Example: `setx VCPKG_ROOT "C:\github\vcpkg"`
-- Visual Studio 2022 (v143) or 2026 (v145), x64 only, with the C++ Desktop Development workload
-- [CMake](https://cmake.org/) 4.2+
-
-### Build
 
 ```sh
 git clone https://github.com/ArthurHub/F4VR-ImmersiveFlashlight.git
 cd F4VR-ImmersiveFlashlight
 git submodule update --init --recursive
 cmake --preset default
-cmake --build build --config Release
+cmake --build --preset release
 ```
 
-This generates the Visual Studio solution in `build/`. Open `build/ImmersiveFlashlightVR.slnx` if you prefer building or debugging in Visual Studio. Project configuration belongs in `CMakeLists.txt`, not the generated VS project files. To package, build the `package_mod` target (`cmake --build --preset package`); it writes a versioned `.7z` to `build/package`.
-
-For local post-build copying, see `CMakeUserPresets.json.template` and set `COPY_PLUGIN_BASE_PATH` to your MO2 mod folder or Fallout 4 VR `Data` folder. More development notes are in [docs/development.md](docs/development.md).
+It needs Visual Studio 2022 or 2026 (x64, C++ desktop workload), CMake 4.2+ and `VCPKG_ROOT`. Prerequisites, packaging and copying to the game are in [docs/development.md](docs/development.md).
 
 ## Maintainers
 
@@ -95,7 +74,7 @@ For local post-build copying, see `CMakeUserPresets.json.template` and set `COPY
 
 PRs accepted. For larger changes, please open an issue first to discuss what you would like to change.
 
-Code style is enforced by clang-format and pre-commit. After cloning, run `pre-commit install` once so local checks run before commits. See [CLAUDE.md](CLAUDE.md) for repository architecture, build expectations, and coding conventions.
+Code style is enforced by clang-format and pre-commit: run `pre-commit install` once after cloning. The architecture is in [CLAUDE.md](CLAUDE.md) and [docs/tech/architecture.md](docs/tech/architecture.md).
 
 ## Support
 

@@ -1,43 +1,55 @@
 # FAQ and Troubleshooting
 
-Common questions and fixes. For how the light works and the full list of settings, see the [Usage and Configuration Guide](README.md); for install and requirements see the [main README](../README.md); for what changed in each release see the [Changelog](changelog.md).
-
-Click a question to expand its answer.
+Common questions and fixes. How the light works: [Usage and Configuration Guide](README.md). Install and requirements: [main README](../README.md). Click a question to expand it.
 
 ## Contents
 
-- [Turning the Light On and Moving It](#turning-the-light-on-and-moving-it)
+- [Getting Started](#getting-started)
 - [Head and Weapon Light](#head-and-weapon-light)
 - [Visuals](#visuals)
 - [NPC Light Detection](#npc-light-detection)
 - [Compatibility](#compatibility)
-- [Settings and Customization](#settings-and-customization)
 
-## Turning the Light On and Moving It
+## Getting Started
+
+<details>
+  <summary>Where are the settings?</summary>
+&#10240;
+
+In [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945): press in both thumbsticks and hold them, then pick Immersive Flashlight VR. Everything is also in the config file, which reloads as you save it:
+
+- Config: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
+- Log: `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`
+
+See [Settings](README.md#settings).
+
+</details>
+
+<details>
+  <summary>The gestures do nothing, and there's no flashlight on my chest</summary>
+&#10240;
+
+The mod waits until you've picked up the **Pip-Boy**. Before that the game only has the vanilla wrist light, which the mod can't move. Once the Pip-Boy is on your wrist, or you're in power armor, everything switches on.
+
+The gestures also pause while a menu that takes the controllers is open (workbench, container, terminal, dialogue). If the chest flashlight is missing with the Pip-Boy on, check **Grab flashlight from the body** on the General page.
+
+</details>
 
 <details>
   <summary>The flashlight won't turn on, or my old flashlight button does nothing</summary>
 &#10240;
 
-The vanilla long-press of the off-hand trigger still toggles the light **by default**, alongside this mod's gestures. If that button does nothing, the vanilla-toggle disable has been switched on — turn it back off on the misc config screen, or set `bDisableVanillaFlashlightToggle = false` in the config file. Either way you can always turn the light on by grabbing the model off your chest, or with the head / hand gestures — see [Moving the Light](README.md#moving-the-light-gestures).
+The vanilla long-press of the offhand trigger toggles the light by default. If it does nothing, **Disable the game's flashlight toggle** is on (General page). You can always turn the light on with a gesture: grab it off your chest, or use the head or hand gesture. See [Gestures](README.md#gestures).
 
-If the light turns on but not where you expect it, a restriction may be blocking that location — see [Head and Weapon Light](#head-and-weapon-light).
-
-</details>
-
-<details>
-  <summary>The gestures do nothing and there's no flashlight on my chest at the start of a new game</summary>
-&#10240;
-
-The mod waits until you've picked up the **Pip-Boy**. Before that, the game only has the vanilla wrist light, which the mod can't move or tune, so the gestures are inert, the chest model is hidden, and the light stays under the vanilla toggle. Once the Pip-Boy is on your wrist (or you're in power armor) everything switches on.
+If it turns on but not where you expect, a restriction may be blocking that location. See [Head and Weapon Light](#head-and-weapon-light).
 
 </details>
 
 <details>
-  <summary>How do I move the light between hand, head, and weapon?</summary>
+  <summary>My beam tuning changes are gone</summary>
 &#10240;
 
-All location changes are physical VR gestures (grab from your body, offhand-to-head, offhand-to-primary-hand, two-handed toggle). The full reference and the configurable [default bindings](README.md#default-control-bindings) are in the Usage Guide. Any gesture can be rebound or disabled (`none`) in the config file.
+The in-world tuning hands its changes to the Mods Config menu, which shows them as pending once you exit the tuning. Press **Save** there to keep them. Closing the menu without saving discards them.
 
 </details>
 
@@ -47,31 +59,23 @@ All location changes are physical VR gestures (grab from your body, offhand-to-h
   <summary>The light won't go on my head</summary>
 &#10240;
 
-Out of power armor the head lamp is gated by a **headgear requirement**, which ships set to **Immersive** — you must be wearing a light-capable helmet or hard hat (not a soft hat). Either wear eligible headgear, or change `iFlashlightHeadgearRequirement` on the misc config screen to **Any headgear** or **None**. In power armor the helmet lamp always works regardless of this setting. See [Headgear Requirement](headgear-restriction.md).
+Out of power armor, the head light needs headgear. By default it takes a light-capable helmet or hard hat, not a soft hat. Wear one, or set **Require headgear for flashlight on head** (General page) to a looser option. In power armor the helmet lamp always works. See [Headgear Requirement](headgear-restriction.md).
 
 </details>
 
 <details>
-  <summary>The weapon-mounted light won't turn on</summary>
+  <summary>My helmet should count as light-capable but doesn't</summary>
 &#10240;
 
-The **weapon-flashlight requirement** ships set to **AutoDetect**: when a supported weapon mod (e.g. Tactical Weapon Mods) is installed, the weapon light only mounts on guns that actually carry a modeled flashlight. Equip a weapon with a flashlight attachment, or set `iWeaponFlashlightMeshRequired` to **Disabled** on the misc config screen so the weapon light always applies. See [Weapon Flashlight Requirement](weapon-mount-restriction.md).
+Set `aDumpDataOnce = ["headgear"]` in the config file's `[Debug]` section and save. The log then lists every head-slot armor in your load order, as allowed or blocked. Add the helmet to `aHeadLightAllowList` as `"localFormID|plugin"`, or its mod's helmet keyword to `aHeadLightKeywords`. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
 
 </details>
 
 <details>
-  <summary>The hand light turns off when I draw a melee weapon</summary>
+  <summary>The weapon light won't turn on</summary>
 &#10240;
 
-That's intentional — a drawn melee or unarmed weapon occupies your primary hand, so the light can't sit there. Sheathe the weapon, or move the light to your offhand or head.
-
-</details>
-
-<details>
-  <summary>The light jumps to my head when I grip my weapon two-handed</summary>
-&#10240;
-
-A two-handed grip occupies your offhand, so a light held there has to go somewhere. Normally it moves onto the weapon; if the weapon-flashlight requirement is on and your gun has no lamp, it goes to your **head** instead of being lost — and if you're not wearing eligible headgear, the headgear requirement then turns it off. Releasing the grip brings it back to your offhand. See [When the weapon has no lamp](weapon-mount-restriction.md#when-the-weapon-has-no-lamp).
+With a supported weapon mod installed (Tactical Weapon Mods, VRCP DOOM), the weapon light only goes on guns that carry a modeled flashlight. Fit a flashlight attachment, or set **Require a flashlight on the weapon** (General page) to **Not required**. See [Weapon Flashlight Requirement](weapon-mount-restriction.md).
 
 </details>
 
@@ -79,7 +83,7 @@ A two-handed grip occupies your offhand, so a light held there has to go somewhe
   <summary>My gun has a flashlight attachment but the mod doesn't see it</summary>
 &#10240;
 
-The weapon is scanned only when it changes, so **holster and re-draw** first — that's usually all it takes. If it still isn't recognised, the mod is looking for node names it doesn't know: open the weapon in NifSkope, find the node the lamp hangs from, and add its name to `aWeaponFlashlightMeshNodes`. The log records the scan result either way. See [Making it work with your weapon mods](weapon-mount-restriction.md#making-it-work-with-your-weapon-mods).
+The weapon is checked only when it changes, so **holster and draw it again**. If it's still missed, the lamp hangs from a node the mod doesn't know: find its name in NifSkope and add it to `aWeaponFlashlightMeshNodes`. The log records each check. See [Making it work with your weapon mods](weapon-mount-restriction.md#making-it-work-with-your-weapon-mods).
 
 </details>
 
@@ -87,21 +91,41 @@ The weapon is scanned only when it changes, so **holster and re-draw** first —
   <summary>The beam on my weapon comes out of the wrong place</summary>
 &#10240;
 
-When no modeled flashlight is detected the beam sits at a generic offset near the barrel — it's a guess that suits most guns. When a lamp _is_ detected the beam roots at that lamp instead, and `tWeaponFlashlightMountTransform` tunes the offset from it live while you watch. See [What changes when a lamp is found](weapon-mount-restriction.md#what-changes-when-a-lamp-is-found).
+On a gun with no detected lamp, the beam sits at a general offset near the barrel. With a lamp detected it comes from the lamp, and **Beam on the flashlight** (Advanced page, Weapon mount) adjusts it live.
+
+</details>
+
+<details>
+  <summary>The hand light turns off when I draw a melee weapon</summary>
+&#10240;
+
+That's intended: the melee weapon occupies your primary hand. Put the weapon away, or move the light to your offhand or head.
+
+</details>
+
+<details>
+  <summary>The light jumps to my head when I grip my weapon two-handed</summary>
+&#10240;
+
+A two-handed grip occupies your offhand, so a light held there normally moves onto the weapon. If the weapon-flashlight requirement is on and the gun has no lamp, it goes to your head instead. Bare-headed, the headgear requirement then turns it off. Letting go of the grip brings it back. See [When the weapon has no lamp](weapon-mount-restriction.md#when-the-weapon-has-no-lamp).
 
 </details>
 
 ## Visuals
 
 <details>
-  <summary>How do I hide the icon that shows when my hand is near the flashlight on my chest?</summary>
+  <summary>The flashlight shadows look broken or blocky</summary>
 &#10240;
 
-The icon marks the **grab zone** of the flashlight stowed on your chest. By default it's drawn only while a hand is inside the zone, as a hint that a trigger press will grab or stow the light. To hide it, set `sShowIcon = "never"` in the `[ImFl_BodyActivationSphere]` section of the config file. The grab keeps working exactly the same, and the haptic tick still tells you when your hand is in the zone. The change applies live.
+They only render well with the game's **Shadow Quality** on **HIGH**. The General page warns when it's lower. Performance mods such as [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) lower it while you play. If you'd rather have none, set **Shadows** to off on the General page.
 
-If a sphere shows around it, the global **show all activation spheres** toggle is on (misc config screen, or `bShowAllActivationSpheres` in the config file). It forces every sphere visible at its full size, so turn it off.
+</details>
 
-If you'd rather keep the hint but make it less intrusive, lower `fIconSize` in the same section — it draws a smaller icon without shrinking the actual grab zone. To mark the zone with a glowing sphere instead (or as well), set `sShowSphere = "wheninside"`; `fSphereScale` sizes it.
+<details>
+  <summary>How do I hide the icon near the flashlight on my chest?</summary>
+&#10240;
+
+It marks the grab zone, and shows only while a hand is inside it. On the Gestures page, set **Body grab**'s **Show icon** to Never, or make it smaller with **Icon size**. The grab works the same, and the haptic tick still marks the zone. If a sphere shows too, turn off **Show all activation spheres**.
 
 </details>
 
@@ -109,15 +133,7 @@ If you'd rather keep the hint but make it less intrusive, lower `fIconSize` in t
   <summary>I don't see the flashlight model in my hand</summary>
 &#10240;
 
-The in-hand model is posed onto your fingers through FRIK's hand-pose API, which arrived in **FRIK v78** — on older FRIK the model stays hidden rather than floating unposed in your hand. Update FRIK to v78 or later to see it. Everything else works regardless: the light itself, all the gestures, and the flashlight model stowed on your chest.
-
-</details>
-
-<details>
-  <summary>The flashlight shadows look bad or blocky</summary>
-&#10240;
-
-The mod adds shadows for immersion, but they only render well when the game's **Shadow Quality** is set to **HIGH** — anything lower looks broken. Some performance mods, like [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961), lower shadow quality while the game is running and break the look. If you prefer no flashlight shadows, disable them on the misc config screen.
+The model is posed on your fingers through FRIK's hand-pose API, which needs **FRIK v78** or later. On older FRIK the model stays hidden, and everything else still works. It can also be turned off: see **Show the model** on the Advanced page.
 
 </details>
 
@@ -127,7 +143,7 @@ The mod adds shadows for immersion, but they only render well when the game's **
   <summary>Enemies notice me as soon as I turn the flashlight on</summary>
 &#10240;
 
-That's NPC light detection. Vanilla ignores flashlights for stealth completely — you can put a beam on a raider's chest from the dark and they won't react — and this mod makes the beam count. Carrying a lit flashlight makes you somewhat visible on its own, and putting the beam on someone makes you a lot more visible; catch a hostile full in the face at close range and they've simply seen you. Everything about it is tunable, and `bNpcDetectionEnabled = false` in the config file turns it off entirely. See [NPC Light Detection](npc-detection.md).
+That's NPC light detection. The game ignores flashlights for stealth, and this mod makes the beam count. A lit flashlight makes you a little visible, and the beam on someone makes you much more so. Turn it off with **Enemies detect player light** on the General page. See [NPC Light Detection](npc-detection.md).
 
 </details>
 
@@ -135,15 +151,24 @@ That's NPC light detection. Vanilla ignores flashlights for stealth completely �
   <summary>The flashlight makes stealth too hard</summary>
 &#10240;
 
-Tune it rather than turning it off. `fNpcDetectionLightLevelCurve` up keeps you dim until the beam is genuinely close; `fNpcDetectionMaxRange` down shortens how far the beam can give you away; `fNpcDetectionLightLevelBaseline` down reduces the cost of merely carrying the light; and `bNpcDetectionOnlyWhenSneaking = true` limits the alerts to when you're actually sneaking. The full list is in [NPC Light Detection](npc-detection.md#configuration).
+Tune it on the Advanced page (Enemy light detection) rather than turning it off:
+- **Brighten curve** up keeps you dim until the beam is close.
+- **Reach** down shortens how far the beam gives you away.
+- **Lit while on** down lowers the cost of just carrying the light.
+- **Only while sneaking** limits the alerts to sneaking.
+
+See [Configuration](npc-detection.md#configuration).
 
 </details>
 
 <details>
-  <summary>Enemies find me even when the beam isn't pointing at them</summary>
+  <summary>Enemies find me when the beam isn't pointing at them</summary>
 &#10240;
 
-Three things can cause that. Simply having the light on makes you visible by a fixed amount (`fNpcDetectionLightLevelBaseline`) — you're carrying a light source. While the beam _is_ on somebody, that extra visibility is your own illumination, so every NPC who can see you benefits from it, not only the one being lit. And the bright patch your beam paints on a wall or floor can be noticed by anyone standing near it who can actually see it (set `iNpcDetectionLitSpotSoundLevel = 0` to stop that). See [NPC Light Detection](npc-detection.md).
+Three causes:
+- Having the light on makes you a little visible by itself.
+- While the beam is on someone, every NPC who can see you sees you lit, not only that one.
+- The bright patch the beam paints can be noticed by an NPC near it who is looking at it. **Where it lands** turns that off.
 
 </details>
 
@@ -151,7 +176,7 @@ Three things can cause that. Simply having the light on makes you visible by a f
   <summary>Do I still need Flashlight Stealth Fix?</summary>
 &#10240;
 
-No, and you shouldn't run both — [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) solves the same vanilla problem, so the two stack into roughly double the penalty. This mod's version is directional (pointing the beam away from someone costs you far less than pointing it at them) and checks line of sight, neither of which the Papyrus version can do; on the other hand it only applies to this mod's flashlight. Either uninstall Flashlight Stealth Fix or set `bNpcDetectionEnabled = false` here. See the [comparison](npc-detection.md#compared-to-flashlight-stealth-fix).
+No, and don't run both: [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) solves the same problem, so the two stack. This mod's version depends on where you aim and checks line of sight, but it only knows its own flashlight. Uninstall the other mod, or turn off **Enemies detect player light** here. See the [comparison](npc-detection.md#compared-to-flashlight-stealth-fix).
 
 </details>
 
@@ -161,7 +186,7 @@ No, and you shouldn't run both — [Flashlight Stealth Fix](https://www.nexusmod
   <summary>Does it conflict with other flashlight mods?</summary>
 &#10240;
 
-Run only one flashlight replacement at a time — other mods that drive the Pip-Boy light will conflict. This mod also requires **FRIK v77+**; older FRIK versions lack the config UI and flashlight integration.
+Run one flashlight replacement at a time: other mods that drive the Pip-Boy light conflict with it.
 
 </details>
 
@@ -169,9 +194,9 @@ Run only one flashlight replacement at a time — other mods that drive the Pip-
   <summary>Does it work with ROCK?</summary>
 &#10240;
 
-Yes, with **ROCK v0.9 or newer**; older ROCK versions aren't detected. When [ROCK](https://github.com/brunocatani/ROCK) handles your weapons, the light follows how the weapon is actually held: a two-handed grip puts it on the weapon, a pistol fired one-handed from your offhand moves it to your free primary hand, and a rifle carried by the offhand keeps it on the weapon. While the offhand holds the weapon, your free primary hand takes over the head and body gestures. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
+Yes, with **ROCK v0.9 or newer**. The light follows how ROCK has you hold the weapon: on the weapon in a two-handed grip, in your free primary hand with a pistol fired from the offhand, and on the weapon for a rifle the offhand carries. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
 
-One known limitation: while ROCK fires from your left hand, the mod's primary-hand haptics are felt in the offhand. That needs a fix in ROCK.
+Known limitation: while ROCK fires from your left hand, the mod's primary-hand haptics are felt in the offhand.
 
 </details>
 
@@ -179,29 +204,6 @@ One known limitation: while ROCK fires from your left hand, the mod's primary-ha
   <summary>Why do I get a VR FPS Stabilizer warning?</summary>
 &#10240;
 
-The mod detects [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) because it can degrade flashlight shadows, and shows a notification every 5 minutes while the light is on. The warning does not appear if flashlight shadows are disabled. If you've handled it another way, silence the warning with `bWarnAboutFPSStabilizerMod = false` in the config file.
-
-</details>
-
-## Settings and Customization
-
-<details>
-  <summary>Where are the settings, config file, and logs?</summary>
-&#10240;
-
-Most options are on the in-game beam and misc config screens (open the FRIK configuration UI, then select Immersive Flashlight). Everything else lives in the config file and is live-reloaded into the running game when you save:
-
-- Config file: `%USERPROFILE%\Documents\My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\ImmersiveFlashlightVR.toml`
-- Logs: `%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR.log`
-
-The full settings reference is in the [Usage and Configuration Guide](README.md#advanced-configuration).
-
-</details>
-
-<details>
-  <summary>My helmet should count as light-capable but doesn't</summary>
-&#10240;
-
-The Immersive rule qualifies headgear by keyword, plus an allow list and a deny list you can extend. To see exactly what passes in your own load order, set `aDumpDataOnce = ["headgear"]` in the config file's `[Debug]` section and save — the mod writes every head-slot armor into the log, split into allowed and blocked. Then add the FormID of what you want to `aHeadLightAllowList` (as `localFormID|plugin`), or its mod's helmet keyword to `aHeadLightKeywords`. Changes apply live. See [Choosing what counts](headgear-restriction.md#choosing-what-counts).
+[VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) lowers the shadow quality, which breaks the flashlight's shadows. The mod reminds you every 5 minutes while the light is on with shadows. Turn the reminder off with **Warn about VR FPS Stabilizer** on the General page.
 
 </details>

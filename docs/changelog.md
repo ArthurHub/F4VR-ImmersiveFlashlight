@@ -1,3 +1,9 @@
+## v1.4
+
+- Config: Every setting is now edited in game in [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945), applied live, with Save and Discard. It replaces the main and misc config screens and the FRIK config button.
+- Config: The beam tuning panel opens from the Beam page in Mods Config. Its changes become pending edits there, saved or discarded with the rest, and its Save button is gone. The thumbstick prompts show one line of icons under the tuning row.
+- Config: The config file is now `ImmersiveFlashlightVR.toml`. Your INI settings are carried over on first load.
+
 ## v1.3.1
 
 - Dev: Added a devbench `immersiveflashlightvr` tool. Its `state` reports the light (location, beam), what gates the gestures, weapon grips, restrictions, the last NPC detection event and whether the config UI is open. Its actions turn the light on/off or move it, open or close the config UI, and explain the headgear and weapon restrictions. It publishes events for fired gestures, restriction turn-offs, and every state change. Session config overrides (`set` / `clear`) now apply to the light like an INI edit does.
