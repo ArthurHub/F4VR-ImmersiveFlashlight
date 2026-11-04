@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
+#include "modsconfig/ModsConfigFO4Api.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
 #include "vrui/BindingPrompt.h"
@@ -28,8 +29,21 @@ namespace
     // beam tuning toggle beside it stays where it is when they are swapped
     constexpr float BEAM_VALUES_PANEL_WIDTH = 4.3f;
 
+    // as tall as the buttons beside it, so the row stays even
+    constexpr float BEAM_VALUES_PANEL_HEIGHT = 2.0f;
+
     // where a value starts, measured from the start of its row, so the three line up in a column
     constexpr float BEAM_VALUES_TAB_WIDTH = 2.4f;
+
+    // spreads the three rows over the panel's height
+    constexpr float BEAM_VALUES_LINE_SPACING = 2.4f;
+
+    // the lines are drawn down from the top edge, so the top padding is what places them in the height
+    constexpr UIPanelStyle BEAM_VALUES_PANEL_STYLE = [] {
+        auto style = F4VR_PANEL_STYLE;
+        style.padding = { .top = 0.2f, .right = 0.3f, .bottom = 0.15f, .left = 0.3f };
+        return style;
+    }();
 
     struct ColorOption
     {
@@ -85,6 +99,32 @@ namespace
     {
         ImFl::FlashlightState::setFlashlightRuntimeLocationOverride(location);
         ImFl::Utils::turnFlashlightOn();
+    }
+
+    // the player was told this opening of the screen that the menu refuses its edits, so it is told once
+    bool refusedEditsNotified = false;
+
+    /**
+     * Hand beam values of the tuned location to Mods Config FO4 VR's menu as pending edits, which its Save writes and
+     * its Discard takes back: the screen writes no file. All are read before the first is handed over, as each comes
+     * back as a preview whose override reloads the config, which drops a value not handed over yet. One the menu
+     * refuses, as when it no longer shows the mod, is dropped as the screen closes, which the player is told once.
+     */
+    void handOverBeamValues(const std::initializer_list<ImFl::FlashlightBeamValue> values)
+    {
+        std::vector<std::pair<std::string, mods_config::api::Value>> settings;
+        for (const auto value : values) {
+            settings.push_back(ImFl::g_config.getFlashlightValueSetting(ImFl::FlashlightState::flashlightLocation, value));
+        }
+        for (const auto& [id, value] : settings) {
+            if (!mods_config::api::ModsConfigFO4Client::get().setPendingValue(id, value)) {
+                logger::warn("Beam value '{}' is not taken by the config menu, it is dropped as the beam tuning closes", id);
+                if (!refusedEditsNotified) {
+                    refusedEditsNotified = true;
+                    f4vr::showNotification("Beam changes can't be kept:\nopen the beam tuning from Mods Config");
+                }
+            }
+        }
     }
 
     void loadGoboTextureFiles()
@@ -156,14 +196,16 @@ namespace ImFl::config
         }
         logger::info("Open beam config screen...");
         _closeRequested = false;
+        refusedEditsNotified = false;
         FlashlightState::refreshFlashlightLocation();
         createUI();
         Utils::turnFlashlightOn();
     }
 
     /**
-     * Discard unsaved beam changes (reload config), clear the preview override, release controller
-     * suppression, and detach the UI.
+     * Reload the config, clear the preview override, release controller suppression, and detach the UI. The
+     * reload keeps the tuned values the menu took, as its previews are overrides of the config, and drops
+     * any it refused.
      */
     void BeamScreen::close()
     {
@@ -172,7 +214,6 @@ namespace ImFl::config
         }
         _closeRequested = false;
 
-        // reload config to discard unsaved changes
         FlashlightState::setFlashlightRuntimeLocationOverride(std::nullopt);
         g_config.load();
         if (Utils::isFlashlightOn()) {
@@ -247,18 +288,22 @@ namespace ImFl::config
             case vrcf::Direction::Up:
                 *FlashlightState::flashlightFade = fminf(*FlashlightState::flashlightFade + 0.1f, 4.0f);
                 markValueTuned(TunedValue::Intensity);
+                handOverBeamValues({ FlashlightBeamValue::Fade });
                 break;
             case vrcf::Direction::Down:
                 *FlashlightState::flashlightFade = fmaxf(*FlashlightState::flashlightFade - 0.1f, 0.2f);
                 markValueTuned(TunedValue::Intensity);
+                handOverBeamValues({ FlashlightBeamValue::Fade });
                 break;
             case vrcf::Direction::Right:
                 *FlashlightState::flashlightRadius = min(*FlashlightState::flashlightRadius + 200, 10000);
                 markValueTuned(TunedValue::Distance);
+                handOverBeamValues({ FlashlightBeamValue::Radius });
                 break;
             case vrcf::Direction::Left:
                 *FlashlightState::flashlightRadius = max(*FlashlightState::flashlightRadius - 200, 1000);
                 markValueTuned(TunedValue::Distance);
+                handOverBeamValues({ FlashlightBeamValue::Radius });
                 break;
             }
             FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
@@ -269,11 +314,13 @@ namespace ImFl::config
                 vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::Tick);
                 *FlashlightState::flashlightFov = fminf(*FlashlightState::flashlightFov + 5, 150);
                 markValueTuned(TunedValue::Spread);
+                handOverBeamValues({ FlashlightBeamValue::Fov });
                 FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
             } else if (offhandDirection.value() == vrcf::Direction::Down) {
                 vrcf::VRHaptics.trigger(vrcf::Hand::Offhand, vrcf::HapticPattern::Tick);
                 *FlashlightState::flashlightFov = fmaxf(*FlashlightState::flashlightFov - 5, 5);
                 markValueTuned(TunedValue::Spread);
+                handOverBeamValues({ FlashlightBeamValue::Fov });
                 FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
             }
         }
@@ -324,7 +371,8 @@ namespace ImFl::config
 
     /**
      * While beam tuning is on the gobo and color buttons give their place in the row to the values panel:
-     * the three tuned values are what the thumbsticks are changing, and the presets are not.
+     * the three tuned values are what the thumbsticks are changing, and the presets are not. The thumbstick
+     * prompts show under that row only then, and take no room otherwise.
      */
     void BeamScreen::updateBeamTuningPanelVisibility() const
     {
@@ -332,6 +380,7 @@ namespace ImFl::config
         _switchGoboBtn->setVisibility(!tuning);
         _switchColorBtn->setVisibility(!tuning);
         _beamValuesPanel->setVisibility(tuning);
+        _tuningPromptsRow->setVisibility(tuning);
     }
 
     /**
@@ -341,6 +390,7 @@ namespace ImFl::config
     {
         const int nextGoboIndex = (findCurrentGoboPathIndex() + 1) % static_cast<int>(goboTextureFilePaths.size());
         *FlashlightState::flashlightGoboPath = goboTextureFilePaths[nextGoboIndex];
+        handOverBeamValues({ FlashlightBeamValue::GoboPath });
 
         FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
@@ -352,26 +402,19 @@ namespace ImFl::config
     {
         const int nextColorIndex = (findCurrentColorIndex() + 1) % static_cast<int>(COLOR_OPTIONS.size());
         *FlashlightState::flashlightColor = COLOR_OPTIONS[nextColorIndex].color;
+        handOverBeamValues({ FlashlightBeamValue::Color });
 
         FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
 
     /**
-     * Save the flashlight values only for the current selected location.
-     */
-    void BeamScreen::saveConfig()
-    {
-        f4vr::showNotification(std::format("{} flashlight beam values saved", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
-        g_config.saveFlashlightValues(FlashlightState::flashlightLocation);
-    }
-
-    /**
-     * Reset to default the flashlight values only for the current selected location.
+     * Reset to default the flashlight values only for the current selected location, as pending edits of the menu.
      */
     void BeamScreen::resetConfig()
     {
         f4vr::showNotification(std::format("{} flashlight beam values reset to default", getFlashlightLocationLabel(FlashlightState::flashlightLocation)));
         g_config.resetFlashlightValuesToDefault(FlashlightState::flashlightLocation);
+        handOverBeamValues({ FlashlightBeamValue::Fade, FlashlightBeamValue::Radius, FlashlightBeamValue::Fov, FlashlightBeamValue::Color, FlashlightBeamValue::GoboPath });
         FlashlightState::refreshLightValues(LightRefreshMode::InPlace);
     }
 
@@ -478,17 +521,15 @@ namespace ImFl::config
         _switchColorBtn->setImage("vrui\\switch-color.DDS");
         _switchColorBtn->setOnPressHandler([this](UIButtonPanel*) { switchBeamColor(); });
 
-        _beamValuesPanel = std::make_shared<UITextPanel>("ImFl_BeamValues", BEAM_VALUES_PANEL_WIDTH);
-        _beamValuesPanel->setStyle(F4VR_PANEL_STYLE);
+        _beamValuesPanel = std::make_shared<UITextPanel>("ImFl_BeamValues", BEAM_VALUES_PANEL_WIDTH, BEAM_VALUES_PANEL_HEIGHT);
+        _beamValuesPanel->setStyle(BEAM_VALUES_PANEL_STYLE);
         _beamValuesPanel->setTabWidth(BEAM_VALUES_TAB_WIDTH);
+        _beamValuesPanel->setLineSpacing(BEAM_VALUES_LINE_SPACING);
         _beamValuesPanel->setContent([this](std::vector<TextRow>& rows) {
             rows.push_back(beamValueRow("INTENSITY", std::format("{:.1f}", *FlashlightState::flashlightFade), TunedValue::Intensity));
             rows.push_back(beamValueRow("DISTANCE", std::format("{}", *FlashlightState::flashlightRadius), TunedValue::Distance));
             rows.push_back(beamValueRow("SPREAD", std::format("{:.0f}\xC2\xB0", *FlashlightState::flashlightFov), TunedValue::Spread));
         });
-
-        refreshPresetButtons();
-        updateBeamTuningPanelVisibility();
 
         // the preset buttons and the values panel share the middle of the row, one pair or the other showing
         const auto row2Container = std::make_shared<UIContainer>("Row2", UIContainerLayout::HorizontalCenter, 0.3f);
@@ -496,11 +537,6 @@ namespace ImFl::config
         row2Container->addElement(_switchGoboBtn);
         row2Container->addElement(_switchColorBtn);
         row2Container->addElement(_beamValuesPanel);
-
-        const auto saveBtn = std::make_shared<UIButtonPanel>("ImFl_SaveButton");
-        saveBtn->setImage("f4cf\\vrui\\save.DDS");
-        saveBtn->setBottomText("SAVE");
-        saveBtn->setOnPressHandler([this](UIButtonPanel*) { saveConfig(); });
 
         const auto resetBtn = std::make_shared<UIButtonPanel>("ImFl_ResetButton");
         resetBtn->setImage("f4cf\\vrui\\reset.DDS");
@@ -513,35 +549,45 @@ namespace ImFl::config
         exitBtn->setOnPressHandler([this](UIButtonPanel*) { _closeRequested = true; });
 
         const auto row3Container = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
-        row3Container->addElement(saveBtn);
         row3Container->addElement(resetBtn);
         row3Container->addElement(exitBtn);
 
-        // one footer whose text follows the beam tuning toggle
+        // the thumbstick prompts of the beam tuning, in one line under the row they tune, shown while it is on
+        const auto tuningPrompts = std::make_shared<UITextPanel>("ImFl_BeamTuningPrompts");
+        auto tuningPromptsStyle = F4VR_PANEL_STYLE;
+        tuningPromptsStyle.padding.left = 0.3f;
+        tuningPromptsStyle.padding.right = 0.3f;
+        tuningPrompts->setStyle(tuningPromptsStyle);
+        tuningPrompts->setTextHeight(0.22f);
+        tuningPrompts->setContent([](std::vector<TextRow>& rows) {
+            // the tuning reads the thumbsticks directly (see handleBeamTuningAdjustments), so the prompts
+            // are built from bindings describing exactly those reads; their icons draw the stick's axis
+            constexpr BindingPromptStyle STICK_PROMPT_STYLE{ .imageHeight = 2.8f };
+            const auto stick = [](const vrcf::Hand hand, const vrcf::Direction direction) {
+                return vrcf::InputBinding{ .hand = hand, .type = vrcf::ActivationType::AxisDirection, .axis = vrcf::Axis::Thumbstick, .direction = direction };
+            };
+            rows.push_back({});
+            for (const auto& [binding, text] : { std::pair{ stick(vrcf::Hand::Primary, vrcf::Direction::UpDown), " INTENSITY    " },
+                     std::pair{ stick(vrcf::Hand::Primary, vrcf::Direction::RightLeft), " DISTANCE    " },
+                     std::pair{ stick(vrcf::Hand::Offhand, vrcf::Direction::UpDown), " SPREAD" } }) {
+                appendBindingPrompt(rows.back().spans, binding, STICK_PROMPT_STYLE);
+                rows.back().spans.push_back({ .text = text });
+            }
+        });
+
+        _tuningPromptsRow = std::make_shared<UIContainer>("RowTuningPrompts", UIContainerLayout::HorizontalCenter, 0.3f);
+        _tuningPromptsRow->addElement(tuningPrompts);
+
+        refreshPresetButtons();
+        updateBeamTuningPanelVisibility();
+
         const auto footer = std::make_shared<UITextPanel>("ImFl_BeamFooter");
         footer->setStyle(F4VR_PANEL_STYLE);
-        footer->setTextHeight(0.2f);
-        footer->setContent([beamTuningTglBtn = std::weak_ptr(_beamTuningTglBtn)](std::vector<TextRow>& rows) {
-            const auto tuningBtn = beamTuningTglBtn.lock();
-            if (tuningBtn && tuningBtn->isToggleOn()) {
-                // the tuning reads the thumbsticks directly (see handleBeamTuningAdjustments), so the prompts
-                // are built from bindings describing exactly those reads
-                constexpr BindingPromptStyle STICK_PROMPT_STYLE{ .imageHeight = 2.0f };
-                const auto stick = [](const vrcf::Hand hand) {
-                    return vrcf::InputBinding{ .hand = hand, .type = vrcf::ActivationType::AxisDirection, .axis = vrcf::Axis::Thumbstick };
-                };
-                for (const auto& [hand, text] : { std::pair{ vrcf::Hand::Primary, " UP/DOWN: INTENSITY" },
-                         std::pair{ vrcf::Hand::Primary, " LEFT/RIGHT: DISTANCE" },
-                         std::pair{ vrcf::Hand::Offhand, " UP/DOWN: SPREAD" } }) {
-                    rows.push_back({});
-                    appendBindingPrompt(rows.back().spans, stick(hand), STICK_PROMPT_STYLE);
-                    rows.back().spans.push_back({ .text = text });
-                }
-            } else {
-                rows.emplace_back("TUNE VALUES SEPARATELY PER LOCATION");
-                rows.emplace_back("SAVE TO PERSIST CHANGES BEFORE EXIT");
-                rows.emplace_back("RESET RESETS TO MOD DEFAULTS");
-            }
+        footer->setTextHeight(0.22f);
+        footer->setContent([](std::vector<TextRow>& rows) {
+            rows.emplace_back("TUNE VALUES SEPARATELY PER LOCATION");
+            rows.emplace_back("RESET RESETS TO MOD DEFAULTS");
+            rows.emplace_back("SAVE OR DISCARD CHANGES IN THE CONFIG MENU");
         });
 
         const auto row4Container = std::make_shared<UIContainer>("Row4", UIContainerLayout::HorizontalCenter, 0.3f);
@@ -555,6 +601,7 @@ namespace ImFl::config
         _ui = std::make_shared<UIContainer>("BeamConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _ui->addElement(row4Container);
         _ui->addElement(row3Container);
+        _ui->addElement(_tuningPromptsRow);
         _ui->addElement(row2Container);
         _ui->addElement(_row1ToggleContainer);
         _ui->addElement(header);

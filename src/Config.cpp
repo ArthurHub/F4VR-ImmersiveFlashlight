@@ -103,7 +103,7 @@ namespace
     }
 
     /**
-     * A beam color as the TOML text of its table, { rgb = [r, g, b] } in 0..255, which a save writes as the table.
+     * A beam color as the TOML text of its table, { rgb = [r, g, b] } in 0..255, as Mods Config FO4 VR takes a color.
      */
     std::string beamColorText(const RE::ColorStruct& color)
     {
@@ -181,56 +181,53 @@ namespace ImFl
     }
 
     /**
-     * Persist the beam values of the given location, all in one write of the config file.
+     * A beam value of the location as a setting of Mods Config FO4 VR's config spec: its id, the key and its section as
+     * the spec has a setting with no id of its own, and its current value in the setting's valueType (a color is the
+     * TOML text of its table). The in-world beam tuning hands its edits to the menu with it.
      */
-    void Config::saveFlashlightValues(const FlashlightLocation location)
+    std::pair<std::string, mods_config::api::Value> Config::getFlashlightValueSetting(const FlashlightLocation location, const FlashlightBeamValue value) const
     {
-        switch (location) {
-        case FlashlightLocation::OnHead:
-            saveConfigValues(DEFAULT_SECTION,
-                {
-                    { "fFlashlightOnHeadFade", flashlightOnHeadFade },
-                    { "iFlashlightOnHeadRadius", flashlightOnHeadRadius },
-                    { "fFlashlightOnHeadFov", flashlightOnHeadFov },
-                    { "cFlashlightOnHeadColor", beamColorText(flashlightOnHeadColor) },
-                    { "sFlashlightOnHeadGoboPath", flashlightOnHeadGoboPath },
-                });
-            break;
+        struct BeamValues
+        {
+            std::string_view name;
+            float fade;
+            int radius;
+            float fov;
+            const RE::ColorStruct& color;
+            const std::string& goboPath;
+        };
 
-        case FlashlightLocation::OnPAHead:
-            saveConfigValues(DEFAULT_SECTION,
-                {
-                    { "fFlashlightOnPAHeadFade", flashlightOnPAHeadFade },
-                    { "iFlashlightOnPAHeadRadius", flashlightOnPAHeadRadius },
-                    { "fFlashlightOnPAHeadFov", flashlightOnPAHeadFov },
-                    { "cFlashlightOnPAHeadColor", beamColorText(flashlightOnPAHeadColor) },
-                    { "sFlashlightOnPAHeadGoboPath", flashlightOnPAHeadGoboPath },
-                });
-            break;
+        const auto values = [this, location]() -> BeamValues {
+            switch (location) {
+            case FlashlightLocation::OnHead:
+                return { "OnHead", flashlightOnHeadFade, flashlightOnHeadRadius, flashlightOnHeadFov, flashlightOnHeadColor, flashlightOnHeadGoboPath };
+            case FlashlightLocation::OnPAHead:
+                return { "OnPAHead", flashlightOnPAHeadFade, flashlightOnPAHeadRadius, flashlightOnPAHeadFov, flashlightOnPAHeadColor, flashlightOnPAHeadGoboPath };
+            case FlashlightLocation::InOffhand:
+            case FlashlightLocation::InPrimaryHand:
+                return { "InHand", flashlightInHandFade, flashlightInHandRadius, flashlightInHandFov, flashlightInHandColor, flashlightInHandGoboPath };
+            case FlashlightLocation::OnWeapon:
+                return { "OnWeapon", flashlightOnWeaponFade, flashlightOnWeaponRadius, flashlightOnWeaponFov, flashlightOnWeaponColor, flashlightOnWeaponGoboPath };
+            }
+            std::unreachable();
+        }();
 
-        case FlashlightLocation::InOffhand:
-        case FlashlightLocation::InPrimaryHand:
-            saveConfigValues(DEFAULT_SECTION,
-                {
-                    { "fFlashlightInHandFade", flashlightInHandFade },
-                    { "iFlashlightInHandRadius", flashlightInHandRadius },
-                    { "fFlashlightInHandFov", flashlightInHandFov },
-                    { "cFlashlightInHandColor", beamColorText(flashlightInHandColor) },
-                    { "sFlashlightInHandGoboPath", flashlightInHandGoboPath },
-                });
-            break;
-
-        case FlashlightLocation::OnWeapon:
-            saveConfigValues(DEFAULT_SECTION,
-                {
-                    { "fFlashlightOnWeaponFade", flashlightOnWeaponFade },
-                    { "iFlashlightOnWeaponRadius", flashlightOnWeaponRadius },
-                    { "fFlashlightOnWeaponFov", flashlightOnWeaponFov },
-                    { "cFlashlightOnWeaponColor", beamColorText(flashlightOnWeaponColor) },
-                    { "sFlashlightOnWeaponGoboPath", flashlightOnWeaponGoboPath },
-                });
-            break;
+        const auto idOf = [&values](const std::string_view typePrefix, const std::string_view name) {
+            return std::format("{}Flashlight{}{}:{}", typePrefix, values.name, name, DEFAULT_SECTION);
+        };
+        switch (value) {
+        case FlashlightBeamValue::Fade:
+            return { idOf("f", "Fade"), values.fade };
+        case FlashlightBeamValue::Radius:
+            return { idOf("i", "Radius"), values.radius };
+        case FlashlightBeamValue::Fov:
+            return { idOf("f", "Fov"), values.fov };
+        case FlashlightBeamValue::Color:
+            return { idOf("c", "Color"), beamColorText(values.color) };
+        case FlashlightBeamValue::GoboPath:
+            return { idOf("s", "GoboPath"), values.goboPath };
         }
+        std::unreachable();
     }
 
     /**

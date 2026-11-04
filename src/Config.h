@@ -8,6 +8,7 @@
 #include "api/FRIKApi.h"
 #include "config/ConfigBase.h"
 #include "f4vr/WandActivationSphere.h"
+#include "modsconfig/ModsConfigFO4Api.h"
 #include "vrcf/VRControllersManager.h"
 
 namespace ImFl
@@ -84,6 +85,18 @@ namespace ImFl
         AutoDetect
     };
 
+    /**
+     * One of the beam values each location has, which is a setting of its own in the config spec.
+     */
+    enum class FlashlightBeamValue : uint8_t
+    {
+        Fade = 0,
+        Radius,
+        Fov,
+        Color,
+        GoboPath
+    };
+
     class Config : public ConfigBase
     {
     public:
@@ -92,7 +105,7 @@ namespace ImFl
         {}
 
         void setFlashlightLocation(FlashlightConfigLocation location, bool inPowerArmor);
-        void saveFlashlightValues(FlashlightLocation location);
+        std::pair<std::string, mods_config::api::Value> getFlashlightValueSetting(FlashlightLocation location, FlashlightBeamValue value) const;
         void resetFlashlightValuesToDefault(FlashlightLocation location);
 
         // Resolve the active in-hand spatial config by hand / grip style / power-armor state.

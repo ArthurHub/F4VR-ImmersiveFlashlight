@@ -14,10 +14,10 @@ namespace ImFl::config
 {
     /**
      * The in-game VR config UI: pick the mount location (head / PA head / in-hand / on-weapon) and tune its
-     * beam - intensity/radius/FOV via thumbstick, plus gobo and color presets - with Save/Reset for the
-     * selected location. FlashlightMod owns it: opened from Mods Config FO4 VR's Beam page, closed by its
-     * Exit, on session load, and as FRIK's config opens. Every other setting is edited in Mods Config FO4
-     * VR's menu, or in the config file.
+     * beam - intensity/radius/FOV via thumbstick, plus gobo and color presets - with Reset to defaults for
+     * the selected location. FlashlightMod owns it: opened from Mods Config FO4 VR's Beam page, closed by its
+     * Exit, on session load, and as FRIK's config opens. It saves nothing itself: each edit is handed to the
+     * minimized menu as a pending value, which the menu's Save writes and its Discard takes back.
      *
      * A press of a button fires while the UI manager is iterating its elements, so Exit only asks for the
      * close, which onFrameUpdate does: detaching the UI then would invalidate that loop.
@@ -54,7 +54,6 @@ namespace ImFl::config
         void updateBeamTuningPanelVisibility() const;
         static void switchBeamGobo();
         static void switchBeamColor();
-        static void saveConfig();
         static void resetConfig();
         static void switchingToOnHeadConfig();
         static void switchingToOnPAHeadConfig();
@@ -74,6 +73,7 @@ namespace ImFl::config
         std::shared_ptr<vrui::UIButtonPanel> _switchGoboBtn;
         std::shared_ptr<vrui::UIButtonPanel> _switchColorBtn;
         std::shared_ptr<vrui::UITextPanel> _beamValuesPanel;
+        std::shared_ptr<vrui::UIContainer> _tuningPromptsRow;
 
         // Exit was pressed, and the next onFrameUpdate closes the UI
         bool _closeRequested = false;
