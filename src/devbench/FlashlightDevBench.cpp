@@ -351,9 +351,9 @@ namespace ImFl::devbench
             requireFlashlight();
             const auto op = args.value("op", std::string("open"));
             if (op == "open") {
-                g_imFl.getConfigScreen()->openConfigMode();
+                g_imFl.getConfigScreen()->open();
             } else if (op == "close") {
-                g_imFl.getConfigScreen()->closeConfigMode();
+                g_imFl.getConfigScreen()->close();
             } else {
                 throw std::invalid_argument(std::format("ui: unknown op '{}': open|close", op));
             }

@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "FlashlightState.h"
 #include "Utils.h"
+#include "api/FRIKApi.h"
 #include "f4vr/PlayerNodes.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
@@ -144,11 +145,6 @@ namespace ImFl::config
         return _ui != nullptr;
     }
 
-    void BeamScreen::setOnBackHandler(std::function<void()> handler)
-    {
-        _onBack = std::move(handler);
-    }
-
     /**
      * Resolve the runtime location, build the UI (which sets the location preview override), and turn the
      * light on so the tuned beam is visible.
@@ -159,6 +155,7 @@ namespace ImFl::config
             return;
         }
         logger::info("Open beam config screen...");
+        _closeRequested = false;
         FlashlightState::refreshFlashlightLocation();
         createUI();
         Utils::turnFlashlightOn();
@@ -173,6 +170,7 @@ namespace ImFl::config
         if (!isOpen()) {
             return;
         }
+        _closeRequested = false;
 
         // reload config to discard unsaved changes
         FlashlightState::setFlashlightRuntimeLocationOverride(std::nullopt);
@@ -201,11 +199,17 @@ namespace ImFl::config
     }
 
     /**
-     * Handle the beam config screen on every frame update.
+     * Handle the beam config screen on every frame update: close it if Exit was pressed or FRIK's config opened.
      */
     void BeamScreen::onFrameUpdate()
     {
+        F4CF_PERF_FUNCTION();
         if (!isOpen()) {
+            return;
+        }
+
+        if (_closeRequested || (frik::api::FRIKApi::inst && frik::api::FRIKApi::inst->isConfigOpen())) {
+            close();
             return;
         }
 
@@ -503,19 +507,15 @@ namespace ImFl::config
         resetBtn->setBottomText("RESET");
         resetBtn->setOnPressHandler([this](UIButtonPanel*) { resetConfig(); });
 
-        const auto backBtn = std::make_shared<UIButtonPanel>("ImFl_BackButton");
-        backBtn->setImage("f4cf\\vrui\\exit.DDS");
-        backBtn->setBottomText("BACK");
-        backBtn->setOnPressHandler([this](UIButtonPanel*) {
-            if (_onBack) {
-                _onBack();
-            }
-        });
+        const auto exitBtn = std::make_shared<UIButtonPanel>("ImFl_ExitButton");
+        exitBtn->setImage("f4cf\\vrui\\exit.DDS");
+        exitBtn->setBottomText("EXIT");
+        exitBtn->setOnPressHandler([this](UIButtonPanel*) { _closeRequested = true; });
 
         const auto row3Container = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
         row3Container->addElement(saveBtn);
         row3Container->addElement(resetBtn);
-        row3Container->addElement(backBtn);
+        row3Container->addElement(exitBtn);
 
         // one footer whose text follows the beam tuning toggle
         const auto footer = std::make_shared<UITextPanel>("ImFl_BeamFooter");

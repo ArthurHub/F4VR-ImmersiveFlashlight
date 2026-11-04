@@ -3,7 +3,7 @@
 #include "Config.h"
 #include "Flashlight.h"
 #include "ModBase.h"
-#include "config-mode/MainScreen.h"
+#include "config-mode/BeamScreen.h"
 
 namespace ImFl
 {
@@ -11,7 +11,7 @@ namespace ImFl
     {
     public:
         FlashlightMod()
-            : ModBase(Settings(Version::PROJECT, Version::NAME, &g_config, 32, true))
+            : ModBase(Settings(Version::PROJECT, Version::NAME, &g_config, 64, true))
         {
             // the activation-sphere icons and config UI panels draw on the framework's overlay
             _settings.preloadRendering = true;
@@ -19,7 +19,7 @@ namespace ImFl
 
         bool isConfigOpen() const;
 
-        config::MainScreen* getConfigScreen() const
+        config::BeamScreen* getConfigScreen() const
         {
             return _config.get();
         }
@@ -32,15 +32,16 @@ namespace ImFl
 
     private:
         static void addEmbeddedFlashlightKeyword();
-        static bool registerOpenConfigViaFRIK();
-        static void onFRIKMessage(F4SE::MessagingInterface::Message* aMsg);
+        static void initializeFRIKApi();
+        void registerModsConfigEntry();
+        void restoreModsConfigMenuOnConfigClose();
 
         std::unique_ptr<Flashlight> _flashlight;
 
-        std::unique_ptr<config::MainScreen> _config;
+        std::unique_ptr<config::BeamScreen> _config;
 
-        // check if FRIK mod detected and initialized to open config via FRIK config
-        bool _frikInitialized = false;
+        // the config UI was opened from Mods Config FO4 VR's menu, which is shown again as it closes
+        bool _openedFromModsConfig = false;
     };
 
     // The ONE global to rule them ALL

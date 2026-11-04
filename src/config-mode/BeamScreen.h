@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -14,10 +13,14 @@
 namespace ImFl::config
 {
     /**
-     * Beam config screen: pick the mount location (head / PA head / in-hand / on-weapon) and tune its
+     * The in-game VR config UI: pick the mount location (head / PA head / in-hand / on-weapon) and tune its
      * beam - intensity/radius/FOV via thumbstick, plus gobo and color presets - with Save/Reset for the
-     * selected location. Reached from the main config screen; a Back button returns to it. The beam
-     * shadows toggle lives on the misc screen.
+     * selected location. FlashlightMod owns it: opened from Mods Config FO4 VR's Beam page, closed by its
+     * Exit, on session load, and as FRIK's config opens. Every other setting is edited in Mods Config FO4
+     * VR's menu, or in the config file.
+     *
+     * A press of a button fires while the UI manager is iterating its elements, so Exit only asks for the
+     * close, which onFrameUpdate does: detaching the UI then would invalidate that loop.
      *
      * The two preset buttons show the preset they are on: the gobo button draws the gobo texture itself
      * and the color button is tinted with the beam color. While beam tuning is on they give their place
@@ -31,8 +34,6 @@ namespace ImFl::config
         void open();
         void close();
         void onFrameUpdate();
-
-        void setOnBackHandler(std::function<void()> handler);
 
     private:
         /**
@@ -74,7 +75,8 @@ namespace ImFl::config
         std::shared_ptr<vrui::UIButtonPanel> _switchColorBtn;
         std::shared_ptr<vrui::UITextPanel> _beamValuesPanel;
 
-        std::function<void()> _onBack;
+        // Exit was pressed, and the next onFrameUpdate closes the UI
+        bool _closeRequested = false;
 
         // what the preset buttons are currently painted with, so the gobo texture is only reloaded and the
         // labels only rewritten when the preset actually changes (a press, a location switch, a reset...)

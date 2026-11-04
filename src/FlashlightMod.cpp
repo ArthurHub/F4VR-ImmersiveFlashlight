@@ -5,6 +5,8 @@
 #include "api/FRIKApi.h"
 #include "api/FRIKApiV2.h"
 #include "devbench/FlashlightDevBench.h"
+#include "f4vr/F4VRUtils.h"
+#include "modsconfig/ModsConfigFO4Api.h"
 
 // This is the entry point to the mod.
 extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Query(const F4SE::QueryInterface* a_skse, F4SE::PluginInfo* a_info)
@@ -24,7 +26,7 @@ namespace ImFl
 {
     bool FlashlightMod::isConfigOpen() const
     {
-        return _config->isConfigOpen();
+        return _config->isOpen();
     }
 
     /**
@@ -39,6 +41,45 @@ namespace ImFl
             logger::info("Disable FRIK flashlight feature");
             FRIKApiV2::inst->blockFeature("ImmersiveFlashlight", FRIKApiV2::Feature::Flashlight, true);
         }
+
+        registerModsConfigEntry();
+    }
+
+    /**
+     * Adds the function of the config spec's button that opens the beam tuning in the world, and the game's shadow map
+     * size, which its warning under Shadows asks. The framework connects the client at kPostLoad, and nothing is called
+     * while Mods Config FO4 VR is not installed. The menu calls a press on the game thread, and is minimized while the
+     * config UI is open, and shown again as that closes. The size is the game's setting as it runs, which the game's
+     * settings menu changes with no restart, and not its INI file.
+     */
+    void FlashlightMod::registerModsConfigEntry()
+    {
+        using namespace mods_config::api;
+        ModsConfigFO4Client::get().addState("shadowMapResolution", [] {
+            const auto setting = f4vr::getIniSetting("iShadowMapResolution:Display");
+            return setting ? std::optional<Value>(setting->GetInt()) : std::nullopt;
+        });
+        ModsConfigFO4Client::get().addFunction("openBeamConfig", [this](const Params&) {
+            const auto player = RE::PlayerCharacter::GetSingleton();
+            if (!player || !player->loadedData || !_flashlight) {
+                return FunctionResult{ .done = false, .message = "The beam tuning opens once a game is loaded." };
+            }
+            _config->open();
+            _openedFromModsConfig = true;
+            ModsConfigFO4Client::get().minimizeMenu();
+            return FunctionResult{ .done = true, .message = {} };
+        });
+    }
+
+    /**
+     * Shows Mods Config FO4 VR's menu again once the config UI that was opened from it is closed.
+     */
+    void FlashlightMod::restoreModsConfigMenuOnConfigClose()
+    {
+        if (_openedFromModsConfig && !_config->isOpen()) {
+            _openedFromModsConfig = false;
+            mods_config::api::ModsConfigFO4Client::get().restoreMenu();
+        }
     }
 
     /**
@@ -52,12 +93,9 @@ namespace ImFl
         WeaponGripHandler::initialize();
 
         _flashlight = std::make_unique<Flashlight>();
-        _config = std::make_unique<config::MainScreen>();
+        _config = std::make_unique<config::BeamScreen>();
 
-        _frikInitialized = registerOpenConfigViaFRIK();
-        if (_frikInitialized) {
-            _messaging->RegisterListener(onFRIKMessage, FRIKApi::FRIK_F4SE_MOD_NAME);
-        }
+        initializeFRIKApi();
     }
 
     /**
@@ -65,7 +103,8 @@ namespace ImFl
      */
     void FlashlightMod::onGameSessionLoaded()
     {
-        _config->closeConfigMode();
+        _config->close();
+        _openedFromModsConfig = false;
         if (_flashlight) {
             _flashlight->onGameSessionLoaded();
         }
@@ -85,6 +124,7 @@ namespace ImFl
         _flashlight->onFrameUpdate();
 
         _config->onFrameUpdate();
+        restoreModsConfigMenuOnConfigClose();
 
         // Debug: dump the Immersive-rule headgear allow/block classification on request (one-shot INI token).
         if (g_config.checkDebugDumpDataOnceFor("headgear")) {
@@ -114,34 +154,15 @@ namespace ImFl
     }
 
     /**
-     * Register for FRIK main config to have a button to open this mod config.
+     * Initialize FRIK's API, which the hand poses and the two-handed weapon grip use: without it FRIKApi::inst stays null.
      */
-    bool FlashlightMod::registerOpenConfigViaFRIK()
+    void FlashlightMod::initializeFRIKApi()
     {
         const int err = FRIKApi::initialize(3);
         if (err != 0) {
             logger::error("FRIK API init failed with error: {}!", err);
-            return false;
+            return;
         }
         logger::info("FRIK (v{}) API (v{}) init successful!", FRIKApi::inst->getModVersion(), FRIKApi::inst->getVersion());
-
-        static std::string modName(Version::PROJECT);
-        static std::string buttonIconNifPath = modName + "\\misc\\btn-flashlight.nif";
-        FRIKApi::inst->registerOpenModSettingButtonToMainConfig({
-            .buttonIconNifPath = buttonIconNifPath.c_str(),
-            .callbackReceiverName = modName.c_str(),
-            .callbackMessageType = 15,
-        });
-        return true;
-    }
-
-    /**
-     * Receiving the registered open config message from FRIK.
-     */
-    void FlashlightMod::onFRIKMessage(F4SE::MessagingInterface::Message* aMsg)
-    {
-        if (aMsg->type == 15) {
-            g_imFl._config->openConfigMode();
-        }
     }
 }

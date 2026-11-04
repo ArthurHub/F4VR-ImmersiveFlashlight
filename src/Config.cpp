@@ -22,8 +22,11 @@ namespace
     constexpr const char* SECTION_HEAD_ACTIVATION_SPHERE = "ImFl_HeadActivationSphere";
     constexpr const char* SECTION_PRIMARY_HAND_ACTIVATION_SPHERE = "ImFl_PrimaryHandActivationSphere";
 
-    // The mod's own activation-sphere icon (resolved under Data\Textures\ImmersiveFlashlightVR\).
+    // The activation-sphere icons, all in Data\Textures\ImmersiveFlashlightVR\ (the framework's own icons too, so
+    // the config menu lists them in one folder). The head sphere names the hand icon, as the framework's default
+    // is under f4cf\, where the mod has none.
     constexpr auto FLASHLIGHT_ICON = "activation-icon-flashlight.dds";
+    constexpr auto HAND_ICON = "activation-icon-hand.dds";
 
     // Named config sections for the advanced, per-feature settings. Location, beam appearance and the global
     // light/toggle keys are in the main section (DEFAULT_SECTION); only the advanced groups are read from these.
@@ -131,70 +134,6 @@ namespace ImFl
             flashlightConfigLocation = location;
             saveConfigValue(DEFAULT_SECTION, "iFlashlightLocation", static_cast<int>(location));
         }
-    }
-
-    void Config::setFlashlightFlagsBitmask(const std::string& bitmask)
-    {
-        flashlightFlagsBitmask = bitmask;
-        saveConfigValue(DEFAULT_SECTION, "sFlashlightFlagsBitmask", flashlightFlagsBitmask);
-    }
-
-    /**
-     * Persist the "show all activation spheres" master toggle. Read live by Flashlight each frame.
-     */
-    void Config::setShowAllActivationSpheres(const bool show)
-    {
-        showAllActivationSpheres = show;
-        saveConfigValue(DEFAULT_SECTION, "bShowAllActivationSpheres", show);
-    }
-
-    /**
-     * Persist the stowed-on-body model toggle. Read live by Flashlight::updateBodyStow each frame.
-     */
-    void Config::setShowFlashlightOnBody(const bool show)
-    {
-        showFlashlightOnBody = show;
-        saveConfigValue(SECTION_BODY_STOW, "bShowFlashlightOnBody", show);
-    }
-
-    /**
-     * Persist the head-mounted-light headgear requirement. Read live by RestrictionHandler each frame; the
-     * Immersive rule reuses the form lists already resolved at load (no re-resolve needed to switch modes).
-     */
-    void Config::setFlashlightHeadgearRequirement(const FlashlightHeadgearRequirement requirement)
-    {
-        flashlightHeadgearRequirement = requirement;
-        saveConfigValue(SECTION_HEADGEAR_RESTRICTION, "iFlashlightHeadgearRequirement", static_cast<int>(requirement));
-    }
-
-    /**
-     * Persist the weapon-flashlight-mesh requirement. The caller must follow with RestrictionHandler::invalidate()
-     * so the mesh-detection cache and resolved effective state re-scan for the new value (programmatic saves
-     * don't fire the hot-reload).
-     */
-    void Config::setWeaponFlashlightMeshRequirement(const FlashlightWeaponMeshRequirement requirement)
-    {
-        weaponFlashlightMeshRequirement = requirement;
-        saveConfigValue(SECTION_WEAPON_MOUNT, "iWeaponFlashlightMeshRequired", static_cast<int>(requirement));
-    }
-
-    /**
-     * Persist the vanilla-flashlight-toggle disable. The caller must follow with
-     * Utils::updateVanillaFlashlightToggleDisabled() to apply/restore the game setting live.
-     */
-    void Config::setDisableVanillaFlashlightToggle(const bool disabled)
-    {
-        disableVanillaFlashlightToggle = disabled;
-        saveConfigValue(DEFAULT_SECTION, "bDisableVanillaFlashlightToggle", disabled);
-    }
-
-    /**
-     * Persist the NPC light-detection master toggle. Read live by NpcDetectionHandler on each tick.
-     */
-    void Config::setNpcDetectionEnabled(const bool enabled)
-    {
-        npcDetectionEnabled = enabled;
-        saveConfigValue(SECTION_NPC_DETECTION, "bNpcDetectionEnabled", enabled);
     }
 
     /**
@@ -513,6 +452,7 @@ namespace ImFl
                 .primary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::Tap, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .secondary = { .hand = vrcf::Hand::Offhand, .type = vrcf::ActivationType::LongPress, .button = vr::k_EButton_SteamVR_Trigger, .suppress = true },
                 .showIcon = f4vr::ActivationSphereVisibility::Never,
+                .iconStyle = { .texture = HAND_ICON },
             });
 
         RE::NiTransform primaryHandSphereDefault = common::MatrixUtils::getTransform(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
