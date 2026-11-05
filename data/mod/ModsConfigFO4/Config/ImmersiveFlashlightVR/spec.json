@@ -15,6 +15,20 @@
   },
   "defaultFile": "config",
   "applies": "live",
+  "sharedPresetLists": {
+    "beams": [
+      { "rgb": [220, 232, 255], "text": "Cool white" },
+      { "rgb": [240, 230, 225], "text": "Mostly white" },
+      { "rgb": [235, 224, 190], "text": "Warm white" },
+      { "rgb": [255, 200, 150], "text": "Warm dim" },
+      { "rgb": [255, 176, 64], "text": "Amber" },
+      { "rgb": [255, 210, 210], "text": "Red" },
+      { "rgb": [210, 255, 210], "text": "Green" },
+      { "rgb": [190, 190, 255], "text": "Blue" },
+      { "rgb": [190, 100, 255], "text": "Purple" },
+      { "rgb": [120, 50, 255], "text": "UV" }
+    ]
+  },
   "content": [
     {
       "type": "image",
@@ -54,7 +68,7 @@
         { "type": "spacer" },
         {
           "type": "text",
-          "text": "<font color='#FFBF33'>Take it:</font> reach to the flashlight on your belt and tap the trigger. Put it back the same way to turn it off.<br><font color='#FFBF33'>On your head:</font> bring your offhand near your head until you feel a tick, then tap the trigger. Long-press to pull it back to your hand.<br><font color='#FFBF33'>Between hands and onto the weapon:</font> bring your offhand near your primary hand and tap the trigger.<br><br><font color='#FFBF33'>Auto switch:</font> A light in your primary hand moves onto a drawn gun and turns off for melee. A light in your offhand moves onto the gun while you grip it two-handed. Each place keeps its own beam, set on the Beam page.<br><br><font color='#FFBF33'>Requirements:</font> by default the head light needs a helmet or hard hat, and with some weapon mods a gun needs a modeled lamp to take the light. Both are on the General page.<br><br><font color='#FFBF33'>Enemies see your beam:</font> hostile NPCs in the beam, or near the spot it lights, come to look.",
+          "text": "<font color='#10FA78'>Take it:</font> reach to the flashlight on your belt and tap the trigger. Put it back the same way to turn it off.<br><font color='#10FA78'>On your head:</font> bring your offhand near your head until you feel a tick, then tap the trigger. Long-press to pull it back to your hand.<br><font color='#10FA78'>Between hands and onto the weapon:</font> bring your offhand near your primary hand and tap the trigger.<br><br><font color='#10FA78'>Auto switch:</font> A light in your primary hand moves onto a drawn gun and turns off for melee. A light in your offhand moves onto the gun while you grip it two-handed. Each place keeps its own beam, set on the Beam page.<br><br><font color='#10FA78'>Requirements:</font> by default the head light needs a helmet or hard hat, and with some weapon mods a gun needs a modeled lamp to take the light. Both are on the General page.<br><br><font color='#10FA78'>Enemies see your beam:</font> hostile NPCs in the beam, or near the spot it lights, come to look.",
           "html": true
         }
       ]
@@ -325,7 +339,7 @@
               "text": "Color",
               "help": "The color of the light on the head.",
               "default": { "rgb": [235, 224, 190] },
-              "valueOptions": { "alpha": false },
+              "valueOptions": { "alpha": false, "sharedPresets": "beams" },
               "storage": { "path": ["ImmersiveFlashlightVR", "cFlashlightOnHeadColor"] }
             },
             {
@@ -391,7 +405,7 @@
               "text": "Color",
               "help": "The color of the light on the power armor helmet.",
               "default": { "rgb": [235, 224, 190] },
-              "valueOptions": { "alpha": false },
+              "valueOptions": { "alpha": false, "sharedPresets": "beams" },
               "storage": { "path": ["ImmersiveFlashlightVR", "cFlashlightOnPAHeadColor"] }
             },
             {
@@ -457,7 +471,7 @@
               "text": "Color",
               "help": "The color of the light in either hand.",
               "default": { "rgb": [240, 230, 225] },
-              "valueOptions": { "alpha": false },
+              "valueOptions": { "alpha": false, "sharedPresets": "beams" },
               "storage": { "path": ["ImmersiveFlashlightVR", "cFlashlightInHandColor"] }
             },
             {
@@ -507,7 +521,7 @@
               "text": "Color",
               "help": "The color of the light on the weapon.",
               "default": { "rgb": [255, 255, 255] },
-              "valueOptions": { "alpha": false },
+              "valueOptions": { "alpha": false, "sharedPresets": "beams" },
               "storage": { "path": ["ImmersiveFlashlightVR", "cFlashlightOnWeaponColor"] }
             },
             {

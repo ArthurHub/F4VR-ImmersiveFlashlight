@@ -53,11 +53,14 @@ namespace
         std::string_view name;
     };
 
-    constexpr std::array<ColorOption, 8> COLOR_OPTIONS{ {
+    // the Mods Config spec's "beams" color presets are this list plus a UV: change both together
+    constexpr std::array<ColorOption, 10> COLOR_OPTIONS{ {
         { .color = { 255, 255, 255 }, .name = "FULL WHITE" },
+        { .color = { 220, 232, 255 }, .name = "COOL WHITE" },
         { .color = { 240, 230, 225 }, .name = "MOSTLY WHITE" },
         { .color = { 235, 224, 190 }, .name = "WARM WHITE" },
         { .color = { 255, 200, 150 }, .name = "WARM DIM" },
+        { .color = { 255, 176, 64 }, .name = "AMBER" },
         { .color = { 255, 210, 210 }, .name = "RED" },
         { .color = { 210, 255, 210 }, .name = "GREEN" },
         { .color = { 190, 190, 255 }, .name = "BLUE" },
