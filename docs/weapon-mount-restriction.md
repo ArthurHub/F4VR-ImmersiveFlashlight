@@ -40,9 +40,10 @@ These are all on by default, under Weapon mount on the Advanced page:
 
 With the requirement on:
 
-- **A light on the weapon turns off.**
+- **The light goes elsewhere instead of the weapon.** Drawing or switching to such a gun with the light on your weapon or in your primary hand moves it to your head, or to your offhand if the [headgear requirement](headgear-restriction.md) rules the head out. A two-handed grip with the light in your offhand does the same, since the grip occupies that hand. Putting the gun away, or letting go of the grip, brings it back to the hand.
+- **With no place left, the light turns off.** That's both hands on the gun and no eligible headgear. Turning it on there shows a message saying why.
+- **Without the move, the light turns off.** With **Move the light when its place isn't allowed** (General page) off, the light turns off instead of going elsewhere, and turning it on with such a gun shows a message saying why.
 - **The hand-or-weapon gesture won't put it on the weapon**, and the two-handed toggle does nothing.
-- **A two-handed grip sends the light to your head.** With the light in your offhand, the grip occupies that hand, so the light goes to your head instead of turning off. There the [headgear requirement](headgear-restriction.md) applies. Letting go of the grip brings it back.
 
 ## Making it work with your weapon mods
 
@@ -56,7 +57,8 @@ The log (`%USERPROFILE%\Documents\My Games\Fallout4VR\F4SE\ImmersiveFlashlightVR
 
 - `AutoDetect: supported weapon mod '<plugin>' found` or `no supported weapon mod found`: whether the requirement is on.
 - `Found visible weapon-mounted flashlight node: <name>`: a lamp was found on the weapon.
-- `Equipped weapon has no flashlight mesh — turning the weapon flashlight off`: the requirement turned the light off.
+- `Flashlight runtime location: OnWeapon -> <location>`: the weapon has no lamp, so the light moved elsewhere.
+- `No location available for the flashlight (at <location>) — turning it off`: there was no place left for the light.
 - `No visible weapon-mounted flashlight node found`: no lamp was found. It is logged at debug level, so set `iLogLevel = 1` in `[Debug]` to see it.
 
 ## Settings

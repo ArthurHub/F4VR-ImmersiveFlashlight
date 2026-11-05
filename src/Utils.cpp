@@ -118,13 +118,20 @@ namespace ImFl
     }
 
     /**
-     * Turns flashlight off if it's on.
+     * Turns flashlight off if it's on. Without sound it calls the toggle's worker, ShowPipboyLight(false), directly:
+     * the same off (IsPipboyLightOn reads the light pointer it clears, and the lamp's glow meshes flip), minus the
+     * toggle's UIPipBoyLightOff menu sound and gamepad light-bar update.
      */
-    void Utils::turnFlashlightOff()
+    void Utils::turnFlashlightOff(const bool withSound)
     {
         const auto player = f4vr::getPlayer();
-        if (f4vr::isPipboyLightOn(player)) {
+        if (!f4vr::isPipboyLightOn(player)) {
+            return;
+        }
+        if (withSound) {
             f4vr::togglePipboyLight(player);
+        } else {
+            f4vr::PlayerCharacter_ShowPipboyLight(player, false, false);
         }
     }
 

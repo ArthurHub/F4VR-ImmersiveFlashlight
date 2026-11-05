@@ -56,6 +56,7 @@ namespace ImFl::devbench
             bool offhandHoldingWeapon = false;
             bool primaryHandFree = false;
 
+            bool locationAvailable = false;
             bool headAllowed = false;
             bool weaponEquipped = false;
             bool weaponFlashlightAllowed = false;
@@ -102,6 +103,7 @@ namespace ImFl::devbench
             Flag{ "grip", "carriedByOffhand", &FlashlightDevState::carriedByOffhand },
             Flag{ "grip", "offhandHoldingWeapon", &FlashlightDevState::offhandHoldingWeapon },
             Flag{ "grip", "primaryHandFree", &FlashlightDevState::primaryHandFree },
+            Flag{ "restrictions", "locationAvailable", &FlashlightDevState::locationAvailable },
             Flag{ "restrictions", "headAllowed", &FlashlightDevState::headAllowed },
             Flag{ "restrictions", "weaponEquipped", &FlashlightDevState::weaponEquipped },
             Flag{ "restrictions", "weaponFlashlightAllowed", &FlashlightDevState::weaponFlashlightAllowed },
@@ -223,6 +225,7 @@ namespace ImFl::devbench
             state.offhandHoldingWeapon = WeaponGripHandler::isOffhandHoldingWeapon();
             state.primaryHandFree = WeaponGripHandler::isPrimaryHandFreeOfWeapon();
 
+            state.locationAvailable = FlashlightState::hasAvailableLocation();
             state.headAllowed = RestrictionHandler::isHeadFlashlightAllowed();
             state.weaponEquipped = RestrictionHandler::isWeaponEquipped();
             state.weaponFlashlightAllowed = RestrictionHandler::isWeaponFlashlightAllowed();
@@ -292,7 +295,7 @@ namespace ImFl::devbench
                 "gating.blockingMenu; restrictions.weaponLampNode; npc.lastEvent (the last detection event posted: kind, spotted, soundLevel, npc, "
                 "ageMs). liveness adds ready (false = no player 3D yet, and nothing else is reported). Every flag's and label's change is also an "
                 "event, <group>.<name> with its value, once the new value has held {} frames. Other events: gesture (a gesture fired: gesture, hand, "
-                "lightOn, location), restriction.lightOff (rule)",
+                "lightOn, location), restriction.lightOff (location: where the light was when no location was available)",
                 groups,
                 STABLE_FRAMES);
         }

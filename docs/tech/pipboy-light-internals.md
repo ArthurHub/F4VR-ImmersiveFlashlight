@@ -142,9 +142,9 @@ writing either way, and restores the original call when the option is turned off
 `FlashlightState::refreshLightValues(mode)` writes the config onto the form (`setLightValues()`) and
 stops there when no value changed or the light is off. An on light is re-created by default (see
 "When it re-creates" below). Location changes and config hot-reload take that path: it only runs engine
-code, and a light that moves hides the swap. A location change also plays the light-on sound the
-vanilla toggle plays (`UIUtils::PlayMenuSound("UIPipBoyLightOn")`, 1227993, `0x14133d7d0`); a
-hot-reload stays silent. Only the beam screen's tuning passes
+code, and a light that moves hides the swap. A location change made with a gesture also plays the
+light-on sound the vanilla toggle plays (`UIUtils::PlayMenuSound("UIPipBoyLightOn")`, 1227993,
+`0x14133d7d0`); an automatic location change and a hot-reload stay silent. Only the beam screen's tuning passes
 `LightRefreshMode::InPlace`, because the in-place refresh swaps objects the renderer is using. It
 confines that risk to someone standing in the config UI. `LiveLight::refresh(form)` then repeats the
 build-time copy on the existing objects:
@@ -189,8 +189,8 @@ beam changes apply to the light that is on. Re-check these after touching either
 - In beam config, intensity, color, radius, FOV and gobo change without a blink, with shadows on and
   off. Widening the FOV or the radius doesn't leave a hard edge where the old beam ended.
 - Toggling shadows on the misc screen re-creates the light without the toggle sound.
-- **Not tested in game yet:** moving the light between locations with different beam values
-  re-creates it with the light-on sound only; saving a config beam change re-creates it silently. A config
+- **Not tested in game yet:** moving the light between locations with different beam values with a
+  gesture re-creates it with the light-on sound only, and an automatic move silently; saving a config beam change re-creates it silently. A config
   save that changes no beam value, or a move between locations with the same values, leaves the light
   alone.
 - The log has no `Renderer kept refusing to rebuild the flashlight light volume`.

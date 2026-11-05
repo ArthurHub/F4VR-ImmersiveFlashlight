@@ -221,8 +221,7 @@ namespace ImFl
         // Optional restriction requiring a modeled flashlight on the equipped weapon before the light may
         // mount on it (FlashlightLocation::OnWeapon). See FlashlightWeaponMeshRequirement. When effectively
         // on (RestrictionHandler::isWeaponFlashlightMeshRequired() — Enabled, or AutoDetect with a supported
-        // mod installed), RestrictionHandler detects the mesh node and turns an on-weapon light off when the
-        // weapon carries no such mesh.
+        // mod installed), RestrictionHandler detects the mesh node, and a weapon without one may not carry the light.
         FlashlightWeaponMeshRequirement weaponFlashlightMeshRequirement = FlashlightWeaponMeshRequirement::Disabled;
         // Plugins whose presence enables the requirement under AutoDetect. Parsed from a comma-separated INI
         // list of plugin filenames (.esp/.esm); matched against the loaded mods load-order-independently.
@@ -301,6 +300,10 @@ namespace ImFl
         // Keep the flashlight on while the Pip-Boy is open, instead of the vanilla game turning it off until the
         // Pip-Boy closes (outside power armor). Applied by Utils::updateKeepFlashlightOnInPipboy().
         bool keepFlashlightOnInPipboy = true;
+
+        // When a restriction rules out the light's location, move it to the next available one (see
+        // FlashlightState::resolveFlashlightLocation()). Off, the light turns off instead.
+        bool restrictionFallback = true;
 
         // NPC light detection: on a throttled tick while the light is on, NpcDetectionHandler posts a
         // player-owned detection event at what the beam touches — near the nearest lit NPC (with line of

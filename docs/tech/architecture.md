@@ -6,9 +6,12 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
 
 - `FlashlightLocation` is where the light is at runtime: `OnHead`, `OnPAHead`, `InOffhand`, `InPrimaryHand`, `OnWeapon`. `FlashlightConfigLocation` is what the player chose: `OnHead`, `InOffhand`, `InPrimaryHand`. Each location has its own beam values (fade, radius, FOV, color, gobo, plus the head's tilt).
 - The choice is kept per power-armor state (`iFlashlightLocation` / `iFlashlightLocationInPA`). `FlashlightState::getActiveFlashlightConfigLocation()` picks it by `f4vr::isInPowerArmor()`, and `switchFlashlightConfigLocation()` saves only the current state's. The per-frame `refreshFlashlightLocation()` moves the light on a PA transition.
-- `getFlashlightLocation()` resolves the runtime location:
-  - **`InPrimaryHand`:** an empty hand is `InPrimaryHand`, a drawn ranged weapon is `OnWeapon`. A drawn melee weapon stays `InPrimaryHand`, and `RestrictionHandler::enforceRestrictions()` turns that light off, as the hand is occupied. `f4vr::isMeleeWeaponDrawn()` is true only while melee is drawn.
-  - **`InOffhand`:** `InOffhand`, but a two-handed grip (`WeaponGripHandler::isTwoHandedGripActive()`, FRIK or ROCK) routes it to `OnWeapon`. When the weapon-flashlight requirement is on and the weapon has no lamp, it falls back to the head instead (`OnHead` / `OnPAHead`, then subject to the headgear requirement).
+- `resolveFlashlightLocation()` resolves the runtime location in two steps. The config is never rewritten by it, so the light returns to the chosen place once that is available again.
+  - **Requested:** `getRequestedFlashlightLocation()` maps the choice onto the game state (the bullets below).
+  - **Fallback:** with `bRestrictionFallback` on, when `isLocationAvailable()` rules the requested location out, the first available of head, `InOffhand`, `InPrimaryHand`, `OnWeapon` is taken. The head needs `isHeadFlashlightAllowed()` (`OnPAHead` always passes), a hand must be free of the weapon, and the weapon needs `RestrictionHandler::canWeaponCarryFlashlight()`.
+  - **Nowhere:** with none available (with `bRestrictionFallback` off, as soon as the requested location is ruled out), `FlashlightState::hasAvailableLocation()` turns false and the light keeps its place, so it doesn't move just to be turned off. `RestrictionHandler::enforceRestrictions()` then turns it off.
+  - **`InPrimaryHand`:** an empty hand is `InPrimaryHand`, a drawn weapon is `OnWeapon`. With the weapon-flashlight requirement off that includes melee, at the barrel offset. `f4vr::isMeleeWeaponDrawn()` is true only while melee is drawn.
+  - **`InOffhand`:** `InOffhand`, but a two-handed grip (`WeaponGripHandler::isTwoHandedGripActive()`, FRIK or ROCK) routes it to `OnWeapon`.
   - **Weapon in the offhand (ROCK):** carried one-handed there, the primary hand is free, so either hand config resolves to `InPrimaryHand` (checked before the hand branches). Two-handed takes the normal routing.
   - **Part carry (ROCK):** the offhand holds a weapon it can't fire (`isWeaponCarriedByOffhand()`). `InOffhand` then takes the two-handed routing. `InPrimaryHand` stays `OnWeapon`, unless the light was put into the free hand during the carry: `switchFlashlightConfigLocation(InPrimaryHand)` sets `FlashlightState::_heldInFreePrimaryHand`, which resolves to `InPrimaryHand` until the carry ends.
 - While the offhand holds the weapon (`isOffhandHoldingWeapon()`), the gestures change hands: the body grab feeds only the primary binding (while `isPrimaryHandFreeOfWeapon()`), the free primary hand takes over the head gesture, and the primary-hand sphere and the two-handed toggle are inert.
@@ -34,7 +37,7 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
 
 ## Activation spheres
 
-- Three `f4vr::WandActivationSphere` zones (framework, see its [input-binding docs](../../external/F4VR-CommonFramework/docs/input-binding.md#activation-spheres)) are configured by `Config::bodyActivation` / `headActivation` / `primaryHandActivation`. Each comes from its `[ImFl_*ActivationSphere]` section via `ConfigBase::loadWandActivationConfig`:
+- Three `f4vr::WandActivationSphere` zones (framework, see its [f4vr README](../../external/F4VR-CommonFramework/src/f4vr/README.md#activation-spheres)) are configured by `Config::bodyActivation` / `headActivation` / `primaryHandActivation`. Each comes from its `[ImFl_*ActivationSphere]` section via `ConfigBase::loadWandActivationConfig`:
   - the zone: `tZone`, plus an optional `tZonePA`
   - the bindings: `kPrimaryBinding` / `kSecondaryBinding`, with `suppress` in the binding
   - the haptics: `sEntryHaptic`, `sPrimaryHaptic` / `sSecondaryHaptic`
@@ -73,7 +76,7 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
 
 ## Restrictions
 
-`RestrictionHandler` holds the gameplay gates. `enforceRestrictions()` runs after `refreshFlashlightLocation()` and turns the light off when a requirement is unmet. It stands aside during the beam-tuning preview.
+`RestrictionHandler` holds the gameplay gates, which the location resolve reads to move the light elsewhere (see [Location model](#location-model)). `enforceRestrictions()` runs after `refreshFlashlightLocation()` and turns the light off only when no location is available: bare-headed (by the requirement) with both hands on a weapon that can't carry it, or with `bRestrictionFallback` off, its own location ruled out. `getNoLocationMessage()` names what ruled it out. The player hears one sound either way, told apart by `_lightWasOn` (the previous frame). A light that loses its place while on turns off with the vanilla off sound and no message, as the player just caused it. A light just turned on there (the vanilla toggle, since the gestures don't turn it on into nowhere) already played the on sound. It goes off silently (`Utils::turnFlashlightOff(false)`, `ShowPipboyLight(false)` without the toggle's sound), and a HUD message says why, at most every 3 s. It stands aside during the beam-tuning preview.
 
 ### Headgear (head, out of PA only)
 
@@ -87,13 +90,13 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
 - **Detection:** `onFrameUpdate()` walks the weapon 3D for the first node named in `aWeaponFlashlightMeshNodes` (NIF node names, default `AddOnNode`), only when `f4vr::EquippedWeaponHandler` reports a weapon change. There is no rescan, so a lamp that attaches a frame late waits for the next change. It returns whether the weapon changed, so `Flashlight` can invalidate `OnWeaponBeamMesh`.
 - **Invalidation:** `invalidate()` drops the cached node and re-resolves. It is called at game load, session load, a PA transition and a config reload.
 - **Beam rooting:** with `bWeaponFlashlightMountBeamToMesh`, `getOnWeaponFlashlightMeshNode()` returns the lamp node, and the light is rooted there with `tWeaponFlashlightMountTransform` instead of the generic barrel offset.
-- **Off:** a missing lamp turns an on-weapon light off. That happens only on the primary-hand path, since the two-handed offhand path falls back to the head.
+- **Weapon change:** the lamp scan runs after the frame's location refresh, so `RestrictionHandler::onFrameUpdate()` re-resolves the location on a weapon change before enforcing. Otherwise a light on a weapon swapped for one without a lamp would be resolved against the previous weapon and turned off instead of falling back.
 
 ## Light switches
 
 - **`bDisableVanillaFlashlightToggle`:** `Utils::updateVanillaFlashlightToggleDisabled()` sets `fPipboyLightDelay:Controls` to 99, caching the original once and restoring it when turned off. It is idempotent, and applied at session load and on reload.
 - **`bKeepFlashlightOnInPipboy`:** `Utils::updateKeepFlashlightOnInPipboy()` patches the `IsPipboyLightOn()` call in `PipboyManager::InitPipboy` to `xor eax, eax`, as power armor already does. The bytes are checked before each write. See [pipboy-light-internals.md](pipboy-light-internals.md) §2.
-- **Light refresh:** `FlashlightState::refreshLightValues(mode)` writes the beam values onto the light form, which is all an off light needs, and does nothing when nothing changed. An on light is re-created (`LiveLight::recreate()`, the engine's hide/show without its sounds), with `RecreateWithSound` for a location change. `InPlace` (beam tuning) refreshes the live light (`LiveLight::refresh()`), and falls back to re-creating it when the light flags changed. See [pipboy-light-internals.md](pipboy-light-internals.md) §3.
+- **Light refresh:** `FlashlightState::refreshLightValues(mode)` writes the beam values onto the light form, which is all an off light needs, and does nothing when nothing changed. An on light is re-created (`LiveLight::recreate()`, the engine's hide/show without its sounds), with `RecreateWithSound` for a location change made with a gesture (`switchFlashlightConfigLocation()`). Automatic location changes (a grip, a drawn weapon, a restriction fallback) are silent, as they follow what the player does anyway. `InPlace` (beam tuning) refreshes the live light (`LiveLight::refresh()`), and falls back to re-creating it when the light flags changed. See [pipboy-light-internals.md](pipboy-light-internals.md) §3.
 
 ## NPC light detection
 

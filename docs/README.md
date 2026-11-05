@@ -74,8 +74,9 @@ The location is remembered separately in and out of power armor.
 
 ### Automatic switching
 
-- **Light in the primary hand:** it moves onto a drawn ranged weapon, and turns off with a melee or unarmed weapon drawn, as the hand is busy.
-- **Light in the offhand:** it moves onto the weapon while you grip it two-handed, and comes back when you let go. If the [weapon-flashlight requirement](weapon-mount-restriction.md) is on and the gun has no lamp, it goes to your head instead.
+- **Light in the primary hand:** it moves onto a drawn weapon, as the hand is busy. A melee weapon carries it too, at the same general offset as a gun, unless the [weapon-flashlight requirement](weapon-mount-restriction.md) is on. With bare fists your hand keeps holding it.
+- **Light in the offhand:** it moves onto the weapon while you grip it two-handed, and comes back when you let go.
+- **When a [restriction](#restrictions) rules a place out:** the light goes to the first place that's free: your head, your offhand, your free primary hand, then the weapon. It returns once its own place is allowed again. Turn **Move the light when its place isn't allowed** (General page) off to have the light turn off instead.
 
 ### Power armor
 
@@ -144,7 +145,7 @@ Gripping a weapon two-handed, your offhand can't reach that zone, so a tap of th
 | Weapon light to offhand | `[ImFl_PrimaryHandActivationSphere]` → `kSecondaryBinding` | offhand long-press trigger |
 | Weapon light, two-handed | `[ImFl_WeaponMount]` → `kToggleWeaponFlashlightTwoHandedBinding` | offhand tap trigger |
 
-The offhand tap is shared on purpose. The gestures apply in situations that don't overlap, so only one fires. In the file a binding is `{ hand = "offhand", type = "tap", button = "trigger" }`, and `{ type = "none" }` turns it off. The full syntax is in the [framework's input-binding guide](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md).
+The offhand tap is shared on purpose. The gestures apply in situations that don't overlap, so only one fires. In the file a binding is `{ hand = "offhand", type = "tap", button = "trigger" }`, and `{ type = "none" }` turns it off. The full syntax is in the framework's [binding guide](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/input-binding.md), and each gesture section's zone, icon, sphere and vibration keys in its [activation-spheres guide](https://github.com/ArthurHub/F4VR-CommonFramework/blob/main/docs/activation-spheres.md).
 
 ## Beam
 
@@ -173,7 +174,7 @@ A hand-held light has two grips, each with its own light angle, model placement 
 
 ## Restrictions
 
-Optional rules. When one isn't met, its light turns off and its gesture does nothing until it is.
+Optional rules. When one isn't met, its gesture does nothing, and a light there moves to the next free place (see [Automatic switching](#automatic-switching)). It turns off only with no place left: no eligible headgear and both hands on a gun without a lamp. With **Move the light when its place isn't allowed** off, it turns off as soon as its own place is ruled out. Turning the light on where it has no place shows a message saying why.
 
 - **Headgear for the head light** (out of power armor): not required, any headgear, or only light-capable helmets and hard hats (the default). See [Headgear Requirement](headgear-restriction.md).
 - **A flashlight on the weapon:** the weapon light only goes on guns that carry a modeled flashlight, and comes from that lamp. By default it applies only with a supported weapon mod installed. See [Weapon Flashlight Requirement](weapon-mount-restriction.md).

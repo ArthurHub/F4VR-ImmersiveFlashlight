@@ -22,6 +22,7 @@ namespace ImFl
         static bool isHeadFlashlightAllowed();
         static bool isWeaponEquipped();
         static bool isWeaponFlashlightAllowed();
+        static bool canWeaponCarryFlashlight();
         static bool isWeaponFlashlightMeshRequired();
         static bool onFrameUpdate();
         static void invalidate();
@@ -35,6 +36,7 @@ namespace ImFl
         static bool resolveWeaponFlashlightMeshRequired();
         static bool checkWeaponChangeForFlashlightOnWeaponDetection();
         static void enforceRestrictions();
+        static const char* getNoLocationMessage();
         static bool isPipboyWorn();
         static bool isLightCapableHeadgear(const RE::TESObjectARMO* armor);
         static bool isLightCapableHeadgearWorn();
@@ -55,5 +57,11 @@ namespace ImFl
 
         // The Pip-Boy was found worn (isPipboyWorn()); it can't be unequipped, so it's latched until invalidate().
         inline static bool _pipboyWorn = false;
+
+        // When enforceRestrictions() last told the player the light had nowhere to go, to throttle the message.
+        inline static std::uint64_t _lastNoLocationNotificationTime = 0;
+
+        // The light was on at the previous enforceRestrictions(), to tell a light just turned on from one already on.
+        inline static bool _lightWasOn = false;
     };
 }

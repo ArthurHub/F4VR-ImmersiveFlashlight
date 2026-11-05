@@ -469,6 +469,7 @@ namespace ImFl
 
         disableVanillaFlashlightToggle = config[DEFAULT_SECTION]["bDisableVanillaFlashlightToggle"].value_or(false);
         keepFlashlightOnInPipboy = config[DEFAULT_SECTION]["bKeepFlashlightOnInPipboy"].value_or(true);
+        restrictionFallback = config[DEFAULT_SECTION]["bRestrictionFallback"].value_or(true);
 
         // NPC light detection (NpcDetectionHandler)
         npcDetectionEnabled = config[SECTION_NPC_DETECTION]["bNpcDetectionEnabled"].value_or(true);

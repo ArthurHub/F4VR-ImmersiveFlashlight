@@ -3,6 +3,9 @@
 - Config: Every setting is now edited in game in [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945), applied live, with Save and Discard. It replaces the main and misc config screens and the FRIK config button.
 - Config: The beam tuning panel opens from the Beam page in Mods Config. Its changes become pending edits there, saved or discarded with the rest, and its Save button is gone. The thumbstick prompts show one line of icons under the tuning row.
 - Config: The config file is now `ImmersiveFlashlightVR.toml`. Your INI settings are carried over on first load.
+- Restrictions: A light whose place a restriction rules out now moves to the next free place (your head, a free hand, then the weapon) instead of turning off, and returns once its place is allowed again. Taking off your helmet moves a head light to your offhand. With no place left (no eligible headgear and both hands on a gun without a lamp), it turns off, and turning it on there shows a message saying why instead of only playing the toggle sound. **Move the light when its place isn't allowed** (General page) turns the move off, so the light turns off instead.
+- Flashlight: The light moves silently when it switches place on its own (a grip, a drawn weapon, a restriction). Moving it with a gesture still plays the light-on sound.
+- Fixed the weapon light staying off after switching to a gun without a lamp (with the weapon-flashlight requirement on). Toggling the light only played its sound.
 
 ## v1.3.1
 

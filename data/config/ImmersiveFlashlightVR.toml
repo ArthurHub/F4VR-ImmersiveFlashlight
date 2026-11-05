@@ -101,6 +101,11 @@ bDisableVanillaFlashlightToggle = false
 # (except in power armor) and back on when it closes; set to false for that.
 bKeepFlashlightOnInPipboy = true
 
+# When a restriction (headgear, weapon flashlight) rules out the light's place, move it to the next free place:
+# the head, a free hand, then the weapon. It returns once its place is allowed again. Set to false to turn the
+# light off instead.
+bRestrictionFallback = true
+
 # Force every activation sphere to always render at its true size, for tuning (a global master over the
 # [ImFl_*ActivationSphere] sections at the bottom of the file). Overrides each sphere's own sShowSphere and
 # fSphereScale; icons are left as configured.

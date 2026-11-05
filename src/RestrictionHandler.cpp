@@ -246,13 +246,28 @@ namespace ImFl
     }
 
     /**
+     * Whether the light may sit on the weapon as a location: a weapon (not bare fists) is drawn, and when the
+     * weapon-flashlight requirement is on, isWeaponFlashlightAllowed(). With the requirement off a drawn melee weapon
+     * carries it too, as the primary-hand config has always mounted it there.
+     */
+    bool RestrictionHandler::canWeaponCarryFlashlight()
+    {
+        return _weaponHandler.isDrawn() && (!isWeaponFlashlightMeshRequired() || isWeaponFlashlightAllowed());
+    }
+
+    /**
      * Per-frame driver (called from Flashlight::onFrameUpdate): refresh the weapon-flashlight detection cache,
-     * then enforce the active restrictions.
+     * then enforce the active restrictions. A weapon change re-resolves the light's location first: the location was
+     * resolved earlier in the frame against the previous weapon, and a light on a weapon swapped for one without a
+     * lamp must fall back rather than be turned off.
      */
     bool RestrictionHandler::onFrameUpdate()
     {
         F4CF_PERF_FUNCTION();
         const bool weaponChanged = checkWeaponChangeForFlashlightOnWeaponDetection();
+        if (weaponChanged) {
+            FlashlightState::refreshFlashlightLocation();
+        }
 
         enforceRestrictions();
 
@@ -333,31 +348,48 @@ namespace ImFl
      * Enforce the active restrictions on the passive path. Skipped while a config-mode location override is
      * active so beam tuning isn't interrupted, a no-op while the light is off, and before the Pip-Boy is worn
      * (isFlashlightAvailable()), where the light is the vanilla wrist glow and stays under vanilla control.
-     * Turns the light off when its current location is no longer permitted:
-     *  - Head: on the (non-PA) head with the headgear requirement unmet (a head runtime location already
-     *    implies out of PA — PA maps to OnPAHead, always allowed).
-     *  - Weapon: on the weapon with isWeaponFlashlightAllowed() false (no detected mesh, or a drawn
-     *    melee/unarmed weapon, which resolves to OnWeapon — see FlashlightState::getFlashlightLocation).
+     * The light turns off only when no location is available (see FlashlightState::resolveFlashlightLocation): with the
+     * restriction fallback on, the headgear can't take it and both hands are on a weapon that can't carry it; with it
+     * off, its own location is ruled out. Either way the player hears one sound. A light that loses its place while on
+     * turns off with the vanilla off sound, and no message: the player just caused it. A light just turned on there
+     * (the vanilla toggle: the gestures don't turn it on into nowhere) already played the on sound, so it goes off
+     * silently and a message says why.
      */
     void RestrictionHandler::enforceRestrictions()
     {
         F4CF_PERF_FUNCTION();
-        if (FlashlightState::isRuntimeLocationOverrideActive() || !Utils::isFlashlightOn() || !isFlashlightAvailable()) {
+        const bool lightOn = Utils::isFlashlightOn();
+        const bool lightJustTurnedOn = lightOn && !_lightWasOn;
+        _lightWasOn = lightOn;
+
+        if (FlashlightState::isRuntimeLocationOverrideActive() || !lightOn || !isFlashlightAvailable() || FlashlightState::hasAvailableLocation()) {
             return;
         }
 
-        if (FlashlightState::flashlightLocation == FlashlightLocation::OnHead && !isHeadFlashlightAllowed()) {
-            logger::info("Headgear requirement not met — turning the head flashlight off");
-            Utils::turnFlashlightOff();
-            f4cf::devbench::emit("restriction.lightOff", [] { return nlohmann::json{ { "rule", "headgear" } }; });
-            return;
-        }
+        logger::info("No location available for the flashlight (at {}) — turning it off", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation));
+        Utils::turnFlashlightOff(!lightJustTurnedOn);
+        f4cf::devbench::emit("restriction.lightOff", [] {
+            return nlohmann::json{ { "location", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation) } };
+        });
 
-        if (isWeaponFlashlightMeshRequired() && FlashlightState::flashlightLocation == FlashlightLocation::OnWeapon && _weaponHandler.isDrawn() && !isWeaponFlashlightAllowed()) {
-            logger::info("Equipped weapon has no flashlight mesh — turning the weapon flashlight off");
-            Utils::turnFlashlightOff();
-            f4cf::devbench::emit("restriction.lightOff", [] { return nlohmann::json{ { "rule", "weaponFlashlightMesh" } }; });
+        if (lightJustTurnedOn && common::isNowTimePassed(_lastNoLocationNotificationTime, 3000)) {
+            f4vr::showNotification(getNoLocationMessage());
+            _lastNoLocationNotificationTime = common::nowMillis();
         }
+    }
+
+    /**
+     * The HUD message for a light turned off with no location available, naming what ruled its place out. With the
+     * restriction fallback on that is always both the head and the weapon. With it off, only the requested location
+     * is tried, and of those only the head and the weapon can be ruled out (a requested hand is a free one).
+     */
+    const char* RestrictionHandler::getNoLocationMessage()
+    {
+        if (g_config.restrictionFallback) {
+            return "Flashlight off: your headgear can't hold it, and the weapon in your hands has no flashlight.";
+        }
+        return FlashlightState::getRequestedFlashlightLocation() == FlashlightLocation::OnHead ? "Flashlight off: your headgear can't hold it."
+                                                                                               : "Flashlight off: this weapon has no flashlight.";
     }
 
     /**

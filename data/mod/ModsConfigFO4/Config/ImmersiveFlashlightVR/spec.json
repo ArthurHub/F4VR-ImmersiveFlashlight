@@ -277,6 +277,14 @@
             {
               "type": "switcher",
               "valueType": "bool",
+              "text": "Move the light when its place isn't allowed",
+              "help": "When a requirement rules out where the light is, it moves to the next free place: your head, a free hand, then the weapon, and returns once its place is allowed again. When off, the light turns off instead.",
+              "default": true,
+              "storage": { "path": ["ImmersiveFlashlightVR", "bRestrictionFallback"] }
+            },
+            {
+              "type": "switcher",
+              "valueType": "bool",
               "text": "Enemies detect player light",
               "help": "Enemies your beam reaches, or who see where it lands, notice the light and come looking for its source. Fine-tune it on the Advanced page.",
               "default": true,

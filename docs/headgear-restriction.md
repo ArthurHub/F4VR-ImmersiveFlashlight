@@ -29,9 +29,9 @@ The head light is the most convenient mount: hands-free and pointing where you l
 ## When you're not wearing eligible headgear
 
 - **The head gesture won't put the light on your head.** No haptic, and the trigger reaches the game. A light already on your head can still be turned off.
-- **A head light turns off** once the requirement stops being met. Take the helmet off and the light goes out. It doesn't move to a hand.
+- **A head light moves to your hand** once the requirement stops being met. Take the helmet off and the light goes to your offhand, or onto the weapon if both hands are on it. Put an eligible helmet back on and it returns to your head. With **Move the light when its place isn't allowed** (General page) off, the light turns off instead, and turning it on bare-headed shows a message saying why.
 
-With the light in your offhand and a two-handed grip on a gun without a lamp, the light falls back to your head (see [Weapon Flashlight Requirement](weapon-mount-restriction.md#when-the-weapon-has-no-lamp)). This requirement then applies, so bare-headed the light turns off.
+When a gun without a lamp would carry the light, it falls back to your head (see [Weapon Flashlight Requirement](weapon-mount-restriction.md#when-the-weapon-has-no-lamp)), and bare-headed on to your offhand. With both hands on that gun there's no place left, so the light turns off, and turning it on there shows a message saying why.
 
 ## Choosing what counts
 

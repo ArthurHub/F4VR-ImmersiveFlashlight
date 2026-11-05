@@ -78,6 +78,7 @@ namespace ImFl
 
     /**
      * Switch the flashlight location to the given location and apply its light values (re-creating an on light).
+     * The gestures move the light this way, so the move plays the vanilla light-on sound as their feedback.
      * Switching to the primary hand while the offhand carries the weapon puts the light in the free hand for the
      * rest of that carry, even when the config location is already the primary hand (which otherwise resolves to
      * the weapon).
@@ -98,7 +99,7 @@ namespace ImFl
                 getFlashlightConfigLocationLabel(location));
             g_config.setFlashlightLocation(location, inPowerArmor);
         }
-        refreshFlashlightLocation();
+        refreshFlashlightLocation(LightRefreshMode::RecreateWithSound);
     }
 
     /**
@@ -116,16 +117,21 @@ namespace ImFl
 
     /**
      * Refresh the current flashlight location based on config and game state.
-     * Update the config references and reload the light values if location changed.
+     * Update the config references and reload the light values if location changed, re-creating an on light with the
+     * given mode: silent by default, as the automatic moves (a grip, a drawn weapon, a fallback) follow what the player
+     * does anyway. With no location available the light keeps its place, so it doesn't move just to be turned off by
+     * RestrictionHandler.
      */
-    void FlashlightState::refreshFlashlightLocation()
+    void FlashlightState::refreshFlashlightLocation(const LightRefreshMode mode)
     {
         F4CF_PERF_FUNCTION();
         if (!WeaponGripHandler::isWeaponCarriedByOffhand()) {
             _heldInFreePrimaryHand = false;
         }
 
-        const auto newFlashlightLocation = getFlashlightLocation();
+        const auto resolvedLocation = resolveFlashlightLocation();
+        _hasAvailableLocation = resolvedLocation.has_value();
+        const auto newFlashlightLocation = resolvedLocation.value_or(flashlightLocation);
         if (flashlightLocation == newFlashlightLocation) {
             return;
         }
@@ -135,15 +141,15 @@ namespace ImFl
         refreshConfigReferences();
 
         // push the new location's values onto the light
-        refreshLightValues(LightRefreshMode::RecreateWithSound);
+        refreshLightValues(mode);
     }
 
     /**
      * Reload the light values from config onto the game light, doing nothing more when none of them changed.
      * The game copies the light form onto the light when it's turned on, so an off light only needs the form
      * written. An on light is re-created by default (LiveLight::recreate(): the engine's own hide and show, without
-     * the vanilla toggle's sounds), which INI hot-reload uses. A location change re-creates it with the vanilla
-     * light-on sound (RecreateWithSound); the light moving hides the swap.
+     * the vanilla toggle's sounds), which INI hot-reload and the automatic location changes use; the light moving hides
+     * the swap. A gesture's location change adds the vanilla light-on sound (RecreateWithSound).
      * InPlace, for beam tuning, writes the values into the live light instead (LiveLight::refresh()) so they show
      * without it going off. That reaches deeper into the engine, so it's kept to tuning, and it still re-creates the
      * light when the flags changed (shadows on/off make another kind of light) or the light can't take them.
@@ -275,6 +281,14 @@ namespace ImFl
     }
 
     /**
+     * Whether the last location resolve found a location the light may take (see resolveFlashlightLocation()).
+     */
+    bool FlashlightState::hasAvailableLocation()
+    {
+        return _hasAvailableLocation;
+    }
+
+    /**
      * Get a readable label for a flashlight config location.
      */
     const char* FlashlightState::getFlashlightConfigLocationLabel(const FlashlightConfigLocation location)
@@ -328,21 +342,42 @@ namespace ImFl
     }
 
     /**
-     * Get the real flashlight location based on config and current game state.
-     * A temporary override takes priority, otherwise gameplay state decides between head, PA head, hand, and weapon.
-     * For config InOffhand, a two-handed grip occupies the offhand: the light mounts on the weapon, but when the
-     * weapon-flashlight requirement is on and the weapon carries no modeled flashlight it falls back to the head
-     * (rather than turning off) until the grip is released and it returns to the offhand.
-     * A weapon carried one-handed in the offhand leaves the primary hand free, so either hand config holds the
-     * light in the primary hand. A weapon carried by the offhand with the firing grip detached (can't be fired)
-     * keeps the light on the weapon like a two-handed hold, unless it was put in the free primary hand.
+     * Get the real flashlight location based on config and current game state, or nullopt when the light has nowhere
+     * to go. A temporary override takes priority. Otherwise the location the config asks for
+     * (getRequestedFlashlightLocation()) is taken when available, else, with the restriction fallback on, the first
+     * available of the head, the offhand, the free primary hand, then the weapon. The config location is never
+     * rewritten, so the light returns to it once it is available again.
      */
-    FlashlightLocation FlashlightState::getFlashlightLocation()
+    std::optional<FlashlightLocation> FlashlightState::resolveFlashlightLocation()
     {
         if (_runtimeLocationOverride.has_value()) {
             return _runtimeLocationOverride.value();
         }
 
+        if (!g_config.restrictionFallback) {
+            const auto requestedLocation = getRequestedFlashlightLocation();
+            return isLocationAvailable(requestedLocation) ? std::optional(requestedLocation) : std::nullopt;
+        }
+
+        const auto headLocation = f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
+        for (const auto location :
+            { getRequestedFlashlightLocation(), headLocation, FlashlightLocation::InOffhand, FlashlightLocation::InPrimaryHand, FlashlightLocation::OnWeapon }) {
+            if (isLocationAvailable(location)) {
+                return location;
+            }
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * The location the config asks for in the current game state, whether or not it is available.
+     * A hand config mounts the light on the weapon when the weapon occupies that hand (config InOffhand: a two-handed
+     * grip). A weapon carried one-handed in the offhand leaves the primary hand free, so either hand config holds the
+     * light in the primary hand. A weapon carried by the offhand with the firing grip detached (can't be fired)
+     * keeps the light on the weapon like a two-handed hold, unless it was put in the free primary hand.
+     */
+    FlashlightLocation FlashlightState::getRequestedFlashlightLocation()
+    {
         const auto configLocation = getActiveFlashlightConfigLocation();
 
         if (configLocation == FlashlightConfigLocation::OnHead) {
@@ -355,26 +390,41 @@ namespace ImFl
         }
 
         if (configLocation == FlashlightConfigLocation::InOffhand) {
+            // Unless the offhand grips a two-handed weapon, it holds the light.
             if (!WeaponGripHandler::isTwoHandedGripActive() && !WeaponGripHandler::isWeaponCarriedByOffhand()) {
                 return FlashlightLocation::InOffhand;
             }
-            // The offhand grips a two-handed weapon and can't hold the light. Mount it on the weapon, unless the
-            // weapon-flashlight requirement is on and the weapon has no modeled flashlight — then fall back to the
-            // head instead of losing the light; releasing the grip resolves back to the offhand.
-            if (RestrictionHandler::isWeaponFlashlightMeshRequired() && !RestrictionHandler::isWeaponFlashlightAllowed()) {
-                return f4vr::isInPowerArmor() ? FlashlightLocation::OnPAHead : FlashlightLocation::OnHead;
-            }
-            return FlashlightLocation::OnWeapon;
-        }
-
-        // config InPrimaryHand: an empty hand (nothing drawn) or bare fists holds the light itself; a drawn
-        // weapon occupies the hand, so the light mounts on the weapon instead — unless the offhand carries the
-        // weapon and the light was put in the freed hand.
-        if (!RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn() || (_heldInFreePrimaryHand && WeaponGripHandler::isWeaponCarriedByOffhand())) {
+        } else if (!RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn() || (_heldInFreePrimaryHand && WeaponGripHandler::isWeaponCarriedByOffhand())) {
+            // config InPrimaryHand: an empty hand (nothing drawn) or bare fists holds the light itself, as does the
+            // freed hand the light was put in while the offhand carries the weapon.
             return FlashlightLocation::InPrimaryHand;
         }
 
+        // The weapon occupies the hand: mount the light on it.
         return FlashlightLocation::OnWeapon;
+    }
+
+    /**
+     * Whether the light may take the given location now: the head needs the headgear requirement met (the PA head
+     * always may), a hand must be free of the weapon (bare fists hold the light), and the weapon must be drawn and
+     * may carry the light (see RestrictionHandler::canWeaponCarryFlashlight()).
+     */
+    bool FlashlightState::isLocationAvailable(const FlashlightLocation location)
+    {
+        switch (location) {
+        case FlashlightLocation::OnHead:
+            return RestrictionHandler::isHeadFlashlightAllowed();
+        case FlashlightLocation::OnPAHead:
+            return true;
+        case FlashlightLocation::InOffhand:
+            return !WeaponGripHandler::isTwoHandedGripActive() && !WeaponGripHandler::isOffhandHoldingWeapon();
+        case FlashlightLocation::InPrimaryHand:
+            return !RestrictionHandler::isWeaponEquipped() || f4vr::isUnarmedWeaponDrawn() || WeaponGripHandler::isPrimaryHandFreeOfWeapon();
+        case FlashlightLocation::OnWeapon:
+            return RestrictionHandler::canWeaponCarryFlashlight();
+        default:
+            return false;
+        }
     }
 
     /**

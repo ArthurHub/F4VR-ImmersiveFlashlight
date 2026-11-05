@@ -96,18 +96,18 @@ On a gun with no detected lamp, the beam sits at a general offset near the barre
 </details>
 
 <details>
-  <summary>The hand light turns off when I draw a melee weapon</summary>
+  <summary>The hand light moves when I draw a melee weapon</summary>
 &#10240;
 
-That's intended: the melee weapon occupies your primary hand. Put the weapon away, or move the light to your offhand or head.
+The melee weapon occupies your primary hand, so the light moves off it as it does for a gun. With the weapon-flashlight requirement off, the light mounts on the melee weapon, at the same general offset as on a gun. With it on, a melee weapon has no lamp, so the light goes to your head or offhand. To keep a hand light, hold it in your offhand.
 
 </details>
 
 <details>
-  <summary>The light jumps to my head when I grip my weapon two-handed</summary>
+  <summary>The light jumps to my head or offhand when I draw a gun or grip it two-handed</summary>
 &#10240;
 
-A two-handed grip occupies your offhand, so a light held there normally moves onto the weapon. If the weapon-flashlight requirement is on and the gun has no lamp, it goes to your head instead. Bare-headed, the headgear requirement then turns it off. Letting go of the grip brings it back. See [When the weapon has no lamp](weapon-mount-restriction.md#when-the-weapon-has-no-lamp).
+A gun in your hand normally carries the light: drawn, it takes the light from your primary hand, and gripped two-handed, from your offhand. If the weapon-flashlight requirement is on and the gun has no lamp, the light goes to your head instead, or to your offhand when the headgear requirement rules the head out. With both hands on the gun there's no place left, so the light turns off, and turning it on there shows a message saying why. Putting the gun away or letting go of the grip brings it back. To have the light turn off instead, turn **Move the light when its place isn't allowed** (General page) off. See [When the weapon has no lamp](weapon-mount-restriction.md#when-the-weapon-has-no-lamp).
 
 </details>
 

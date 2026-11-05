@@ -23,7 +23,7 @@ namespace ImFl
         static void loadConfiguredGoboTextures();
         static bool isFlashlightOn();
         static void turnFlashlightOn();
-        static void turnFlashlightOff();
+        static void turnFlashlightOff(bool withSound = true);
         static bool areFlashlightShadowsEnabled();
         static void updateVanillaFlashlightToggleDisabled();
         static void updateKeepFlashlightOnInPipboy();

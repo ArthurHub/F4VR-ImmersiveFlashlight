@@ -9,7 +9,7 @@ namespace ImFl
     /**
      * How FlashlightState::refreshLightValues() applies changed values to a light that is on.
      * Recreate hides and shows the light again, the engine's own path, silently. RecreateWithSound adds the vanilla
-     * light-on sound, for a location change. InPlace writes them into the live light (LiveLight::refresh()), so they
+     * light-on sound, for a location change made with a gesture. InPlace writes them into the live light (LiveLight::refresh()), so they
      * show without the light going off, and is kept to beam tuning.
      */
     enum class LightRefreshMode : std::uint8_t
@@ -35,7 +35,7 @@ namespace ImFl
         static void switchFlashlightConfigLocation(FlashlightConfigLocation location);
         static void setFlashlightRuntimeLocationOverride(std::optional<FlashlightLocation> locationOverride);
 
-        static void refreshFlashlightLocation();
+        static void refreshFlashlightLocation(LightRefreshMode mode = LightRefreshMode::Recreate);
         static void refreshLightValues(LightRefreshMode mode = LightRefreshMode::Recreate);
         static void setLightValues();
         static void refreshGripStyle();
@@ -43,6 +43,8 @@ namespace ImFl
         // Whether a config-mode location override is currently forcing the runtime location (used to suppress
         // gameplay enforcement, e.g. RestrictionHandler, while previewing a location in the config UI).
         static bool isRuntimeLocationOverrideActive();
+        static bool hasAvailableLocation();
+        static FlashlightLocation getRequestedFlashlightLocation();
         static const char* getFlashlightConfigLocationLabel(FlashlightConfigLocation location);
         static const char* getFlashlightLocationLabel(FlashlightLocation location);
         static const char* getGripStyleLabel(FlashlightGripStyle style);
@@ -58,7 +60,8 @@ namespace ImFl
         static inline std::string* flashlightGoboPath = nullptr;
 
     private:
-        static FlashlightLocation getFlashlightLocation();
+        static std::optional<FlashlightLocation> resolveFlashlightLocation();
+        static bool isLocationAvailable(FlashlightLocation location);
         static void refreshConfigReferences();
         static RE::TESObjectLIGH* getLightForm();
 
@@ -67,5 +70,8 @@ namespace ImFl
         // The light was put in the free primary hand while the offhand carries the weapon, so config InPrimaryHand
         // resolves to the hand instead of the weapon. Only meaningful during that carry; cleared when it ends.
         inline static bool _heldInFreePrimaryHand = false;
+
+        // The last resolve found a location the light may take. False makes RestrictionHandler turn the light off.
+        inline static bool _hasAvailableLocation = true;
     };
 }
