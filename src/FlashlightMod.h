@@ -24,6 +24,11 @@ namespace ImFl
             return _config.get();
         }
 
+        Flashlight* getFlashlight() const
+        {
+            return _flashlight.get();
+        }
+
     protected:
         virtual void onModLoaded(const F4SE::LoadInterface* f4SE) override;
         virtual void onGameLoaded() override;

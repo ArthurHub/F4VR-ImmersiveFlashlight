@@ -312,6 +312,18 @@ namespace ImFl::devbench
         }
 
         /**
+         * Where the light is after an action: lightOn, location, configLocation.
+         */
+        json lightSummary()
+        {
+            return {
+                { "lightOn", Utils::isFlashlightOn() },
+                { "location", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation) },
+                { "configLocation", FlashlightState::getFlashlightConfigLocationLabel(FlashlightState::getActiveFlashlightConfigLocation()) },
+            };
+        }
+
+        /**
          * light: switch the configured location and/or turn the light on / off, the way the gestures do (a location
          * switch is saved to the config file as theirs is).
          */
@@ -339,11 +351,47 @@ namespace ImFl::devbench
             } else if (!op.empty()) {
                 throw std::invalid_argument(std::format("light: unknown op '{}': on|off|toggle", op));
             }
-            return {
-                { "lightOn", Utils::isFlashlightOn() },
-                { "location", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation) },
-                { "configLocation", FlashlightState::getFlashlightConfigLocationLabel(FlashlightState::getActiveFlashlightConfigLocation()) },
-            };
+            return lightSummary();
+        }
+
+        /**
+         * gesture: fire a gesture as if its binding were pressed in its zone, through the same state gating as the
+         * real one. An inert gesture is not an error: it answers fired false and why.
+         */
+        json runGesture(const json& args)
+        {
+            requireFlashlight();
+            const auto name = args.value("gesture", std::string());
+            const auto press = args.value("press", std::string("tap"));
+            const auto hand = args.value("hand", std::string("offhand"));
+            if (press != "tap" && press != "long") {
+                throw std::invalid_argument(std::format("gesture: unknown press '{}': tap|long", press));
+            }
+            if (hand != "offhand" && hand != "primaryHand") {
+                throw std::invalid_argument(std::format("gesture: unknown hand '{}': offhand|primaryHand", hand));
+            }
+
+            using enum Flashlight::SimulatedGesture;
+            Flashlight::SimulatedGesture gesture;
+            if (name == "bodyGrab") {
+                gesture = hand == "offhand" ? BodyGrabOffhand : BodyGrabPrimaryHand;
+            } else if (name == "head") {
+                gesture = press == "tap" ? HeadTap : HeadLongPress;
+            } else if (name == "primaryHand") {
+                gesture = press == "tap" ? PrimaryHandTap : PrimaryHandLongPress;
+            } else if (name == "weaponToggle") {
+                gesture = WeaponToggle;
+            } else {
+                throw std::invalid_argument(std::format("gesture: unknown gesture '{}': bodyGrab|head|primaryHand|weaponToggle", name));
+            }
+
+            const char* inert = g_imFl.getFlashlight()->simulateGesture(gesture);
+            auto out = lightSummary();
+            out["fired"] = inert == nullptr;
+            if (inert) {
+                out["inert"] = inert;
+            }
+            return out;
         }
 
         /**
@@ -414,6 +462,19 @@ namespace ImFl::devbench
                 { "location", arg("string", "light: switch the configured location first: head|offhand|primaryHand (primaryHand lands on a drawn ranged weapon)") },
             },
             .handler = &runLight,
+        });
+        f4cf::devbench::addAction({
+            .name = "gesture",
+            .description = "fire a gesture as if its button were pressed in its zone: the same state gating and action as the real one, minus the "
+                           "zone, button and haptic. bodyGrab (hand), head (press: tap puts the light on / off the head, long pulls it to the "
+                           "hand), primaryHand (press: tap moves it among offhand / primary hand / weapon, long pulls it off the weapon), "
+                           "weaponToggle (two-handed grip only). Returns fired, inert (why it didn't), lightOn, location, configLocation",
+            .arguments = {
+                { "gesture", arg("string", "gesture: bodyGrab|head|primaryHand|weaponToggle") },
+                { "press", arg("string", "gesture: tap (default)|long, for head and primaryHand") },
+                { "hand", arg("string", "gesture: offhand (default)|primaryHand, the hand that grabs at the body for bodyGrab") },
+            },
+            .handler = &runGesture,
         });
         f4cf::devbench::addAction({
             .name = "ui",

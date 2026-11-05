@@ -47,19 +47,54 @@ namespace ImFl
     class Flashlight
     {
     public:
+        /**
+         * A gesture and the binding of it that fires, for simulateGesture().
+         */
+        enum class SimulatedGesture : std::uint8_t
+        {
+            BodyGrabOffhand,
+            BodyGrabPrimaryHand,
+            HeadTap,
+            HeadLongPress,
+            PrimaryHandTap,
+            PrimaryHandLongPress,
+            WeaponToggle,
+        };
+
         explicit Flashlight();
 
         void onFrameUpdate();
         void onGameSessionLoaded();
+        const char* simulateGesture(SimulatedGesture gesture);
 
     private:
+        /**
+         * A gesture's two bindings as fed to its sphere this frame, each DisabledBinding in states where it doesn't act.
+         */
+        struct GestureBindings
+        {
+            vrcf::InputBinding primary;
+            vrcf::InputBinding secondary;
+        };
+
         static void applyConfigChange();
         void handlePowerArmorTransition();
+        bool isBodyStowEnabled() const;
         void updateBodyStow();
         bool checkBodyGrab(bool enabled);
+        static GestureBindings getBodyGrabBindings();
+        static GestureBindings getHeadBindings();
+        static GestureBindings getPrimaryHandBindings();
+        bool isWeaponToggleActive() const;
         void checkHeadActivation();
         void checkPrimaryHandActivation();
         void checkWeaponFlashlightToggle() const;
+        static void bodyGrab(vrcf::Hand hand);
+        static void headTap(vrcf::Hand hand);
+        static void headToHand(vrcf::Hand hand);
+        static void primaryHandTap(vrcf::Hand hand);
+        static void weaponToOffhand(vrcf::Hand hand);
+        static void weaponToggle(vrcf::Hand hand);
         static void adjustFlashlightTransformToHandOrHead(const RE::NiAVObject* inHandLightAnchor);
         static void onWeaponTransformFinalized();
         void maybeShowFPSStabilizerModWarning();

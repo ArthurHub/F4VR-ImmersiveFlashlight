@@ -137,7 +137,8 @@ The framework registers the `immersiveflashlightvr` tool with its generic action
 
 - **State:** `FlashlightDevState`, captured after each frame while armed. Every flag and label also emits a `<group>.<name>` event once a new value holds for 3 frames.
 - **Events, always on:** `gesture` (from each gesture callback) and `restriction.lightOff`.
-- **Actions:** `light` (`on|off|toggle`, `location`), `ui` (`open|close`) and `restrictions` (what is allowed, and why).
+- **Actions:** `light` (`on|off|toggle`, `location`), `gesture`, `ui` (`open|close`) and `restrictions` (what is allowed, and why).
+- **`gesture`** fires `bodyGrab` (`hand`), `head` / `primaryHand` (`press`: `tap|long`) or `weaponToggle` through `Flashlight::simulateGesture()`. That runs the bindings the frame would feed (`get*Bindings()`, `isWeaponToggleActive()`) and the gesture's own handler, so only the zone and the button press are skipped. An inert gesture answers `fired: false` with the reason.
 - **Node names, for the generic `nodes` action:** `ImmersiveFlashlight`, `ImmersiveFlashlightBody`, `ImmersiveFlashlightWeaponBeam`.
 
 Inside `namespace ImFl`, `devbench::` is the mod's, and the framework's is `f4cf::devbench::`.
