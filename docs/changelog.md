@@ -6,7 +6,7 @@
 - Restrictions: A light whose place a restriction rules out now moves to the next free place (your head, a free hand, then the weapon) instead of turning off, and returns once its place is allowed again. Taking off your helmet moves a head light to your offhand. With no place left (no eligible headgear and both hands on a gun without a lamp), it turns off, and turning it on there shows a message saying why instead of only playing the toggle sound. **Move the light when its place isn't allowed** (General page) turns the move off, so the light turns off instead.
 - Flashlight: The light moves silently when it switches place on its own (a grip, a drawn weapon, a restriction). Moving it with a gesture still plays the light-on sound.
 - Fixed the weapon light staying off after switching to a gun without a lamp (with the weapon-flashlight requirement on). Toggling the light only played its sound.
-- Dev: The devbench tool's `gesture` action fires any gesture as if its button were pressed in its zone, with the same rules for when it acts, so a script can test the gestures.
+- Dev: The devbench tool's `gesture` action fires any gesture as if its button were pressed in its zone, with the same rules for when it acts, so a script can test the gestures. Its `powerArmor` action finds the nearest power armor frame for a test to get into.
 
 ## v1.3.1
 

@@ -137,7 +137,8 @@ The framework registers the `immersiveflashlightvr` tool with its generic action
 
 - **State:** `FlashlightDevState`, captured after each frame while armed. Every flag and label also emits a `<group>.<name>` event once a new value holds for 3 frames.
 - **Events, always on:** `gesture` (from each gesture callback) and `restriction.lightOff`.
-- **Actions:** `light` (`on|off|toggle`, `location`), `gesture`, `ui` (`open|close`) and `restrictions` (what is allowed, and why).
+- **Actions:** `light` (`on|off|toggle`, `location`), `gesture`, `powerArmor`, `ui` (`open|close`) and `restrictions` (what is allowed, and why).
+- **`powerArmor`** finds the nearest frame in the player's cell by its `FurnitureTypePowerArmor` keyword. The console's `player.cf "Actor.SwitchToPowerArmor" <formId>` gets the player in at once, and `... none` gets them out. KabutoVR blocks that exit. Activating the frame, from code or the console, doesn't get the player in.
 - **`gesture`** fires `bodyGrab` (`hand`), `head` / `primaryHand` (`press`: `tap|long`) or `weaponToggle` through `Flashlight::simulateGesture()`. That runs the bindings the frame would feed (`get*Bindings()`, `isWeaponToggleActive()`) and the gesture's own handler, so only the zone and the button press are skipped. An inert gesture answers `fired: false` with the reason.
 - **Node names, for the generic `nodes` action:** `ImmersiveFlashlight`, `ImmersiveFlashlightBody`, `ImmersiveFlashlightWeaponBeam`.
 
