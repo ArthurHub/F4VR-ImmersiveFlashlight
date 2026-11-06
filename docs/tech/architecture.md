@@ -109,7 +109,7 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
   - the `shadowMapResolution` state, which the Shadows warning reads
   - the `openBeamConfig` function, which opens `BeamScreen` and minimizes the menu; the menu is restored as the screen closes
 - `BeamScreen` saves nothing itself. Each tuned value, and Reset's defaults, goes to the menu with `setPendingValue` by setting id (`<key>:<section>`, from `Config::getFlashlightValueSetting()`), so the menu's Save writes them and its Discard takes them back.
-- A value comes back as a preview whose reload drops any edit not handed over yet, so all values are read before the first is handed over. A refused value is dropped on close, and the player is told once.
+- The screen sets a value in the config before it hands it over, and refreshes the light itself. The value comes back as a preview marked `handedOver`, which `ConfigPreviews` records as an override with no reload. A refused value is not kept: the next load of the config drops it, and the player is told once.
 - Button handlers fire mid-`UIManager` iteration, so Exit only sets `_closeRequested`, and `onFrameUpdate()` closes.
 
 ## Config hot-reload

@@ -108,20 +108,16 @@ namespace
     bool refusedEditsNotified = false;
 
     /**
-     * Hand beam values of the tuned location to Mods Config FO4 VR's menu as pending edits, which its Save writes and
-     * its Discard takes back: the screen writes no file. All are read before the first is handed over, as each comes
-     * back as a preview whose override reloads the config, which drops a value not handed over yet. One the menu
-     * refuses, as when it no longer shows the mod, is dropped as the screen closes, which the player is told once.
+     * Hand beam values of the tuned location, already set in the config, to Mods Config FO4 VR's menu as pending
+     * edits, which its Save writes and its Discard takes back: the screen writes no file. One the menu refuses, as
+     * when it no longer shows the mod, is not kept: the next load of the config drops it. The player is told once.
      */
     void handOverBeamValues(const std::initializer_list<ImFl::FlashlightBeamValue> values)
     {
-        std::vector<std::pair<std::string, mods_config::api::Value>> settings;
         for (const auto value : values) {
-            settings.push_back(ImFl::g_config.getFlashlightValueSetting(ImFl::FlashlightState::flashlightLocation, value));
-        }
-        for (const auto& [id, value] : settings) {
-            if (!mods_config::api::ModsConfigFO4Client::get().setPendingValue(id, value)) {
-                logger::warn("Beam value '{}' is not taken by the config menu, it is dropped as the beam tuning closes", id);
+            const auto [id, setting] = ImFl::g_config.getFlashlightValueSetting(ImFl::FlashlightState::flashlightLocation, value);
+            if (!mods_config::api::ModsConfigFO4Client::get().setPendingValue(id, setting)) {
+                logger::warn("Beam value '{}' is not taken by the config menu, and is not kept", id);
                 if (!refusedEditsNotified) {
                     refusedEditsNotified = true;
                     f4vr::showNotification("Beam changes can't be kept:\nopen the beam tuning from Mods Config");
