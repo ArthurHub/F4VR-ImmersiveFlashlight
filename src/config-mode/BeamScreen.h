@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "vrcf/VRControllersManager.h"
 #include "vrui/UIButtonPanel.h"
 #include "vrui/UIContainer.h"
 #include "vrui/UITextPanel.h"
@@ -24,8 +25,8 @@ namespace ImFl::config
      *
      * The two preset buttons show the preset they are on: the gobo button draws the gobo texture itself
      * and the color button is tinted with the beam color. While beam tuning is on they give their place
-     * in the row to a panel with the three tuned values, which is where the thumbstick adjustments are
-     * read off - the value just changed is highlighted for a moment.
+     * in the row to a panel with the three tuned values, each with the thumbstick push that tunes it, which
+     * is where the adjustments are read off - the value just changed is highlighted for a moment.
      */
     class BeamScreen
     {
@@ -49,7 +50,7 @@ namespace ImFl::config
 
         void handleBeamTuningAdjustments();
         void markValueTuned(TunedValue value);
-        vrui::TextRow beamValueRow(std::string_view label, const std::string& value, TunedValue tunedValue) const;
+        vrui::TextRow beamValueRow(std::string_view label, const std::string& value, TunedValue tunedValue, const vrcf::InputBinding& stick) const;
         void refreshPresetButtons();
         void updateBeamTuningPanelVisibility() const;
         static void switchBeamGobo();
@@ -73,7 +74,6 @@ namespace ImFl::config
         std::shared_ptr<vrui::UIButtonPanel> _switchGoboBtn;
         std::shared_ptr<vrui::UIButtonPanel> _switchColorBtn;
         std::shared_ptr<vrui::UITextPanel> _beamValuesPanel;
-        std::shared_ptr<vrui::UIContainer> _tuningPromptsRow;
 
         // Exit was pressed, and the next onFrameUpdate closes the UI
         bool _closeRequested = false;

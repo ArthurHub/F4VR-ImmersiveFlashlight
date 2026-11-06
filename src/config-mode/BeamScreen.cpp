@@ -1,5 +1,7 @@
 #include "BeamScreen.h"
 
+#include <ranges>
+
 #include "Config.h"
 #include "FlashlightState.h"
 #include "Utils.h"
@@ -25,9 +27,9 @@ namespace
     // how long the value a thumbstick adjustment just changed stays highlighted in the values panel
     constexpr uint64_t TUNED_VALUE_HIGHLIGHT_MS = 1500;
 
-    // the width of the two preset buttons the values panel replaces plus the padding between them, so the
-    // beam tuning toggle beside it stays where it is when they are swapped
-    constexpr float BEAM_VALUES_PANEL_WIDTH = 4.3f;
+    // wide enough for a value's name, the value and its prompt; wider than the two preset buttons it swaps
+    // with, so the centred row shifts a little as tuning turns on
+    constexpr float BEAM_VALUES_PANEL_WIDTH = 4.8f;
 
     // as tall as the buttons beside it, so the row stays even
     constexpr float BEAM_VALUES_PANEL_HEIGHT = 2.0f;
@@ -35,15 +37,26 @@ namespace
     // where a value starts, measured from the start of its row, so the three line up in a column
     constexpr float BEAM_VALUES_TAB_WIDTH = 2.4f;
 
-    // spreads the three rows over the panel's height
-    constexpr float BEAM_VALUES_LINE_SPACING = 2.4f;
+    // tight: the prompt icons, taller than the text, are what keep the rows apart (UITextPanel::lineStep)
+    constexpr float BEAM_VALUES_LINE_SPACING = 1.4f;
 
-    // the lines are drawn down from the top edge, so the top padding is what places them in the height
+    // the thumbstick prompt ending each value's row, about as tall as a row's pitch
+    constexpr BindingPromptStyle BEAM_VALUES_PROMPT_STYLE{ .imageHeight = 2.32f };
+
+    // even padding top and bottom: the first and last rows' prompts reach past their text to the padding
     constexpr UIPanelStyle BEAM_VALUES_PANEL_STYLE = [] {
         auto style = F4VR_PANEL_STYLE;
-        style.padding = { .top = 0.2f, .right = 0.3f, .bottom = 0.15f, .left = 0.3f };
+        style.padding = { .top = 0.08f, .right = 0.3f, .bottom = 0.08f, .left = 0.3f };
         return style;
     }();
+
+    /**
+     * The thumbstick push of one hand along one axis, as the beam tuning reads it, for its prompt icon.
+     */
+    vrcf::InputBinding tuningStick(const vrcf::Hand hand, const vrcf::Direction direction)
+    {
+        return vrcf::InputBinding{ .hand = hand, .type = vrcf::ActivationType::AxisDirection, .axis = vrcf::Axis::Thumbstick, .direction = direction };
+    }
 
     struct ColorOption
     {
@@ -335,13 +348,21 @@ namespace ImFl::config
     }
 
     /**
-     * One row of the values panel: the value's name, then the value itself at the tab stop so the three
-     * line up, highlighted while it is the one the last thumbstick adjustment changed.
+     * One row of the values panel: the value's name, the value itself at the tab stop so the three line up,
+     * and the thumbstick push that tunes it at the right edge. The value and its prompt are highlighted
+     * while it is the one the last thumbstick adjustment changed.
      */
-    vrui::TextRow BeamScreen::beamValueRow(const std::string_view label, const std::string& value, const TunedValue tunedValue) const
+    vrui::TextRow BeamScreen::beamValueRow(const std::string_view label, const std::string& value, const TunedValue tunedValue, const vrcf::InputBinding& stick) const
     {
         const auto highlighted = tunedValue == _lastTunedValue && nowMillis() - _lastTunedValueTime < TUNED_VALUE_HIGHLIGHT_MS;
-        return { .spans = { { .text = std::format("{}\t", label) }, { .text = value, .color = highlighted ? std::optional(render::colors::Yellow) : std::nullopt } } };
+        const auto color = highlighted ? std::optional(render::colors::Yellow) : std::nullopt;
+        TextRow row{ .spans = { { .text = std::format("{}\t", label) }, { .text = std::format("{}{}", value, TEXT_PANEL_RIGHT_TAB), .color = color } } };
+        const auto promptStart = row.spans.size();
+        appendBindingPrompt(row.spans, stick, BEAM_VALUES_PROMPT_STYLE);
+        for (auto& span : row.spans | std::views::drop(promptStart)) {
+            span.color = color;
+        }
+        return row;
     }
 
     /**
@@ -370,8 +391,7 @@ namespace ImFl::config
 
     /**
      * While beam tuning is on the gobo and color buttons give their place in the row to the values panel:
-     * the three tuned values are what the thumbsticks are changing, and the presets are not. The thumbstick
-     * prompts show under that row only then, and take no room otherwise.
+     * the three tuned values are what the thumbsticks are changing, and the presets are not.
      */
     void BeamScreen::updateBeamTuningPanelVisibility() const
     {
@@ -379,7 +399,6 @@ namespace ImFl::config
         _switchGoboBtn->setVisibility(!tuning);
         _switchColorBtn->setVisibility(!tuning);
         _beamValuesPanel->setVisibility(tuning);
-        _tuningPromptsRow->setVisibility(tuning);
     }
 
     /**
@@ -525,9 +544,20 @@ namespace ImFl::config
         _beamValuesPanel->setTabWidth(BEAM_VALUES_TAB_WIDTH);
         _beamValuesPanel->setLineSpacing(BEAM_VALUES_LINE_SPACING);
         _beamValuesPanel->setContent([this](std::vector<TextRow>& rows) {
-            rows.push_back(beamValueRow("INTENSITY", std::format("{:.1f}", *FlashlightState::flashlightFade), TunedValue::Intensity));
-            rows.push_back(beamValueRow("DISTANCE", std::format("{}", *FlashlightState::flashlightRadius), TunedValue::Distance));
-            rows.push_back(beamValueRow("SPREAD", std::format("{:.0f}\xC2\xB0", *FlashlightState::flashlightFov), TunedValue::Spread));
+            // the tuning reads the thumbsticks directly (see handleBeamTuningAdjustments), so the prompts are
+            // built from bindings describing exactly those reads; their icons draw the stick's axis
+            rows.push_back(beamValueRow("INTENSITY",
+                std::format("{:.1f}", *FlashlightState::flashlightFade),
+                TunedValue::Intensity,
+                tuningStick(vrcf::Hand::Primary, vrcf::Direction::UpDown)));
+            rows.push_back(beamValueRow("DISTANCE",
+                std::format("{}", *FlashlightState::flashlightRadius),
+                TunedValue::Distance,
+                tuningStick(vrcf::Hand::Primary, vrcf::Direction::RightLeft)));
+            rows.push_back(beamValueRow("SPREAD",
+                std::format("{:.0f}\xC2\xB0", *FlashlightState::flashlightFov),
+                TunedValue::Spread,
+                tuningStick(vrcf::Hand::Offhand, vrcf::Direction::UpDown)));
         });
 
         // the preset buttons and the values panel share the middle of the row, one pair or the other showing
@@ -550,32 +580,6 @@ namespace ImFl::config
         const auto row3Container = std::make_shared<UIContainer>("Row3", UIContainerLayout::HorizontalCenter, 0.3f);
         row3Container->addElement(resetBtn);
         row3Container->addElement(exitBtn);
-
-        // the thumbstick prompts of the beam tuning, in one line under the row they tune, shown while it is on
-        const auto tuningPrompts = std::make_shared<UITextPanel>("ImFl_BeamTuningPrompts");
-        auto tuningPromptsStyle = F4VR_PANEL_STYLE;
-        tuningPromptsStyle.padding.left = 0.3f;
-        tuningPromptsStyle.padding.right = 0.3f;
-        tuningPrompts->setStyle(tuningPromptsStyle);
-        tuningPrompts->setTextHeight(0.22f);
-        tuningPrompts->setContent([](std::vector<TextRow>& rows) {
-            // the tuning reads the thumbsticks directly (see handleBeamTuningAdjustments), so the prompts
-            // are built from bindings describing exactly those reads; their icons draw the stick's axis
-            constexpr BindingPromptStyle STICK_PROMPT_STYLE{ .imageHeight = 2.8f };
-            const auto stick = [](const vrcf::Hand hand, const vrcf::Direction direction) {
-                return vrcf::InputBinding{ .hand = hand, .type = vrcf::ActivationType::AxisDirection, .axis = vrcf::Axis::Thumbstick, .direction = direction };
-            };
-            rows.push_back({});
-            for (const auto& [binding, text] : { std::pair{ stick(vrcf::Hand::Primary, vrcf::Direction::UpDown), " INTENSITY    " },
-                     std::pair{ stick(vrcf::Hand::Primary, vrcf::Direction::RightLeft), " DISTANCE    " },
-                     std::pair{ stick(vrcf::Hand::Offhand, vrcf::Direction::UpDown), " SPREAD" } }) {
-                appendBindingPrompt(rows.back().spans, binding, STICK_PROMPT_STYLE);
-                rows.back().spans.push_back({ .text = text });
-            }
-        });
-
-        _tuningPromptsRow = std::make_shared<UIContainer>("RowTuningPrompts", UIContainerLayout::HorizontalCenter, 0.3f);
-        _tuningPromptsRow->addElement(tuningPrompts);
 
         refreshPresetButtons();
         updateBeamTuningPanelVisibility();
@@ -600,7 +604,6 @@ namespace ImFl::config
         _ui = std::make_shared<UIContainer>("BeamConfig", UIContainerLayout::VerticalUp, 0.35f, 1.6f);
         _ui->addElement(row4Container);
         _ui->addElement(row3Container);
-        _ui->addElement(_tuningPromptsRow);
         _ui->addElement(row2Container);
         _ui->addElement(_row1ToggleContainer);
         _ui->addElement(header);
