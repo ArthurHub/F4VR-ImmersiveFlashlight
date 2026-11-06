@@ -187,6 +187,11 @@ fFlashlightGripOverhandTiltDegrees = 120.0
 # Larger = more stable but switches feel less responsive.
 fFlashlightGripHysteresisDegrees = 60.0
 
+# With controller-direction movement (the game's bUseWandDirectionalMovement setting), the game moves you
+# where the offhand controller points. Holding the light in the offhand with the controller pointing backward
+# (e.g. an overhand grip) reverses that. This flips the movement stick then, so you move where the beam points.
+bFlipReversedWandMovement = true
+
 
 # -------------------------------------------------------------------------------------------------
 # ADVANCED: Head flashlight headgear restriction

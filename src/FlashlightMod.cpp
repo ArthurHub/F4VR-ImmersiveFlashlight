@@ -46,11 +46,12 @@ namespace ImFl
     }
 
     /**
-     * Adds the function of the config spec's button that opens the beam tuning in the world, and the game's shadow map
-     * size, which its warning under Shadows asks. The framework connects the client at kPostLoad, and nothing is called
-     * while Mods Config FO4 VR is not installed. The menu calls a press on the game thread, and is minimized while the
-     * config UI is open, and shown again as that closes. The size is the game's setting as it runs, which the game's
-     * settings menu changes with no restart, and not its INI file.
+     * Adds the function of the config spec's button that opens the beam tuning in the world, the game's shadow map
+     * size, which its warning under Shadows asks, and whether movement follows the controller, which enables the reversed
+     * movement fix. The framework connects the client at kPostLoad, and nothing is called while Mods Config FO4 VR is not
+     * installed. The menu calls a press on the game thread, and is minimized while the config UI is open, and shown again
+     * as that closes. Both states are the game's settings as it runs, which its settings menu changes with no restart,
+     * and not its INI file.
      */
     void FlashlightMod::registerModsConfigEntry()
     {
@@ -59,6 +60,7 @@ namespace ImFl
             const auto setting = f4vr::getIniSetting("iShadowMapResolution:Display");
             return setting ? std::optional<Value>(setting->GetInt()) : std::nullopt;
         });
+        ModsConfigFO4Client::get().addState("wandDirectionalMovement", [] { return std::optional<Value>(f4vr::useWandDirectionalMovement()); });
         ModsConfigFO4Client::get().addFunction("openBeamConfig", [this](const Params&) {
             const auto player = RE::PlayerCharacter::GetSingleton();
             if (!player || !player->loadedData || !_flashlight) {

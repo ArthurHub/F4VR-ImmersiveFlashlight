@@ -172,6 +172,8 @@ A hand-held light has two grips, each with its own light angle, model placement 
 
 **Auto** (the default) picks the grip from how you tilt the controller. It can also be locked to one grip, on the Advanced page.
 
+With movement by controller direction, the game moves you where your offhand controller points. When that hand holds the light with the controller pointing backward, as an overhand grip can, the mod flips the movement stick so you move where the beam points. **Fix reversed movement**, beside the grip settings, turns this off.
+
 ## Restrictions
 
 Optional rules. When one isn't met, its gesture does nothing, and a light there moves to the next free place (see [Automatic switching](#automatic-switching)). It turns off only with no place left: no eligible headgear and both hands on a gun without a lamp. With **Move the light when its place isn't allowed** off, it turns off as soon as its own place is ruled out. Turning the light on where it has no place shows a message saying why.

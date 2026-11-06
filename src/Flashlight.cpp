@@ -12,6 +12,7 @@
 #include "devbench/DevBench.h"
 #include "f4vr/F4VRUtils.h"
 #include "f4vr/PlayerNodes.h"
+#include "f4vr/WandMovement.h"
 #include "vrcf/VRControllersManager.h"
 #include "vrcf/VRControllersSuppressor.h"
 
@@ -158,6 +159,8 @@ namespace ImFl
             _onWeaponBeamMesh.invalidate();
         }
 
+        alignWandMovementToBeam();
+
         if (!Utils::isFlashlightOn()) {
             _inHandFlashlightMesh.onFrameUpdate(false);
             _onWeaponBeamMesh.onFrameUpdate();
@@ -216,6 +219,24 @@ namespace ImFl
             }
         }
         _flashlightOnRecentlyFrames = Utils::isFlashlightOn() ? 5 : (std::max)(0, _flashlightOnRecentlyFrames - 1);
+    }
+
+    /**
+     * While the light is held in the offhand, has controller-direction movement follow the beam (light +X) rather than the
+     * offhand controller, which an overhand grip can point backward. Not called means not corrected: the framework drops
+     * the correction a frame later, so a skipped update can't leave the stick inverted. Off in gesture-blocking menus,
+     * which take the stick; the Pip-Boy isn't one, as the player walks with it open.
+     */
+    void Flashlight::alignWandMovementToBeam() const
+    {
+        if (!g_config.flipReversedWandMovement || _gesturesBlockedByMenu || !Utils::isFlashlightOn() || FlashlightState::flashlightLocation != FlashlightLocation::InOffhand) {
+            return;
+        }
+        if (const auto lightNode = f4vr::getFirstChild(f4vr::getVRPlayerNodes()->headLightParentNode)) {
+            // this codebase keeps world rotations transposed: row 0 of `rotate` is where local +X (the beam) points
+            const auto& rotation = lightNode->world.rotate;
+            f4vr::WandMovement::alignTo("ImFl_WandMovement", RE::NiPoint3(rotation.entry[0][0], rotation.entry[0][1], rotation.entry[0][2]));
+        }
     }
 
     /**

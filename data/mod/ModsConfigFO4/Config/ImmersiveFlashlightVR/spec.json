@@ -722,6 +722,15 @@
               "valueOptions": { "min": 0.0, "max": 120.0, "step": 1.0 },
               "enabledWhen": { "setting": "gripMode", "equals": 0 },
               "storage": { "path": ["ImFl_HandMount", "fFlashlightGripHysteresisDegrees"] }
+            },
+            {
+              "type": "switcher",
+              "valueType": "bool",
+              "text": "Fix reversed movement",
+              "help": "With movement by controller direction, holding the light in the offhand with the controller pointing back reverses your movement. This flips it so you move where the beam points. Only with movement by controller direction on in the game's settings.",
+              "default": true,
+              "enabledWhen": { "clientState": "wandDirectionalMovement", "equals": true },
+              "storage": { "path": ["ImFl_HandMount", "bFlipReversedWandMovement"] }
             }
           ]
         },

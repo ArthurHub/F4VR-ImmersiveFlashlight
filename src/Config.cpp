@@ -402,6 +402,7 @@ namespace ImFl
         flashlightGripMode = static_cast<FlashlightGripMode>(config[SECTION_HAND_MOUNT]["iFlashlightGripMode"].value_or(0));
         flashlightGripOverhandTiltDegrees = config[SECTION_HAND_MOUNT]["fFlashlightGripOverhandTiltDegrees"].value_or(120.0f);
         flashlightGripHysteresisDegrees = config[SECTION_HAND_MOUNT]["fFlashlightGripHysteresisDegrees"].value_or(30.0f);
+        flipReversedWandMovement = config[SECTION_HAND_MOUNT]["bFlipReversedWandMovement"].value_or(true);
 
         flashlightHeadgearRequirement = static_cast<FlashlightHeadgearRequirement>(config[SECTION_HEADGEAR_RESTRICTION]["iFlashlightHeadgearRequirement"].value_or(0));
         headLightKeywordNames = getStringListValue(config, SECTION_HEADGEAR_RESTRICTION, "aHeadLightKeywords", {});

@@ -89,6 +89,7 @@ namespace ImFl
         void checkHeadActivation();
         void checkPrimaryHandActivation();
         void checkWeaponFlashlightToggle() const;
+        void alignWandMovementToBeam() const;
         static void bodyGrab(vrcf::Hand hand);
         static void headTap(vrcf::Hand hand);
         static void headToHand(vrcf::Hand hand);

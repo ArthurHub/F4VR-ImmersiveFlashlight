@@ -252,6 +252,9 @@ namespace ImFl
         float flashlightGripOverhandTiltDegrees = 0.0f;
         float flashlightGripHysteresisDegrees = 0.0f;
 
+        // With controller-direction movement, invert the movement stick while the offhand holding the light points away from the beam.
+        bool flipReversedWandMovement = true;
+
         // Stowed flashlight model on the body: shown (beam-less) while the flashlight is off so the
         // player can grab it to turn it on into a hand, or put it back to turn it off.
         bool showFlashlightOnBody = true;
