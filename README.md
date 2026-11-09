@@ -74,7 +74,7 @@ It needs Visual Studio 2022 or 2026 (x64, C++ desktop workload), CMake 4.2+ and 
 
 PRs accepted. For larger changes, please open an issue first to discuss what you would like to change.
 
-Code style is enforced by clang-format and pre-commit: run `pre-commit install` once after cloning. The architecture is in [CLAUDE.md](CLAUDE.md) and [docs/tech/architecture.md](docs/tech/architecture.md).
+Code style is enforced by clang-format for C++ and Prettier for JSON through pre-commit: run `pre-commit install` once after cloning. The architecture is in [CLAUDE.md](CLAUDE.md) and [docs/tech/architecture.md](docs/tech/architecture.md).
 
 ## Support
 

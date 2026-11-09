@@ -202,7 +202,11 @@
               "text": "<font color='#FFBF33'>WARNING: VR FPS Stabilizer is installed</font> - it lowers the game's shadow quality while you play, which may break the beam's shadows. Turn flashlight shadows off, or remove it.",
               "html": true,
               "visibleWhen": {
-                "all": [{ "f4sePlugin": "VRFPSStabilizerFallout" }, { "setting": "shadows", "equals": "0000010000100001" }, { "setting": "warnAboutFPSStabilizerMod", "equals": true }]
+                "all": [
+                  { "f4sePlugin": "VRFPSStabilizerFallout" },
+                  { "setting": "shadows", "equals": "0000010000100001" },
+                  { "setting": "warnAboutFPSStabilizerMod", "equals": true }
+                ]
               }
             },
             {
@@ -864,10 +868,7 @@
             "any": [
               { "setting": "weaponMeshRequired", "equals": 1 },
               {
-                "all": [
-                  { "setting": "weaponMeshRequired", "equals": 2 },
-                  { "any": [{ "plugin": "VRCP_DOOMMerged.esp" }, { "plugin": "TacticalMods.esp" }] }
-                ]
+                "all": [{ "setting": "weaponMeshRequired", "equals": 2 }, { "any": [{ "plugin": "VRCP_DOOMMerged.esp" }, { "plugin": "TacticalMods.esp" }] }]
               }
             ]
           },

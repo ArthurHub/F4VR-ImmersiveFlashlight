@@ -1,17 +1,6 @@
 {
   "name": "f4vr-immersive-flashlight",
   "version": "1",
-  "dependencies": [
-    "args",
-    "rapidcsv",
-    "rsm-mmio",
-    "spdlog",
-    "xbyak",
-    "nlohmann-json",
-    "simpleini",
-    "tomlplusplus",
-    "thomasmonkman-filewatch",
-    "cpptrace"
-  ],
+  "dependencies": ["args", "rapidcsv", "rsm-mmio", "spdlog", "xbyak", "nlohmann-json", "simpleini", "tomlplusplus", "thomasmonkman-filewatch", "cpptrace"],
   "builtin-baseline": "5cd4931b18d49c77074703cf293a7837ac7506fa"
 }

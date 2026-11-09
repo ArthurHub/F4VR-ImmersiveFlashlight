@@ -69,7 +69,9 @@ Set `COPY_PLUGIN_CONFIGURATIONS` in that preset to limit the copy to some build 
 
 ## Code style
 
-clang-format enforces style via `.clang-format`. After cloning, run `pre-commit install` once so clang-format runs automatically on every commit.
+clang-format enforces C++ style via `.clang-format`, and Prettier enforces JSON style via `.prettierrc.json` (180 columns, two-space indentation, CRLF). After cloning, run `pre-commit install` once so the checks run automatically on every commit.
+
+JSON specs under `data/mod/` are formatted; exported JSON configs under `data/config/` keep their native layout. The hooks pin Prettier 3.7.4 and Node 26.13.0, and the existing maintenance workflow runs the same checks on GitHub.
 
 ## Testing
 
