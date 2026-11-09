@@ -66,9 +66,50 @@
           }
         },
         { "type": "spacer" },
+
         {
           "type": "text",
-          "text": "<font color='#10FA78'>Take it:</font> reach to the flashlight on your belt and tap the trigger. Put it back the same way to turn it off.<br><font color='#10FA78'>On your head:</font> bring your offhand near your head until you feel a tick, then tap the trigger. Long-press to pull it back to your hand.<br><font color='#10FA78'>Between hands and onto the weapon:</font> bring your offhand near your primary hand and tap the trigger.<br><br><font color='#10FA78'>Auto switch:</font> A light in your primary hand moves onto a drawn gun and turns off for melee. A light in your offhand moves onto the gun while you grip it two-handed. Each place keeps its own beam, set on the Beam page.<br><br><font color='#10FA78'>Requirements:</font> by default the head light needs a helmet or hard hat, and with some weapon mods a gun needs a modeled lamp to take the light. Both are on the General page.<br><br><font color='#10FA78'>Enemies see your beam:</font> hostile NPCs in the beam, or near the spot it lights, come to look.",
+          "text": "<font color='#10FA78'>Flashlight positions:</font> Your flashlight can be in either hand, on your weapon, or on your head (with or without Power Armor). Its location is remembered separately inside and outside Power Armor.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>How to interact:</font> Move your hand near a flashlight interaction point. You'll feel a brief haptic tick when you're in range. Tap the trigger to interact.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Belt flashlight:</font> Reach for the flashlight on your belt and tap the trigger to take it into your hand. Return it to your belt to turn it off.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Head flashlight:</font> Bring your offhand near your head and tap the trigger to activate the head-mounted light directly, without first taking it into your hand.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Transfer the light:</font> Bring your offhand near your primary hand and tap the trigger to move the light between hands or onto your weapon. Where it moves depends on its current position and whether you're holding a weapon.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Automatic switching:</font> A light in your primary hand moves onto your gun when drawn, and turns off for melee weapons. A light in your offhand moves onto the gun when gripping it two-handed.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Beam settings:</font> Each flashlight position has its own beam settings. Customize them independently on the Beam page.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Requirements:</font> By default, mounting the light on your head requires a helmet or hard hat. Some weapon mods require a visible flashlight attachment to mount the light on a gun. Both restrictions can be changed on the General page.",
+          "html": true
+        },
+        {
+          "type": "text",
+          "text": "<font color='#10FA78'>Enemy awareness:</font> Hostile NPCs may investigate when caught in your beam or near an area it illuminates. Configure this behavior on the Advanced page.",
           "html": true
         }
       ]
