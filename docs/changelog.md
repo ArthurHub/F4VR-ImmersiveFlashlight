@@ -1,3 +1,7 @@
+## v1.4.1
+
+- Config: A gesture zone's sphere shows in the world while you point at its settings in Mods Config, so you see which zone they set. A zone's row shows it only while that zone is the one in use, in power armor or not. Needs Mods Config FO4 VR 0.11 or later.
+
 ## v1.4
 
 - Config: Every setting is now edited in game in [Mods Config FO4 VR](https://www.nexusmods.com/games/fallout4/mods/110945), applied live, with Save and Discard. It replaces the main and misc config screens and the FRIK config button.
