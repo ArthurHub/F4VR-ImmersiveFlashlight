@@ -368,9 +368,8 @@ namespace ImFl
 
         logger::info("No location available for the flashlight (at {}) — turning it off", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation));
         Utils::turnFlashlightOff(!lightJustTurnedOn);
-        f4cf::devbench::emit("restriction.lightOff", [] {
-            return nlohmann::json{ { "location", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation) } };
-        });
+        f4cf::devbench::emit("restriction.lightOff",
+            [] { return nlohmann::json{ { "location", FlashlightState::getFlashlightLocationLabel(FlashlightState::flashlightLocation) } }; });
 
         if (lightJustTurnedOn && common::isNowTimePassed(_lastNoLocationNotificationTime, 3000)) {
             f4vr::showNotification(getNoLocationMessage());

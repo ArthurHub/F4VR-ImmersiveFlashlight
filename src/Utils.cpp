@@ -235,7 +235,7 @@ namespace ImFl
         std::size_t signature = 0;
         forEachOpenMenu([&](const char* name, const std::uint32_t flags) {
             const auto blockingFlags = flags & GESTURE_BLOCKING_MENU_FLAGS;
-            signature ^= std::hash<std::string_view>{}(name)*31 + blockingFlags;
+            signature ^= std::hash<std::string_view>{}(name) * 31 + blockingFlags;
             if (!blockingMenu && (matchesAny(name, GESTURE_BLOCKING_MENUS) || (blockingFlags != 0 && !matchesAny(name, GESTURE_ALLOWED_MENUS)))) {
                 blockingMenu = name;
             }

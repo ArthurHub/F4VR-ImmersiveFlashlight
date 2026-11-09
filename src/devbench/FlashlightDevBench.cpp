@@ -78,7 +78,7 @@ namespace ImFl::devbench
         {
             const char* group;
             const char* name;
-            bool FlashlightDevState::*value;
+            bool FlashlightDevState::* value;
         };
 
         /**
@@ -88,7 +88,7 @@ namespace ImFl::devbench
         {
             const char* group;
             const char* name;
-            const char* FlashlightDevState::*value;
+            const char* FlashlightDevState::* value;
         };
 
         /**
