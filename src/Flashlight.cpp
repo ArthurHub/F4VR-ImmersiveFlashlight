@@ -253,7 +253,7 @@ namespace ImFl
         _bodyFlashlightMesh.onFrameUpdate(enabled);
 
         // A grab/return may toggle the light, so set the model visibility from the resulting state.
-        checkBodyGrab(enabled && !_gesturesBlockedByMenu);
+        checkBodyGrab();
 
         if (enabled) {
             const bool heldInHand = Utils::isFlashlightOn() && FlashlightState::isHandHeldFlashlight();
@@ -275,20 +275,17 @@ namespace ImFl
      * haptic) only then.
      * @return true if a grab or return toggled the flashlight this frame.
      */
-    bool Flashlight::checkBodyGrab(const bool enabled)
+    bool Flashlight::checkBodyGrab()
     {
-        const auto bindings = getBodyGrabBindings();
-
-        // The grab zone is anchored to the stowed model on the chest bone; mirror it for left-handed players.
-        const auto zoneNode = _bodyFlashlightMesh.stowBoneNode();
+        const auto zone = getBodyGrabZone();
         return _bodyGrabSphere.onFrameUpdate(
             {
-                .enabled = enabled && zoneNode != nullptr,
-                .node = zoneNode,
-                .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
+                .enabled = zone.enabled,
+                .node = zone.node,
+                .zone = zone.zone,
                 .bindings = {
-                    { .binding=bindings.primary, .activateHaptic=g_config.bodyActivation.primaryHaptic },
-                    { .binding=bindings.secondary, .activateHaptic=g_config.bodyActivation.secondaryHaptic },
+                    { .binding=zone.bindings.primary, .activateHaptic=g_config.bodyActivation.primaryHaptic },
+                    { .binding=zone.bindings.secondary, .activateHaptic=g_config.bodyActivation.secondaryHaptic },
                 },
                 .entryHaptic = g_config.bodyActivation.entryHaptic,
                 .showSphere = g_config.bodyActivation.showSphere,
@@ -303,6 +300,23 @@ namespace ImFl
                 bodyGrab(binding.hand);
                 return true;
             });
+    }
+
+    /**
+     * The body grab's zone: anchored to the stowed model on the chest bone, mirrored for left-handed players. Live
+     * while the stow is shown and placed, and no gesture-blocking menu is open.
+     */
+    Flashlight::GestureZone Flashlight::getBodyGrabZone() const
+    {
+        const auto node = _bodyFlashlightMesh.stowBoneNode();
+        return {
+            .name = "bodyGrab",
+            .sphere = &_bodyGrabSphere,
+            .node = node,
+            .zone = mirrorZoneIfNeeded(_bodyFlashlightMesh.grabZoneTransform()),
+            .enabled = isBodyStowEnabled() && !_gesturesBlockedByMenu && node != nullptr,
+            .bindings = getBodyGrabBindings(),
+        };
     }
 
     /**
@@ -358,13 +372,14 @@ namespace ImFl
     void Flashlight::checkHeadActivation()
     {
         F4CF_PERF_FUNCTION();
-        const auto bindings = getHeadBindings();
+        const auto zone = getHeadZone();
+        const auto& bindings = zone.bindings;
 
         _headSphere.onFrameUpdate(
             {
-                .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
-                .node = f4vr::getVRPlayerNodes()->hmdNode,
-                .zone = g_config.headActivation.zone,
+                .enabled = zone.enabled,
+                .node = zone.node,
+                .zone = zone.zone,
                 .bindings = {
                     { .binding=bindings.primary, .activateHaptic=g_config.headActivation.primaryHaptic },
                     { .binding=bindings.secondary, .activateHaptic=g_config.headActivation.secondaryHaptic },
@@ -386,6 +401,21 @@ namespace ImFl
                 }
                 return true;
             });
+    }
+
+    /**
+     * The head activation's zone, on the HMD node.
+     */
+    Flashlight::GestureZone Flashlight::getHeadZone() const
+    {
+        return {
+            .name = "head",
+            .sphere = &_headSphere,
+            .node = f4vr::getVRPlayerNodes()->hmdNode,
+            .zone = g_config.headActivation.zone,
+            .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
+            .bindings = getHeadBindings(),
+        };
     }
 
     /**
@@ -453,28 +483,14 @@ namespace ImFl
     void Flashlight::checkPrimaryHandActivation()
     {
         F4CF_PERF_FUNCTION();
-        const auto bindings = getPrimaryHandBindings();
-
-        auto zone = g_config.primaryHandActivation.zone;
-
-        // Anchor the sphere to the weapon's flashlight mesh when configured and one is mounted (the node is
-        // non-null only while the weapon-flashlight requirement is on), so the gesture is reached at the gun
-        // lamp; otherwise it sits on the primary-hand wand. A non-node mesh falls back to the wand.
-        auto sphereNode = f4vr::getPrimaryHandWandNode();
-        if (g_config.weaponFlashlightAnchorPrimaryHandSphereToMesh) {
-            const auto [meshNode, meshTransform] = RestrictionHandler::getOnWeaponFlashlightMeshNode();
-            if (meshNode) {
-                sphereNode = meshNode->parent;
-                zone = meshTransform;
-                zone.scale = g_config.primaryHandActivation.zone.scale;
-            }
-        }
+        const auto zone = getPrimaryHandZone();
+        const auto& bindings = zone.bindings;
 
         _primaryHandSphere.onFrameUpdate(
             {
-                .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
-                .node = sphereNode,
-                .zone = zone,
+                .enabled = zone.enabled,
+                .node = zone.node,
+                .zone = zone.zone,
                 .bindings = {
                     { .binding=bindings.primary, .activateHaptic=g_config.primaryHandActivation.primaryHaptic },
                     { .binding=bindings.secondary, .activateHaptic=g_config.primaryHandActivation.secondaryHaptic },
@@ -496,6 +512,33 @@ namespace ImFl
                 }
                 return true;
             });
+    }
+
+    /**
+     * The primary-hand activation's zone: on the primary-hand wand, or at the weapon's flashlight mesh when configured
+     * and one is mounted (the node is non-null only while the weapon-flashlight requirement is on), so the gesture is
+     * reached at the gun lamp. A non-node mesh falls back to the wand.
+     */
+    Flashlight::GestureZone Flashlight::getPrimaryHandZone() const
+    {
+        auto zone = g_config.primaryHandActivation.zone;
+        auto node = f4vr::getPrimaryHandWandNode();
+        if (g_config.weaponFlashlightAnchorPrimaryHandSphereToMesh) {
+            const auto [meshNode, meshTransform] = RestrictionHandler::getOnWeaponFlashlightMeshNode();
+            if (meshNode) {
+                node = meshNode->parent;
+                zone = meshTransform;
+                zone.scale = g_config.primaryHandActivation.zone.scale;
+            }
+        }
+        return {
+            .name = "primaryHand",
+            .sphere = &_primaryHandSphere,
+            .node = node,
+            .zone = zone,
+            .enabled = !_gesturesBlockedByMenu && !_flashlightUnavailable,
+            .bindings = getPrimaryHandBindings(),
+        };
     }
 
     /**
@@ -673,6 +716,14 @@ namespace ImFl
         }
         action(binding.hand);
         return nullptr;
+    }
+
+    /**
+     * The three proximity gestures' zones as the frame tests them, for devbench: body grab, head, primary hand. Game thread.
+     */
+    std::array<Flashlight::GestureZone, 3> Flashlight::getGestureZones() const
+    {
+        return { getBodyGrabZone(), getHeadZone(), getPrimaryHandZone() };
     }
 
     /**

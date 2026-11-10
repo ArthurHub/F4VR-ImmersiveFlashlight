@@ -12,6 +12,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "Flashlight.h"
 #include "FlashlightMod.h"
 #include "FlashlightState.h"
 #include "NpcDetectionHandler.h"
@@ -19,8 +20,11 @@
 #include "Utils.h"
 #include "WeaponGripHandler.h"
 #include "common/CommonUtils.h"
+#include "common/MatrixUtils.h"
 #include "devbench/DevBench.h"
 #include "f4vr/F4VRUtils.h"
+#include "f4vr/PlayerNodes.h"
+#include "vrcf/InputBindingParser.h"
 
 namespace ImFl::devbench
 {
@@ -397,6 +401,74 @@ namespace ImFl::devbench
             return out;
         }
 
+        // the radius of the sphere mesh a zone's scale applies to (WandActivationSphere::SPHERE_NIF_BASE_RADIUS, private there)
+        constexpr float SPHERE_BASE_RADIUS = 0.5f;
+
+        json pointToJson(const RE::NiPoint3& point)
+        {
+            return json::array({ point.x, point.y, point.z });
+        }
+
+        /**
+         * One binding of a zone: its TOML text, the wand it is tested with, and whether the sphere suppresses its
+         * button now (that wand is inside); null when the gesture doesn't feed it in this state.
+         */
+        json zoneBindingToJson(const Flashlight::GestureZone& zone, const vrcf::InputBinding& binding)
+        {
+            if (!binding.isEnabled()) {
+                return nullptr;
+            }
+            return {
+                { "binding", vrcf::inputBindingTomlText(binding) },
+                { "wand", f4vr::isPrimaryHand(binding.hand) ? "primaryHand" : "offhand" },
+                { "suppressing", zone.sphere->isSuppressing(binding) },
+            };
+        }
+
+        /**
+         * zones: each proximity gesture's sphere as the frame tests it - its node, world center and radius, the
+         * bindings fed to it, and how far each wand is from its center - so a test driving the controllers can check
+         * a hand is inside before it presses.
+         */
+        json runZones(const json&)
+        {
+            requireFlashlight();
+            const auto offhandWand = f4vr::getOffhandWandNode();
+            const auto primaryWand = f4vr::getPrimaryHandWandNode();
+            json out = {
+                { "wands",
+                    {
+                        { "offhand", offhandWand ? pointToJson(offhandWand->world.translate) : json(nullptr) },
+                        { "primaryHand", primaryWand ? pointToJson(primaryWand->world.translate) : json(nullptr) },
+                    } },
+            };
+            for (const auto& zone : g_imFl.getFlashlight()->getGestureZones()) {
+                auto& entry = out["zones"][zone.name];
+                entry = {
+                    { "enabled", zone.enabled },
+                    { "primary", zoneBindingToJson(zone, zone.bindings.primary) },
+                    { "secondary", zoneBindingToJson(zone, zone.bindings.secondary) },
+                };
+                if (!zone.node) {
+                    entry["node"] = nullptr;
+                    continue;
+                }
+                const auto center = common::MatrixUtils::localToWorldPoint(zone.node->world, zone.zone.translate);
+                const float radius = zone.zone.scale * zone.node->world.scale * SPHERE_BASE_RADIUS;
+                entry["node"] = zone.node->name.c_str();
+                entry["nodePosition"] = pointToJson(zone.node->world.translate);
+                entry["center"] = pointToJson(center);
+                entry["radius"] = radius;
+                for (const auto& [wandName, wand] : { std::pair{ "offhand", offhandWand }, std::pair{ "primaryHand", primaryWand } }) {
+                    if (wand) {
+                        const float distance = common::MatrixUtils::vec3Len(wand->world.translate - center);
+                        entry["wands"][wandName] = { { "distance", distance }, { "inside", distance <= radius } };
+                    }
+                }
+            }
+            return out;
+        }
+
         /**
          * ui: open or close the in-game config UI.
          */
@@ -561,6 +633,15 @@ namespace ImFl::devbench
                 { "hand", arg("string", "gesture: offhand (default)|primaryHand, the hand that grabs at the body for bodyGrab") },
             },
             .handler = &runGesture,
+        });
+        f4cf::devbench::addAction({
+            .name = "zones",
+            .description = "each proximity gesture's sphere (bodyGrab, head, primaryHand) as the frame tests it: enabled, node (its name), "
+                           "nodePosition, center and radius in world units, primary / secondary (the binding fed in this state, the wand it "
+                           "is tested with, suppressing = that wand is inside now; null when not fed), and per wand its distance to the "
+                           "center and inside. wands has both wands' world positions. For driving the controllers into a zone with devbench's "
+                           "input reach before pressing",
+            .handler = &runZones,
         });
         f4cf::devbench::addAction({
             .name = "powerArmor",

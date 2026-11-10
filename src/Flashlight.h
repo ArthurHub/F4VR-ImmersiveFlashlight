@@ -61,13 +61,6 @@ namespace ImFl
             WeaponToggle,
         };
 
-        explicit Flashlight();
-
-        void onFrameUpdate();
-        void onGameSessionLoaded();
-        const char* simulateGesture(SimulatedGesture gesture);
-
-    private:
         /**
          * A gesture's two bindings as fed to its sphere this frame, each DisabledBinding in states where it doesn't act.
          */
@@ -77,11 +70,36 @@ namespace ImFl
             vrcf::InputBinding secondary;
         };
 
+        /**
+         * A proximity gesture's zone as its sphere tests it this frame: the node it is placed against (null while
+         * there is none), the zone in that node's space, whether it is live, and the bindings fed to it.
+         */
+        struct GestureZone
+        {
+            const char* name;
+            const f4vr::WandActivationSphere* sphere;
+            RE::NiNode* node;
+            RE::NiTransform zone;
+            bool enabled;
+            GestureBindings bindings;
+        };
+
+        explicit Flashlight();
+
+        void onFrameUpdate();
+        void onGameSessionLoaded();
+        const char* simulateGesture(SimulatedGesture gesture);
+        std::array<GestureZone, 3> getGestureZones() const;
+
+    private:
         static void applyConfigChange();
         void handlePowerArmorTransition();
         bool isBodyStowEnabled() const;
         void updateBodyStow();
-        bool checkBodyGrab(bool enabled);
+        bool checkBodyGrab();
+        GestureZone getBodyGrabZone() const;
+        GestureZone getHeadZone() const;
+        GestureZone getPrimaryHandZone() const;
         static GestureBindings getBodyGrabBindings();
         static GestureBindings getHeadBindings();
         static GestureBindings getPrimaryHandBindings();
