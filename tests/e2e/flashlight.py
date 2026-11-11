@@ -84,10 +84,6 @@ class Flashlight:
     def ui(self, op):
         return self.bench.mod("ui", op=op)
 
-    def power_armor_frame(self, radius):
-        """The nearest power armor frame within radius game units, or None."""
-        return self.bench.mod("powerArmor", radius=radius)["frame"]
-
     def perf(self, reset=False):
         return self.bench.mod("perf", format="flat", reset=reset)
 
@@ -150,10 +146,26 @@ class Loadout:
         self._switch_weapon("sheatheWeapon")
         self.flashlight.wait(lambda s: not s["restrictions"]["weaponEquipped"], 5, "the weapon holstered")
 
+    def power_armor_frame(self, radius):
+        """The nearest power armor frame in the player's cell within radius game units, as devbench's player tool
+        lists it ({ formId, baseFormId, name, distance }), or None."""
+        frames = self.bench.tool("player", action="findPowerArmor", radius=radius, limit=1)["frames"]
+        return frames[0] if frames else None
+
+    def power_armor(self, action, **args):
+        """A power armor switch through devbench's player tool: enterPowerArmor / exitPowerArmor at once (setup), or
+        stepIn / stepOut through the controllers. It waits for the engine state and answers its outcome (switched,
+        already, refused, notAimed)."""
+        return self.bench.tool("player", action=action, **args)
+
     def leave_power_armor(self):
-        if self.flashlight.state()["gating"]["inPowerArmor"]:
-            self.bench.console('player.cf "Actor.SwitchToPowerArmor" none')
-            self.flashlight.wait(lambda s: not s["gating"]["inPowerArmor"], 10, "out of power armor (KabutoVR blocks the scripted exit)")
+        """Get out of power armor, with the exit gesture when the scripted exit is refused (a mod such as KabutoVR
+        can block it), and wait until the mod sees it."""
+        answer = self.power_armor("exitPowerArmor")
+        if answer["outcome"] == "refused":
+            answer = self.power_armor("stepOut")
+        assert answer["outcome"] in ("switched", "already"), f"out of power armor: {answer['outcome']} ({answer.get('note')})"
+        self.flashlight.wait(lambda s: not s["gating"]["inPowerArmor"], 5, "the mod out of power armor")
 
 
 def close_game_menus(bench):

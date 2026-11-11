@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LOG_FILE = "ImmersiveFlashlightVR.log"
 
 # the actions the tests call that an older build of the mod lacks
-REQUIRED_ACTIONS = ["gesture", "zones", "light", "powerArmor", "restrictions", "ui"]
+REQUIRED_ACTIONS = ["gesture", "zones", "light", "restrictions", "ui"]
 
 # a new game is stable once no mod's dialog has popped up for QUIET_SECONDS, which gives its quests time to start
 # before a test reads what they set; a game that keeps popping them up is used after SETTLE_LIMIT_SECONDS

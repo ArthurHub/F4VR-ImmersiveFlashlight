@@ -15,7 +15,6 @@ QASmoke's player has a working Pip-Boy, and frames stand there for the power arm
 ```powershell
 pytest tests/e2e                          # all
 pytest tests/e2e -m gestures              # one area: light, gestures, overrides, headgear, menus, weapon, powerarmor, input, health
-pytest tests/e2e -m "not powerarmor"      # KabutoVR enabled (it blocks the scripted exit)
 pytest tests/e2e --e2e-restore            # only restore a crashed run's backup
 ```
 
@@ -41,11 +40,11 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 | `test_headgear.py` | Helmet off and on, with and without fallback; the deny list under Immersive and AnyHeadGear; no requirement. |
 | `test_menus.py` | The pause menu blocking the gestures and zones; the config UI. |
 | `test_weapon.py` | The weapon's gesture transitions; the lamp requirement refusing the weapon and moving the light off it. |
-| `test_power_armor.py` | In and out of a frame: the PA head and its beam, the head gestures in PA, the location restored. |
+| `test_power_armor.py` | In and out of a frame through devbench's `player`: at once, with the PA head and its beam, the head gestures in PA and the location restored; and stepping in and out through the controllers, the light restored at each side. A refused scripted exit (KabutoVR) skips the rest of its test, and the exit gesture gets the player out. |
 | `test_input.py` | The gestures for real: devbench's `input` reaches a controller into the head, primary-hand and body-grab zones and presses its trigger (tap, long press), checking the zone suppresses the button and nothing fires outside the zones. About 20-40 s per test, as every reach calibrates. |
 | `test_health.py` | The stowed model in the scene, `Flashlight::onFrameUpdate` p95 with the light in hand, no error in the log over the run. Runs last. |
 
-Helpers: `devbench.py` (client, kept close to Mods Config's), `flashlight.py` (the mod's actions, the loadout), `vrinput.py` (devbench's reach and press), `backup.py`, `report.py`.
+Helpers: `devbench.py` (client, kept close to Mods Config's), `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `vrinput.py` (devbench's reach and press), `backup.py`, `report.py`.
 
 ## Manual checklist
 
@@ -54,7 +53,7 @@ What the tests don't reach, checked in the headset before a release:
 - [ ] Gestures by hand: the zones' look, icons and haptics (`test_input.py` covers the zones and buttons)
 - [ ] Two-handed weapon toggle with a FRIK / ROCK two-handed grip; ROCK weapon in the offhand
 - [ ] Pip-Boy open: the light stays on
-- [ ] Power armor: step in and out with the animation (the light is restored)
+- [ ] Power armor: the light on the PA head looks right through the step-in animation
 - [ ] A weapon with a modeled lamp: the beam leaves the lamp, the glow cone lines up
 - [ ] Beam look per location, gobos, colors; the beam tuning screen from Mods Config (Save / Discard)
 - [ ] A hostile NPC notices the beam (state `npc.lastEvent`)

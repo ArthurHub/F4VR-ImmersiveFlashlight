@@ -1,6 +1,7 @@
 ## v1.4.1
 
 - Config: A gesture zone's sphere shows in the world while you point at its settings in Mods Config, so you see which zone they set. A zone's row shows it only while that zone is the one in use, in power armor or not. Needs Mods Config FO4 VR 0.11 or later.
+- Dev: The devbench tool's `powerArmor` action is gone. devbench's own `player` tool finds the frames and gets the player in and out.
 
 ## v1.4
 

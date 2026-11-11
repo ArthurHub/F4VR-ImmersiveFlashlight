@@ -1,14 +1,11 @@
 #include "devbench/FlashlightDevBench.h"
 
-#include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstdint>
 #include <format>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -513,89 +510,6 @@ namespace ImFl::devbench
             };
         }
 
-        // the keyword on the furniture of every power armor frame standing in the world
-        constexpr std::string_view POWER_ARMOR_FRAME_KEYWORD = "FurnitureTypePowerArmor";
-
-        /**
-         * A furniture reference in the player's cell, and how far it is from the player in game units.
-         */
-        struct NearbyFurniture
-        {
-            RE::TESObjectREFR* ref;
-            RE::TESFurniture* furniture;
-            float distance;
-        };
-
-        /**
-         * The furniture references in the player's cell within maxDistance game units, nearest first.
-         */
-        std::vector<NearbyFurniture> findNearbyFurniture(RE::PlayerCharacter* player, const float maxDistance)
-        {
-            std::vector<NearbyFurniture> found;
-            const auto cell = player->parentCell;
-            if (!cell) {
-                return found;
-            }
-            const auto playerPos = player->GetPosition();
-            for (const auto& refPtr : cell->references) {
-                const auto ref = refPtr.get();
-                if (!ref || ref->IsDeleted() || ref->IsDisabled() || !ref->data.objectReference) {
-                    continue;
-                }
-                const auto furniture = ref->data.objectReference->As<RE::TESFurniture>();
-                if (!furniture) {
-                    continue;
-                }
-                const auto pos = ref->GetPosition();
-                const float dx = pos.x - playerPos.x;
-                const float dy = pos.y - playerPos.y;
-                const float dz = pos.z - playerPos.z;
-                const float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
-                if (distance <= maxDistance) {
-                    found.push_back({ ref, furniture, distance });
-                }
-            }
-            std::ranges::sort(found, {}, &NearbyFurniture::distance);
-            return found;
-        }
-
-        json furnitureToJson(const NearbyFurniture& entry)
-        {
-            json keywords = json::array();
-            entry.furniture->ForEachKeyword([&](const RE::BGSKeyword* keyword) {
-                keywords.push_back(keyword->formEditorID.c_str());
-                return RE::BSContainer::ForEachResult::kContinue;
-            });
-            return {
-                { "formId", std::format("{:08X}", entry.ref->formID) },
-                { "baseFormId", std::format("{:08X}", entry.furniture->formID) },
-                { "distance", entry.distance },
-                { "keywords", keywords },
-            };
-        }
-
-        /**
-         * powerArmor: the nearest power armor frame, for a test to get into with the console's
-         * `player.cf "Actor.SwitchToPowerArmor" <formId>` (and out with `none`). Activating the frame doesn't get the player in.
-         */
-        json runPowerArmor(const json& args)
-        {
-            requireFlashlight();
-            const float radius = args.value("radius", 300.0f);
-            const auto nearby = findNearbyFurniture(f4vr::getPlayer(), radius);
-            const auto frame = std::ranges::find_if(nearby, [](const NearbyFurniture& entry) { return entry.furniture->HasKeywordString(POWER_ARMOR_FRAME_KEYWORD); });
-            if (frame != nearby.end()) {
-                return { { "inPowerArmor", f4vr::isInPowerArmor() }, { "frame", furnitureToJson(*frame) } };
-            }
-
-            // the furniture that is there, with its keywords, to see why none of it matched
-            json furniture = json::array();
-            for (std::size_t i = 0; i < nearby.size() && i < 5; ++i) {
-                furniture.push_back(furnitureToJson(nearby[i]));
-            }
-            return { { "inPowerArmor", f4vr::isInPowerArmor() }, { "frame", nullptr }, { "nearestFurniture", furniture } };
-        }
-
         json arg(const char* type, const char* description)
         {
             return { { "type", type }, { "description", description } };
@@ -644,16 +558,6 @@ namespace ImFl::devbench
                            "zone with devbench's "
                            "input reach before pressing",
             .handler = &runZones,
-        });
-        f4cf::devbench::addAction({
-            .name = "powerArmor",
-            .description = "the nearest power armor frame in the player's cell (with the nearest furniture and its keywords when there is none). "
-                           "Get in and out with the console, at once: player.cf \"Actor.SwitchToPowerArmor\" <frame.formId> / none (KabutoVR "
-                           "blocks the way out)",
-            .arguments = {
-                { "radius", arg("number", "powerArmor: how far to look, in game units, default 300") },
-            },
-            .handler = &runPowerArmor,
         });
         f4cf::devbench::addAction({
             .name = "ui",

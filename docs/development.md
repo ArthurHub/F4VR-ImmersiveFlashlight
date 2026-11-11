@@ -81,10 +81,9 @@ Before a release, run the end-to-end tests in [tests/e2e/](../tests/e2e/README.m
 
 ```powershell
 pytest tests/e2e
-pytest tests/e2e -m "not powerarmor"  # KabutoVR enabled (it blocks the scripted exit)
 ```
 
-- **Covers:** every light location and beam, every gesture's state rules (through the devbench `gesture` action), the headgear and weapon-lamp restrictions with their fallback, menu blocking, the config UI, session overrides, stepping into and out of power armor, frame time, and errors in the log.
+- **Covers:** every light location and beam, every gesture's state rules (through the devbench `gesture` action), the headgear and weapon-lamp restrictions with their fallback, menu blocking, the config UI, session overrides, stepping into and out of power armor (at once and through the controllers), frame time, and errors in the log.
 - **Before running:** be at the main menu, or in QASmoke. The run starts a game there and adds a helmet and a weapon itself.
 - **Leaves:** the mod's config files as they were (backed up through devbench and put back). Nothing reaches a save.
 - **Writes:** an HTML report in `build/e2e/`. The tests README has the manual checklist of what needs the headset.
