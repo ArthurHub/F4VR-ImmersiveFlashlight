@@ -436,6 +436,7 @@ namespace ImFl::devbench
             const auto offhandWand = f4vr::getOffhandWandNode();
             const auto primaryWand = f4vr::getPrimaryHandWandNode();
             json out = {
+                { "leftHanded", f4vr::isLeftHandedMode() },
                 { "wands",
                     {
                         { "offhand", offhandWand ? pointToJson(offhandWand->world.translate) : json(nullptr) },
@@ -639,7 +640,8 @@ namespace ImFl::devbench
             .description = "each proximity gesture's sphere (bodyGrab, head, primaryHand) as the frame tests it: enabled, node (its name), "
                            "nodePosition, center and radius in world units, primary / secondary (the binding fed in this state, the wand it "
                            "is tested with, suppressing = that wand is inside now; null when not fed), and per wand its distance to the "
-                           "center and inside. wands has both wands' world positions. For driving the controllers into a zone with devbench's "
+                           "center and inside. wands has both wands' world positions, leftHanded whether the offhand is the right controller. For driving the controllers into a "
+                           "zone with devbench's "
                            "input reach before pressing",
             .handler = &runZones,
         });

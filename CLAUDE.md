@@ -23,7 +23,7 @@ cmake --build --preset package  # versioned .7z of the DLL + data/mod in build/p
 
 - Needs `VCPKG_ROOT`, MSVC x64, and `git submodule update --init --recursive`.
 - The vcpkg baseline follows the framework's, as CommonLibF4 is built against it. Change it only together with the framework.
-- There is no unit test suite: testing is in game. Before a release, run `pwsh tools/release-check.ps1` with the game running. It drives the mod through devbench and needs KabutoVR disabled, or `-SkipPowerArmor`. See [docs/development.md](docs/development.md#testing).
+- There is no unit test suite: testing is in game. Before a release, run `pytest tests/e2e` with the game at the main menu or in QASmoke. It drives the mod through devbench and needs KabutoVR disabled, or `-m "not powerarmor"`. See [tests/e2e/README.md](tests/e2e/README.md).
 
 ## Code style
 

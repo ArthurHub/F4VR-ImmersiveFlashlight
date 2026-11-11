@@ -77,17 +77,17 @@ JSON specs under `data/mod/` are formatted; exported JSON configs under `data/co
 
 There is no unit test suite. Testing is in game.
 
-Before a release, run [tools/release-check.ps1](../tools/release-check.ps1) against the running game (needs [devbench](https://github.com/ArthurHub/devbench)):
+Before a release, run the end-to-end tests in [tests/e2e/](../tests/e2e/README.md) against the running game (needs [devbench](https://github.com/ArthurHub/devbench) and `pip install -r tests/e2e/requirements.txt`):
 
 ```powershell
-pwsh tools/release-check.ps1
-pwsh tools/release-check.ps1 -SkipPowerArmor  # no power armor frame nearby, or KabutoVR enabled (it blocks the scripted exit)
+pytest tests/e2e
+pytest tests/e2e -m "not powerarmor"  # KabutoVR enabled (it blocks the scripted exit)
 ```
 
 - **Covers:** every light location and beam, every gesture's state rules (through the devbench `gesture` action), the headgear and weapon-lamp restrictions with their fallback, menu blocking, the config UI, session overrides, stepping into and out of power armor, frame time, and errors in the log.
-- **Before running:** load a save. Wear the Pip-Boy and a helmet the headgear restriction accepts. Be out of power armor, with no weapon drawn and no menu open. For the power armor part, stand near a frame.
-- **Leaves:** the light locations and on/off as they were. It moves the light and draws a weapon during the run.
-- **Prints:** a manual checklist of what needs the headset, such as the real zones, two-handed grips and the beam's look.
+- **Before running:** be at the main menu, or in QASmoke. The run starts a game there and adds a helmet and a weapon itself.
+- **Leaves:** the mod's config files as they were (backed up through devbench and put back). Nothing reaches a save.
+- **Writes:** an HTML report in `build/e2e/`. The tests README has the manual checklist of what needs the headset.
 
 ## Tips
 
