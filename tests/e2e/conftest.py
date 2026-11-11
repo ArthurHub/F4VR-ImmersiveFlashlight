@@ -121,9 +121,6 @@ def _settle(bench):
 def _start_game(bench):
     """A game in QASmoke, so nothing the tests do reaches a save: a new one from the main menu, or the one that is
     loaded when it is in QASmoke already."""
-    # the console's buffer drops what a command prints until the Console menu is first made
-    bench.tool("menu", action="open", name="Console")
-    bench.tool("menu", action="close", name="Console")
     # the player exists at the main menu too: the main menu is what tells it from a game
     if "MainMenu" not in bench.open_menus():
         if not bench.tool("inspect", kind="state")["playerLoaded"]:

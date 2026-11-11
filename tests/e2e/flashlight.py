@@ -126,14 +126,11 @@ class Loadout:
             self.flashlight.wait(lambda s: self.worn_headgear() is None, 5, "the headgear off")
 
     def _switch_weapon(self, action):
-        """Draw or sheathe through devbench's player tool (the engine's own call), which waits for the weapon state.
-        The engine drops a switch made right after the previous one settled (a test shorter than about 0.5 s), and
-        devbench makes the call once, so a refused one is made again."""
-        for _ in range(4):
-            answer = self.bench.tool("player", action=action, timeoutMs=1500)
-            if answer["outcome"] in ("switched", "already"):
-                return answer
-        raise AssertionError(f"{action}: {answer['outcome']}, the weapon is {answer['weaponState']}")
+        """Draw or sheathe through devbench's player tool (the engine's own call). It repeats a call the engine
+        ignored and waits for the weapon state, so refused means the switch did not happen."""
+        answer = self.bench.tool("player", action=action, timeoutMs=5000)
+        assert answer["outcome"] in ("switched", "already"), f"{action}: {answer['outcome']}, the weapon is {answer['weaponState']} ({answer.get('note')})"
+        return answer
 
     def draw_weapon(self, form=WEAPON):
         """Equip the weapon and draw it."""

@@ -69,7 +69,8 @@ def test_primary_hand_zone(flashlight, vr, events):
 
 @pytest.mark.parametrize("hand, location", [("offhand", "InOffhand"), ("primaryHand", "InPrimaryHand")])
 def test_body_grab(flashlight, vr, events, hand, location):
-    zone = vr.reach_into_zone("bodyGrab", hand)
+    # the zone hangs off the body's chest bone, not the first-person skeleton's of the same name
+    zone = vr.reach_into_zone("bodyGrab", hand, node=None, front=None, root="player")
     assert_suppressing(zone, "primary" if hand == "offhand" else "secondary")
     tap = lambda: vr.tap(hand)  # noqa: E731
     press_and_expect(flashlight, events, tap, (True, location), "tap: grabs it from the belt")

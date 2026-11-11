@@ -1,9 +1,10 @@
 """Real controller input through devbench's input tool: a reach moves a controller until its wand sits at a player
 node and holds it there, and presses go on top of that hold, so the framework's input handling sees them as real.
 
-Every reach calibrates first (about 16 s per hand) and starts from the same standing rest pose, so a world offset
-measured during one reach lands the same way in the next. That is how a hand is put into a zone whose node a reach
-can't name: the body grab's chest bone resolves to the first-person skeleton's, far from the body.
+A hand's first reach calibrates it (about 16 s); devbench reuses that calibration while the player faces the same way,
+so a later reach costs one 2.6 s rest sample plus the approach. Every reach starts from the same standing rest pose, so
+a world offset measured during one reach lands the same way in the next: a reach to a zone's node, then a second one
+shifted onto the zone's center, puts the hand inside it.
 """
 
 import time
@@ -52,11 +53,12 @@ class VRInput:
             # no reach has run: there is none to stop, and reachStatus has no run to answer for
             return
 
-    def reach(self, hand, node, front=None, offset=None):
+    def reach(self, hand, node, front=None, offset=None, root=None):
         """Move a logical hand's controller to a player node (plus front units along the facing and a world offset),
-        and wait until it holds there."""
+        and wait until it holds there. root (player|firstPerson) searches the node in that skeleton alone: a bone
+        name such as Chest is in both, and the first-person one is found first."""
         self.stop()
-        target = {"node": node, **({"front": front} if front is not None else {}), **({"offset": offset} if offset else {})}
+        target = {"node": node, **({"front": front} if front is not None else {}), **({"offset": offset} if offset else {}), **({"root": root} if root else {})}
         run = self.bench.tool("input", action="reach", owner=OWNER, hands={self.physical(hand): target}, holdMs=HOLD_MS)["runId"]
         deadline = time.monotonic() + REACH_TIMEOUT_SECONDS
         while True:
@@ -69,15 +71,18 @@ class VRInput:
                 raise AssertionError(f"the reach to {node} did not hold within {REACH_TIMEOUT_SECONDS} s: {status['phase']}")
             time.sleep(0.5)
 
-    def reach_into_zone(self, zone, hand, node="hmdNode", front=10):
-        """Put a logical hand inside a gesture's zone and return the zone as the mod reports it: a reach to node first,
-        then, when the wand isn't inside, a second one shifted by how far the wand is from the zone's center."""
-        self.reach(hand, node, front)
+    def reach_into_zone(self, zone, hand, node="hmdNode", front=10, root=None):
+        """Put a logical hand inside a gesture's zone and return the zone as the mod reports it: a reach to node first
+        (None: the zone's own node, as the mod names it), then, when the wand isn't inside, a second one shifted by
+        how far the wand is from the zone's center."""
+        if node is None:
+            node = self._zone(zone, hand)[0]["node"]
+        self.reach(hand, node, front, root=root)
         entry, wand = self._zone(zone, hand)
         if entry["wands"][hand]["inside"]:
             return entry
         offset = [center - at for center, at in zip(entry["center"], wand)]
-        self.reach(hand, node, front, offset)
+        self.reach(hand, node, front, offset, root)
         entry, _ = self._zone(zone, hand)
         assert entry["wands"][hand]["inside"], f"the {hand} wand is {entry['wands'][hand]['distance']:.1f} units from the {zone} zone's center (radius {entry['radius']})"
         return entry
