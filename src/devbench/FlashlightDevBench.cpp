@@ -424,8 +424,8 @@ namespace ImFl::devbench
 
         /**
          * zones: each proximity gesture's sphere as the frame tests it - its node, world center and radius, the
-         * bindings fed to it, and how far each wand is from its center - so a test driving the controllers can check
-         * a hand is inside before it presses.
+         * bindings fed to it, the binding icons on screen, and how far each wand is from its center - so a test
+         * driving the controllers can check a hand is inside before it presses.
          */
         json runZones(const json&)
         {
@@ -446,6 +446,7 @@ namespace ImFl::devbench
                     { "enabled", zone.enabled },
                     { "primary", zoneBindingToJson(zone, zone.bindings.primary) },
                     { "secondary", zoneBindingToJson(zone, zone.bindings.secondary) },
+                    { "bindingIcons", json(std::vector<std::string>(zone.sphere->shownBindingIcons().begin(), zone.sphere->shownBindingIcons().end())) },
                 };
                 if (!zone.node) {
                     entry["node"] = nullptr;
@@ -553,7 +554,8 @@ namespace ImFl::devbench
             .name = "zones",
             .description = "each proximity gesture's sphere (bodyGrab, head, primaryHand) as the frame tests it: enabled, node (its name), "
                            "nodePosition, center and radius in world units, primary / secondary (the binding fed in this state, the wand it "
-                           "is tested with, suppressing = that wand is inside now; null when not fed), and per wand its distance to the "
+                           "is tested with, suppressing = that wand is inside now; null when not fed), bindingIcons (the binding icon "
+                           "textures on screen, in their order), and per wand its distance to the "
                            "center and inside. wands has both wands' world positions, leftHanded whether the offhand is the right controller. For driving the controllers into a "
                            "zone with devbench's "
                            "input reach before pressing",

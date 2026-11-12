@@ -294,6 +294,8 @@ namespace ImFl
                 .sphereOrientation = g_config.bodyActivation.sphereOrientation,
                 .showIcon = g_config.bodyActivation.showIcon,
                 .iconStyle = &g_config.bodyActivation.iconStyle,
+                .showBindingIcon = g_config.bodyActivation.showBindingIcon,
+                .bindingIconStyle = &g_config.bodyActivation.bindingIconStyle,
                 .config = &g_config.bodyActivation,
             },
             [](const vrcf::InputBinding& binding) {
@@ -391,6 +393,8 @@ namespace ImFl
                 .sphereOrientation = g_config.headActivation.sphereOrientation,
                 .showIcon = g_config.headActivation.showIcon,
                 .iconStyle = &g_config.headActivation.iconStyle,
+                .showBindingIcon = g_config.headActivation.showBindingIcon,
+                .bindingIconStyle = &g_config.headActivation.bindingIconStyle,
                 .config = &g_config.headActivation,
             },
             [&](const vrcf::InputBinding& binding) {
@@ -502,6 +506,8 @@ namespace ImFl
                 .sphereOrientation = g_config.primaryHandActivation.sphereOrientation,
                 .showIcon = g_config.primaryHandActivation.showIcon,
                 .iconStyle = &g_config.primaryHandActivation.iconStyle,
+                .showBindingIcon = g_config.primaryHandActivation.showBindingIcon,
+                .bindingIconStyle = &g_config.primaryHandActivation.bindingIconStyle,
                 .config = &g_config.primaryHandActivation,
             },
             [&](const vrcf::InputBinding& binding) {

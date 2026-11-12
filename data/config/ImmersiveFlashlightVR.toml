@@ -374,9 +374,11 @@ fNpcDetectionLightLevelDecayMs = 1000.0
 # -------------------------------------------------------------------------------------------------
 # ADVANCED: Activation-sphere gestures
 # Each gesture is one section below: a zone (tZone / optional tZonePA), two bindings (kPrimaryBinding /
-# kSecondaryBinding), haptics (sEntryHaptic / sPrimaryHaptic / sSecondaryHaptic), and two visuals, each with
+# kSecondaryBinding), haptics (sEntryHaptic / sPrimaryHaptic / sSecondaryHaptic), and three visuals, each with
 # its own when-to-show (never | always | wheninside | whenavailable - the last: while the gesture can fire):
 # - an icon at the zone's center (sShowIcon, sIcon = a .dds, cIconColor = { rgb = [r, g, b], alpha = a } 0..255, fIconSize)
+# - the icons of the bindings (sShowBindingIcon, sBindingIcons = inside | all | primary | secondary,
+#   tBindingIcon = { pos = [right, up, toward you], scale = size } from the zone's center, cBindingIconColor)
 # - a glowing sphere (sShowSphere, sSphereStyle = a preset such as "cyan-subtle", fSphereScale = size vs the zone)
 # A binding (k...) is { hand = "offhand", type = "tap", button = "grip" }, with an optional duration (seconds),
 # suppress (true/false) and modifier = { hand = "offhand", button = "grip" }. { type = "none" } turns it off.
@@ -397,6 +399,9 @@ sSecondaryHaptic = "DoubleClick"
 sShowIcon = "wheninside"
 sIcon = "activation-icon-flashlight.dds"
 fIconSize = 2.0
+sShowBindingIcon = "wheninside"
+sBindingIcons = "inside"
+tBindingIcon = { pos = [0.8, -0.8, 0.0], scale = 1.2 }
 
 
 # Head activation: bring the OFFHAND near the HMD. kPrimaryBinding (tap) puts the light on the head / toggles
@@ -426,6 +431,9 @@ sSecondaryHaptic = "DoubleClick"
 sShowIcon = "wheninside"
 sIcon = "activation-icon-flashlight.dds"
 fIconSize = 1.0
+sShowBindingIcon = "wheninside"
+sBindingIcons = "all"
+tBindingIcon = { pos = [0.5, -0.6, 0.0], scale = 0.9 }
 
 
 # -------------------------------------------------------------------------------------------------

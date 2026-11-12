@@ -71,6 +71,11 @@ def assert_suppressing(flashlight, zone, binding="primary"):
     assert zone[binding] and zone[binding]["suppressing"], f"the {binding} binding is suppressed inside the zone: {zone[binding]}"
 
 
+def binding_icons(flashlight, zone):
+    """The binding icons a zone shows now, by their file names in the icons folder."""
+    return [path.rsplit("\\", 1)[-1] for path in flashlight.zones()["zones"][zone]["bindingIcons"]]
+
+
 def test_outside_the_zones(flashlight, vr, events):
     """A trigger press with the hands in the ready pose fires nothing, and the zones don't swallow the button."""
     zones = flashlight.zones()["zones"]
@@ -98,10 +103,39 @@ def test_primary_hand_zone(flashlight, vr, events):
     flashlight.light(location="offhand", op="on")
     zone = vr.place_in_zone("primaryHand", "offhand")
     assert_suppressing(flashlight, zone)
+    # the shipped config shows all the bindings fed now: the tap only, as the long press pulls the light off the weapon
+    # and is gated off while the light is in a hand
+    assert binding_icons(flashlight, "primaryHand") == [f"{vr.physical('offhand')}-trigger.dds"]
     tap, long = (lambda: vr.tap("offhand")), (lambda: vr.long_press("offhand"))
     press_and_expect(flashlight, events, tap, (True, "InPrimaryHand"), "tap: offhand to primary hand")
     press_and_expect(flashlight, events, tap, (True, "InOffhand"), "tap: primary hand to offhand")
     press_and_expect(flashlight, events, long, None, "long: inert off the weapon")
+
+
+@pytest.mark.weapon
+@pytest.mark.usefixtures("weapon")
+def test_primary_hand_zone_with_weapon(flashlight, vr, events):
+    """With a weapon drawn, the offhand at the primary hand puts the light on the weapon, turns it off and on there, and
+    the long press takes it back to the offhand. The long press's icon shows only while the light is on the weapon."""
+    flashlight.set("iWeaponFlashlightMeshRequired", "0", "ImFl_WeaponMount")  # any weapon carries the light, lamp or not
+    flashlight.light(location="offhand", op="on")
+    side = vr.physical("offhand")
+    tap_icon, long_icon = f"{side}-trigger.dds", f"{side}-longpress-trigger.dds"
+    tap, long = (lambda: vr.tap("offhand")), (lambda: vr.long_press("offhand"))
+
+    assert_suppressing(flashlight, vr.place_in_zone("primaryHand", "offhand"))
+    assert binding_icons(flashlight, "primaryHand") == [tap_icon], "in the offhand, only the tap can fire"
+    press_and_expect(flashlight, events, tap, (True, "OnWeapon"), "tap: offhand to weapon")
+
+    # the hand is aimed at the zone again, as it may follow the light onto the weapon
+    assert_suppressing(flashlight, vr.place_in_zone("primaryHand", "offhand"), "secondary")
+    assert binding_icons(flashlight, "primaryHand") == [tap_icon, long_icon], "on the weapon, the long press can fire too"
+    press_and_expect(flashlight, events, tap, (False, "OnWeapon"), "tap: off on the weapon")
+    press_and_expect(flashlight, events, tap, (True, "OnWeapon"), "tap: on again at the weapon")
+
+    vr.place_in_zone("primaryHand", "offhand")
+    press_and_expect(flashlight, events, long, (True, "InOffhand"), "long: weapon to offhand")
+    assert binding_icons(flashlight, "primaryHand") == [tap_icon], "back in the offhand, only the tap"
 
 
 @pytest.mark.parametrize("hand, location", [("offhand", "InOffhand"), ("primaryHand", "InPrimaryHand")])
@@ -110,6 +144,8 @@ def test_body_grab(flashlight, vr, events, hand, location):
     # that pose
     zone = vr.place_in_zone("bodyGrab", hand, head="down")
     assert_suppressing(flashlight, zone, "primary" if hand == "offhand" else "secondary")
-    tap = lambda: vr.tap(hand)  # noqa: E731
+    # the shipped config shows the bindings of the hand inside only
+    assert binding_icons(flashlight, "bodyGrab") == [f"{vr.physical(hand)}-trigger.dds"]
+    tap =lambda: vr.tap(hand)  # noqa: E731
     press_and_expect(flashlight, events, tap, (True, location), "tap: grabs it from the belt")
     press_and_expect(flashlight, events, tap, (False, location), "tap: returns it")
