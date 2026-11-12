@@ -1,5 +1,5 @@
 """The gestures' transitions, fired through the gesture action: the real gating and handler, without the zone and the
-button (test_input.py drives those). Each case starts from its own light state, with no weapon drawn; the weapon's
+button (test_controllers.py drives those). Each case starts from its own light state, with no weapon drawn; the weapon's
 cases are in test_weapon.py."""
 
 import pytest

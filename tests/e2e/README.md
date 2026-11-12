@@ -4,7 +4,7 @@ pytest tests that drive the running game through devbench's REST port and check 
 
 ## Requirements
 
-- The game running with [devbench](https://github.com/ArthurHub/devbench) (a build with its `files`, `input` and `player` tools), at the main menu or already in QASmoke. The tests `coc qasmoke` so nothing reaches a save; any other loaded game is refused.
+- The game running with [devbench](https://github.com/ArthurHub/devbench) (a build with its `files` and `player` tools, and `input` with its `pose` action and its head presets), at the main menu or already in QASmoke. The tests `coc qasmoke` so nothing reaches a save; any other loaded game is refused.
 - This checkout's build deployed: a run stops at start when the game's mod version or devbench actions don't match.
 - `pip install -r tests/e2e/requirements.txt`
 
@@ -14,7 +14,7 @@ QASmoke's player has a working Pip-Boy, and frames stand there for the power arm
 
 ```powershell
 pytest tests/e2e                          # all
-pytest tests/e2e -m gestures              # one area: light, gestures, overrides, headgear, menus, weapon, powerarmor, input, health
+pytest tests/e2e -m gestures              # one area: light, gestures, overrides, headgear, menus, weapon, controllers, powerarmor, health
 pytest tests/e2e --e2e-restore            # only restore a crashed run's backup
 ```
 
@@ -40,17 +40,17 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 | `test_headgear.py` | Helmet off and on, with and without fallback; the deny list under Immersive and AnyHeadGear; no requirement. |
 | `test_menus.py` | The pause menu blocking the gestures and zones; the config UI. |
 | `test_weapon.py` | The weapon's gesture transitions; the lamp requirement refusing the weapon and moving the light off it. |
+| `test_controllers.py` | The gestures for real: devbench's input `pose` holds the head and hands in its ready pose (in view on the desktop mirror), places a hand into the head, primary-hand and body-grab zones and presses its trigger (tap, long press), checking the zone suppresses the button and nothing fires outside the zones. A placement takes 0.5-1.5 s without calibrating; the head looks down at the belt (devbench's `down` preset) for the body grab, and the head gesture is placed as recorded in the headset (the zone's offhand side, the controller tilted back) so the hand hangs beside the head, not in the face. The report's "Controller placements" table times each one. |
 | `test_power_armor.py` | In and out of a frame through devbench's `player`: at once, with the PA head and its beam, the head gestures in PA and the location restored; and stepping in and out through the controllers, the light restored at each side. A refused scripted exit (KabutoVR) skips the rest of its test, and the exit gesture gets the player out. |
-| `test_input.py` | The gestures for real: devbench's `input` reaches a controller into the head, primary-hand and body-grab zones and presses its trigger (tap, long press), checking the zone suppresses the button and nothing fires outside the zones. A hand's first reach calibrates it (about 16 s); devbench reuses that while the player faces the same way, so a later reach takes a few seconds. |
 | `test_health.py` | The stowed model in the scene, `Flashlight::onFrameUpdate` p95 with the light in hand, no error in the log over the run. Runs last. |
 
-Helpers: `devbench.py` (client, kept close to Mods Config's), `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `vrinput.py` (devbench's reach and press), `backup.py`, `report.py`.
+Helpers: `devbench.py` (client, kept close to Mods Config's), `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `controllers.py` (devbench's pose and press, zone aiming, and a log of each placement), `backup.py`, `report.py`.
 
 ## Manual checklist
 
 What the tests don't reach, checked in the headset before a release:
 
-- [ ] Gestures by hand: the zones' look, icons and haptics (`test_input.py` covers the zones and buttons)
+- [ ] Gestures by hand: the zones' look, icons and haptics (`test_controllers.py` covers the zones and buttons)
 - [ ] Two-handed weapon toggle with a FRIK / ROCK two-handed grip; ROCK weapon in the offhand
 - [ ] Pip-Boy open: the light stays on
 - [ ] Power armor: the light on the PA head looks right through the step-in animation

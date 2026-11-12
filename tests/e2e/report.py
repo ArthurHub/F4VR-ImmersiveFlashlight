@@ -10,7 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-# the areas, by the file of their tests, in the order they run and the page shows them
+# the areas, by the file of their tests, in the order they run and the page shows them: power armor after the others,
+# and health last, its log check covering the whole run
 AREAS = {
     "test_light.py": "Light action",
     "test_gestures.py": "Gestures (simulated)",
@@ -18,8 +19,8 @@ AREAS = {
     "test_headgear.py": "Headgear restriction",
     "test_menus.py": "Menus",
     "test_weapon.py": "Weapon mount",
+    "test_controllers.py": "Gestures (controllers)",
     "test_power_armor.py": "Power armor",
-    "test_input.py": "Gestures (real input)",
     "test_health.py": "Health",
 }
 
@@ -59,6 +60,8 @@ class Report:
         self.tests = []
         self.dialogs = []
         self.notes = []
+        # each hand placed in a gesture zone (controllers.py): its time, corrections and landing
+        self.moves = []
 
     def add_result(self, report):
         """A test's result, from pytest's report of its setup, call or teardown: the call's, or a setup's or a
@@ -124,6 +127,17 @@ class Report:
                 skipped = f"<br><small>{html.escape(test['message'])}</small>" if test["outcome"] == "skipped" and test["message"] else ""
                 out.append(f"<tr><td>{html.escape(test['name'])}{skipped}</td><td class='badge {test['outcome']}'>{test['outcome']}</td>"
                            f"<td>{test['duration']:.1f} s</td></tr>")
+            out.append("</table>")
+
+        if self.moves:
+            total = sum(move["seconds"] for move in self.moves)
+            out.append(f"<h2>Controller placements</h2><div class='meta'>{len(self.moves)} placements, {total:.1f} s in all</div>")
+            out.append("<table><tr><th>Test</th><th>Placement</th><th>Time</th><th>Aims / devbench corrections</th><th>Landed</th></tr>")
+            for move in self.moves:
+                out.append(
+                    f"<tr><td>{html.escape(move['test'])}</td><td>{html.escape(move['what'])}</td><td>{move['seconds']:.1f} s</td>"
+                    f"<td>{move['aims']} / {move['corrections']}</td><td>{move['distance']:.1f} from the center (radius {move['radius']:.1f})</td></tr>"
+                )
             out.append("</table>")
 
         if self.dialogs:

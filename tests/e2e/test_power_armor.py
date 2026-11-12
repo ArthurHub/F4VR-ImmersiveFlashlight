@@ -51,7 +51,6 @@ def test_power_armor_head(flashlight, loadout, frame):
     flashlight.wait(lambda s: not s["gating"]["inPowerArmor"] and s["light"]["on"] and s["light"]["location"] == "OnHead", 5, "the light restored on the head")
 
 
-@pytest.mark.input
 def test_step_in_and_out(flashlight, loadout, frame):
     """The transition a player makes: walking into the frame (aim, A on the primary hand) and the exit gesture (held
     A/X on the offhand), with their animations and FRIK's skeleton swap. The light comes back on at each side's
