@@ -3,6 +3,7 @@
   "modName": "ImmersiveFlashlightVR",
   "displayName": "Immersive Flashlight VR",
   "help": "The Pip-Boy light on your head, in your hands or on your weapon: its beams, and the gestures that move it.",
+  "category": "VR",
   "specVersion": 1,
   "f4sePluginRequirements": ["ImmersiveFlashlightVR"],
   "files": {
@@ -665,14 +666,21 @@
           "help": "Reach a hand to the flashlight on your belt to take the light into that hand, or to put it back.",
           "storage": { "path": ["ImFl_BodyActivationSphere"] },
           "keys": {
-            "kPrimaryBinding": { "text": "Grab with the offhand" },
-            "kSecondaryBinding": { "text": "Grab with the primary hand" },
-            "tZone": { "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } } },
-            "tZonePA": { "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } } },
+            "kPrimaryBinding": { "text": "Grab with the offhand", "default": { "hand": "offhand", "type": "tap", "button": "trigger", "suppress": true } },
+            "kSecondaryBinding": { "text": "Grab with the primary hand", "default": { "hand": "primary", "type": "tap", "button": "trigger", "suppress": true } },
+            "tZone": {
+              "default": { "pos": [3.91, 7.11, 0.67], "scale": 20.0 },
+              "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } }
+            },
+            "tZonePA": {
+              "default": { "pos": [4.01, 10.21, -4.6], "scale": 24.0 },
+              "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } }
+            },
             "sIcon": {
               "default": "activation-icon-flashlight.dds",
               "valueOptions": { "listFromFolder": { "path": "Textures/ImmersiveFlashlightVR", "mask": "activation-icon-*.dds" } }
             },
+            "fIconSize": { "default": 1.5 },
             "sShowBindingIcon": { "default": "wheninside" },
             "sBindingIcons": { "default": "inside" },
             "tBindingIcon": {
@@ -687,9 +695,12 @@
           "help": "Bring the offhand to your head to put the light there, or to turn it off. Its zone is right in front of your eyes, so it shows no icons or sphere.",
           "storage": { "path": ["ImFl_HeadActivationSphere"] },
           "keys": {
-            "kPrimaryBinding": { "text": "Put on the head, or turn off" },
-            "kSecondaryBinding": { "text": "Pull to the offhand" },
-            "tZone": { "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } } },
+            "kPrimaryBinding": { "text": "Put on the head, or turn off", "default": { "hand": "offhand", "type": "tap", "button": "trigger", "suppress": true } },
+            "kSecondaryBinding": { "text": "Pull to the offhand", "default": { "hand": "offhand", "type": "longpress", "button": "trigger", "suppress": true } },
+            "tZone": {
+              "default": { "pos": [0.28, 6.74, 4.15], "rot": [-1.09, -0.07, 3.86], "scale": 18.0 },
+              "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } }
+            },
             "sShowIcon": false,
             "sShowBindingIcon": false,
             "sShowSphere": false
@@ -701,9 +712,12 @@
           "help": "Bring the offhand to the primary hand, or to a weapon's flashlight, to move the light between them.",
           "storage": { "path": ["ImFl_PrimaryHandActivationSphere"] },
           "keys": {
-            "kPrimaryBinding": { "text": "Move between hands, or onto the weapon" },
-            "kSecondaryBinding": { "text": "Pull from the weapon to the offhand" },
-            "tZone": { "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } } },
+            "kPrimaryBinding": { "text": "Move between hands, or onto the weapon", "default": { "hand": "offhand", "type": "tap", "button": "trigger", "suppress": true } },
+            "kSecondaryBinding": { "text": "Pull from the weapon to the offhand", "default": { "hand": "offhand", "type": "longpress", "button": "trigger", "suppress": true } },
+            "tZone": {
+              "default": { "pos": [-2.5, -1.21, -1.02], "scale": 20.0 },
+              "valueOptions": { "position": { "step": 0.1 }, "rotation": false, "scale": { "min": 1, "max": 40, "step": 0.5 } }
+            },
             "sIcon": {
               "default": "activation-icon-flashlight.dds",
               "valueOptions": { "listFromFolder": { "path": "Textures/ImmersiveFlashlightVR", "mask": "activation-icon-*.dds" } }

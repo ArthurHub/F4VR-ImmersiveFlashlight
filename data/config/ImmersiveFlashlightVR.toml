@@ -398,7 +398,7 @@ sPrimaryHaptic = "DoubleClick"
 sSecondaryHaptic = "DoubleClick"
 sShowIcon = "wheninside"
 sIcon = "activation-icon-flashlight.dds"
-fIconSize = 2.0
+fIconSize = 1.5
 sShowBindingIcon = "wheninside"
 sBindingIcons = "inside"
 tBindingIcon = { pos = [0.8, -0.8, 0.0], scale = 1.2 }
