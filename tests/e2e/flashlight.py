@@ -13,6 +13,9 @@ DENIED_HAT = "000316D4"
 # a ranged weapon without a modeled lamp: the assault rifle
 WEAPON = "0000463F"
 
+# FRIK's devbench tool, whose probe sets a two-handed grip
+FRIK_TOOL = "frik"
+
 # the light action's location argument for each configured location
 LOCATION_ARG = {"OnHead": "head", "InOffhand": "offhand", "InPrimaryHand": "primaryHand"}
 
@@ -51,6 +54,13 @@ class Flashlight:
     def gesture(self, gesture, press="tap", hand="offhand"):
         """Fire a gesture through its real gating, without its zone and button: answers fired, inert, lightOn, location."""
         return self.bench.mod("gesture", gesture=gesture, press=press, hand=hand)
+
+    def two_handed_grip(self, on=True):
+        """Set or drop a two-handed grip through FRIK's devbench probe (its setOffHandGripping API, as a weapon mod
+        reports one), the offhand supporting the weapon; FRIK drops it on a weapon change too. FRIK answers whether it
+        reports the grip now."""
+        offhand = "right" if self.zones().get("leftHanded") else "left"
+        return self.bench.tool(FRIK_TOOL, action="probe", op="grip", hand=offhand, on=on)["gripping"]
 
     def config(self, key, section=None):
         """A config value as the mod has it, override included, as its text."""

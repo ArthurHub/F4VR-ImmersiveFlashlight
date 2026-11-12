@@ -149,3 +149,16 @@ def test_body_grab(flashlight, vr, events, hand, location):
     tap =lambda: vr.tap(hand)  # noqa: E731
     press_and_expect(flashlight, events, tap, (True, location), "tap: grabs it from the belt")
     press_and_expect(flashlight, events, tap, (False, location), "tap: returns it")
+
+
+@pytest.mark.weapon
+@pytest.mark.usefixtures("weapon")
+def test_two_handed_toggle(flashlight, vr, events):
+    """The offhand's trigger toggles the weapon light anywhere while it supports the weapon (the grip set through FRIK,
+    the hands in the ready pose, in no zone)."""
+    assert flashlight.two_handed_grip(), "FRIK reports the grip"
+    flashlight.light(location="primaryHand", op="on")
+    flashlight.wait(lambda s: s["grip"]["twoHanded"] and s["light"]["on"] and s["light"]["location"] == "OnWeapon", 3, "the light on the weapon, gripped")
+    tap = lambda: vr.tap("offhand")  # noqa: E731
+    press_and_expect(flashlight, events, tap, (False, "OnWeapon"), "tap: off on the weapon")
+    press_and_expect(flashlight, events, tap, (True, "OnWeapon"), "tap: on again")

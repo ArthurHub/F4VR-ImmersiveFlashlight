@@ -60,3 +60,51 @@ def test_lamp_required_again_leaves_the_weapon(flashlight, fallback):
         assert state["light"]["on"], "the light moves to the next free place"
     else:
         assert not state["light"]["on"], "the light turns off"
+
+
+# (start on, light action location) -> (start location, fired, on, location), in a two-handed grip set through FRIK
+TOGGLE_CASES = {
+    "off on the weapon": ((True, "primaryHand"), ("OnWeapon", True, False, "OnWeapon")),
+    "on at the weapon from off": ((False, "primaryHand"), ("OnWeapon", True, True, "OnWeapon")),
+    "the offhand's light rides the weapon": ((True, "offhand"), ("OnWeapon", True, False, "OnWeapon")),
+    "inert with the light on the head": ((True, "head"), ("OnHead", False, True, "OnHead")),
+}
+
+
+def grip_two_handed(flashlight, location, on):
+    """A two-handed grip set through FRIK (no hand on the weapon), and the light action's location on or off; waits
+    until the mod reads both, and answers the state."""
+    assert flashlight.two_handed_grip(), "FRIK reports the grip"
+    flashlight.light(location=location, op="on" if on else "off")
+    return flashlight.wait(lambda s: s["grip"]["twoHanded"] and s["light"]["on"] is on, 3, f"the two-handed grip and the light {location}")
+
+
+@pytest.mark.parametrize("start, expected", TOGGLE_CASES.values(), ids=TOGGLE_CASES.keys())
+def test_two_handed_toggle(flashlight, events, start, expected):
+    on, location = start
+    start_location, *result = expected
+    assert grip_two_handed(flashlight, location, on)["light"]["location"] == start_location, "the start state"
+    answer = flashlight.gesture("weaponToggle")
+    assert [answer["fired"], answer["lightOn"], answer["location"]] == result, f"inert: {answer.get('inert')}"
+
+    fired = [event for event in events.all("gesture") if event["data"]["gesture"] == "weaponToggle"]
+    assert bool(fired) == answer["fired"], "a fired toggle publishes its event, an inert one none"
+
+
+def test_two_handed_grip_takes_the_primary_hand_gesture(flashlight):
+    """While the offhand supports the weapon, the primary hand's zone feeds neither binding: the toggle replaces them."""
+    grip_two_handed(flashlight, "primaryHand", True)
+    zone = flashlight.zones()["zones"]["primaryHand"]
+    assert (zone["primary"], zone["secondary"]) == (None, None), "the primary-hand zone feeds nothing"
+    for press in ("tap", "long"):
+        answer = flashlight.gesture("primaryHand", press=press)
+        assert (answer["fired"], answer["lightOn"], answer["location"]) == (False, True, "OnWeapon"), f"{press}: inert"
+
+
+def test_two_handed_toggle_without_a_lamp(flashlight):
+    """A lamp required on a weapon without one takes the light off it, and the toggle with it."""
+    grip_two_handed(flashlight, "primaryHand", True)
+    flashlight.set("iWeaponFlashlightMeshRequired", "1", SECTION)
+    flashlight.wait(lambda s: s["light"]["location"] != "OnWeapon", 3, "the light leaving the weapon")
+    answer = flashlight.gesture("weaponToggle")
+    assert not answer["fired"], "the toggle is inert off the weapon"

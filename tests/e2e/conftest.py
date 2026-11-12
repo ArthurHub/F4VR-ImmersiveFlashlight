@@ -9,7 +9,7 @@ import pytest
 
 import backup
 from devbench import Devbench, DevbenchError, Events, find_port, wait_until
-from flashlight import HELMET, Flashlight, Loadout, close_game_menus
+from flashlight import FRIK_TOOL, HELMET, Flashlight, Loadout, close_game_menus
 from report import AREAS, REPORT
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -160,6 +160,16 @@ def _check_mod(bench):
     REPORT.notes.append(f"Immersive Flashlight VR {health['version']}.")
 
 
+def _check_frik(bench):
+    """FRIK answers its devbench probe's grip, which the two-handed tests set the grip through (FRIK 0.79 or later)."""
+    try:
+        version = bench.tool(FRIK_TOOL, action="health")["version"]
+        Flashlight(bench).two_handed_grip(on=False)
+    except DevbenchError as error:
+        pytest.exit(f"FRIK's devbench probe doesn't set a grip ({error}): the two-handed tests need FRIK 0.79 or later", returncode=2)
+    REPORT.notes.append(f"FRIK {version}.")
+
+
 def log_line_count(bench):
     return bench.tool("log", action="tail", file=LOG_FILE, tail=1)["linesScanned"]
 
@@ -171,11 +181,13 @@ def game(bench):
         backup.restore(bench)
     _start_game(bench)
     _check_mod(bench)
+    _check_frik(bench)
     files = backup.take(bench)
     RUN["log_start"] = log_line_count(bench)
     yield bench
     try:
         Flashlight(bench).clear()
+        Flashlight(bench).two_handed_grip(on=False)
     finally:
         written, deleted = backup.restore(bench)
         REPORT.notes.append(f"Backed up {files} config files, and put them back after: {len(written)} written again, {len(deleted)} the run made deleted.")
@@ -193,12 +205,14 @@ def loadout(game):
 
 @pytest.fixture
 def flashlight(game, loadout):
-    """The mod, each test starting the same: no menu, no config UI, the BASELINE overrides alone, out of power armor,
-    no weapon drawn, the allow-listed helmet on, and the light off on the head. A test sets the rest itself."""
+    """The mod, each test starting the same: no menu, no config UI, the BASELINE overrides alone, no two-handed grip set
+    through FRIK, out of power armor, no weapon drawn, the allow-listed helmet on, and the light off on the head. A test
+    sets the rest itself."""
     flashlight = loadout.flashlight
     close_game_menus(game)
     flashlight.ui("close")
     flashlight.clear()
+    flashlight.two_handed_grip(on=False)
     for key, section, value in BASELINE:
         flashlight.set(key, value, section)
     loadout.leave_power_armor()
@@ -208,6 +222,7 @@ def flashlight(game, loadout):
     flashlight.light(location="head", op="off")
     yield flashlight
     flashlight.clear()
+    flashlight.two_handed_grip(on=False)
     flashlight.ui("close")
     close_game_menus(game)
 
