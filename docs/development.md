@@ -83,7 +83,7 @@ Before a release, run the end-to-end tests in [tests/e2e/](../tests/e2e/README.m
 pytest tests/e2e
 ```
 
-- **Covers:** every light location and beam, every gesture's state rules (through the devbench `gesture` action), the headgear and weapon-lamp restrictions with their fallback, the two-handed weapon toggle (in a two-handed grip set through FRIK's devbench probe), menu blocking, the config UI, session overrides, stepping into and out of power armor (at once and through the controllers), frame time, and errors in the log.
+- **Covers:** every light location and beam, every gesture's state rules (through the devbench `gesture` action), the headgear and weapon-lamp restrictions with their fallback, the two-handed weapon toggle (in a two-handed grip set through FRIK's devbench probe), menu blocking, the config UI, session overrides, stepping into and out of power armor (at once and through the controllers), frame time, and errors in the log. `--left-handed` runs it all left-handed.
 - **Before running:** be at the main menu, or in QASmoke. The run starts a game there and adds a helmet and a weapon itself.
 - **Leaves:** the mod's config files as they were (backed up through devbench and put back). Nothing reaches a save.
 - **Writes:** an HTML report in `build/e2e/`. The tests README has the manual checklist of what needs the headset.

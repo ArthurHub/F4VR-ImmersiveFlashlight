@@ -19,6 +19,27 @@ FRIK_TOOL = "frik"
 # the light action's location argument for each configured location
 LOCATION_ARG = {"OnHead": "head", "InOffhand": "offhand", "InPrimaryHand": "primaryHand"}
 
+# the game's handedness setting: the offhand is the right controller while it is 1
+LEFT_HANDED_INI = "bLeftHandedMode:VR"
+
+# the node the light hangs from while it is in a hand
+LIGHT_NODE = "ImmersiveFlashlight"
+
+
+def physical_hand(hand, left_handed):
+    """The controller (left|right) of a logical hand (offhand|primaryHand) for the player's handedness."""
+    return "left" if (hand == "offhand") != left_handed else "right"
+
+
+def set_left_handed(bench, left_handed):
+    """Set the game's handedness, and wait until the mod reads it; answers whether it was left-handed before."""
+    was = bench.console_number(f'getini "{LEFT_HANDED_INI}"') == 1
+    if was != left_handed:
+        bench.console(f'setini "{LEFT_HANDED_INI}" {int(left_handed)}')
+    flashlight = Flashlight(bench)
+    flashlight.wait(lambda s: flashlight.left_handed() == left_handed, 5, f"the mod reading {LEFT_HANDED_INI} {int(left_handed)}")
+    return was
+
 
 def summary(state):
     """The light's state in a few words, for a failure message."""
@@ -59,8 +80,20 @@ class Flashlight:
         """Set or drop a two-handed grip through FRIK's devbench probe (its setOffHandGripping API, as a weapon mod
         reports one), the offhand supporting the weapon; FRIK drops it on a weapon change too. FRIK answers whether it
         reports the grip now."""
-        offhand = "right" if self.zones().get("leftHanded") else "left"
-        return self.bench.tool(FRIK_TOOL, action="probe", op="grip", hand=offhand, on=on)["gripping"]
+        return self.bench.tool(FRIK_TOOL, action="probe", op="grip", hand=self.physical("offhand"), on=on)["gripping"]
+
+    def left_handed(self):
+        """Whether the mod reads the player as left-handed (the offhand is the right controller)."""
+        return self.zones().get("leftHanded", False)
+
+    def physical(self, hand):
+        """The controller (left|right) of a logical hand, from the mod's handedness."""
+        return physical_hand(hand, self.left_handed())
+
+    def light_node(self):
+        """The node the light hangs from in a hand, as devbench's nodes tool finds it (path, world), or None."""
+        matches = self.bench.tool("nodes", action="find", name=LIGHT_NODE, root="scene", limit=1)["matches"]
+        return matches[0] if matches else None
 
     def config(self, key, section=None):
         """A config value as the mod has it, override included, as its text."""

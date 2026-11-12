@@ -1,9 +1,16 @@
 """The light action: switching the configured location and turning the light on and off, as the gestures do, and
 each location's beam."""
 
+import math
+
 import pytest
 
+from devbench import wait_until
+
 pytestmark = pytest.mark.light
+
+# how far the light may hang from its hand's wand, in game units (FRIK's hand bone follows the wand)
+HAND_REACH = 20
 
 
 def where(answer):
@@ -38,3 +45,18 @@ def test_state_follows(flashlight):
     """The state action, read from a frame snapshot, catches up with the action."""
     flashlight.light(location="offhand", op="on")
     flashlight.wait(lambda s: s["light"]["on"] and s["light"]["location"] == "InOffhand" and s["light"]["configLocation"] == "InOffhand", 2, "the state")
+
+
+@pytest.mark.parametrize("hand, location", [("offhand", "InOffhand"), ("primaryHand", "InPrimaryHand")])
+def test_light_in_its_physical_hand(flashlight, hand, location):
+    """The light in a hand hangs under that hand's bone, at its wand: the left or the right one by the handedness."""
+    assert where(flashlight.light(location=hand, op="on")) == (True, location)
+    bone = f"{flashlight.physical(hand)[0].upper()}Arm_Hand"
+
+    def under_bone():
+        node = flashlight.light_node()
+        return node if node and f"/{bone}/" in node["path"] else None
+
+    node = wait_until(under_bone, 3, what=f"the light under {bone}")
+    distance = math.dist(node["world"]["pos"], flashlight.zones()["wands"][hand])
+    assert distance < HAND_REACH, f"the light {distance:.1f} units from the {hand} wand"

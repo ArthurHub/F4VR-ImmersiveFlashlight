@@ -16,6 +16,7 @@ QASmoke's player has a working Pip-Boy, and frames stand there for the power arm
 ```powershell
 pytest tests/e2e                          # all
 pytest tests/e2e -m gestures              # one area: light, gestures, overrides, headgear, menus, weapon, controllers, powerarmor, health
+pytest tests/e2e --left-handed            # all, left-handed
 pytest tests/e2e --e2e-restore            # only restore a crashed run's backup
 ```
 
@@ -23,6 +24,7 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 
 ## State
 
+- The run is right-handed, or left-handed with `--left-handed`: it sets the game's `bLeftHandedMode:VR` through the console at start (the game, FRIK and the mod follow it live) and puts it back after. The tests name the hands offhand and primary hand, and drive the controller of each by the handedness. Run both before a release.
 - Each test starts the same (the `flashlight` fixture): no menu, no config UI, out of power armor, no weapon drawn, the helmet on, and the light off on the head.
 - No two-handed grip: a test that needs one sets it through FRIK's devbench `probe` (`op: grip`, its `setOffHandGripping` API, as a weapon mod reports one), cleared after it.
 - Settings a result depends on are pinned as session overrides (`BASELINE` in `conftest.py`): restriction fallback on, the Immersive headgear rule, no weapon-lamp requirement, the body stow shown. A test overrides one again to try another value.
@@ -36,7 +38,7 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 
 | File | Covers |
 | --- | --- |
-| `test_light.py` | The light action: each location on with its beam radius, on / off / toggle. |
+| `test_light.py` | The light action: each location on with its beam radius, on / off / toggle; the light in each hand hanging under that physical hand's bone, at its wand. |
 | `test_gestures.py` | Every gesture transition with no weapon, fired through its gating (the `gesture` action, without zone and button), and its event. |
 | `test_overrides.py` | A session override on the live beam, and clearing it. |
 | `test_headgear.py` | Helmet off and on, with and without fallback; the deny list under Immersive and AnyHeadGear; no requirement. |

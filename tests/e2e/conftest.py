@@ -9,7 +9,7 @@ import pytest
 
 import backup
 from devbench import Devbench, DevbenchError, Events, find_port, wait_until
-from flashlight import FRIK_TOOL, HELMET, Flashlight, Loadout, close_game_menus
+from flashlight import FRIK_TOOL, HELMET, Flashlight, Loadout, close_game_menus, set_left_handed
 from report import AREAS, REPORT
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,6 +39,7 @@ BASELINE = [
 def pytest_addoption(parser):
     parser.addoption("--devbench-port", type=int, help="devbench's port; by default the one its runtime.json has")
     parser.addoption("--e2e-restore", action="store_true", help="put back the files of a backup a run left, and run no test")
+    parser.addoption("--left-handed", action="store_true", help="run left-handed: the game's handedness set for the run, and put back after")
     parser.addoption("--power-armor-radius", type=float, default=2000.0, help="how far to look for a power armor frame, in game units")
 
 
@@ -175,19 +176,26 @@ def log_line_count(bench):
 
 
 @pytest.fixture(scope="session")
-def game(bench):
-    """The game the tests run in, with the mod's config backed up for the whole run and put back after it."""
+def game(bench, pytestconfig):
+    """The game the tests run in, right-handed or with --left-handed, with the mod's config backed up for the whole run
+    and put back after it, as is the handedness."""
     if backup.pending():
         backup.restore(bench)
     _start_game(bench)
     _check_mod(bench)
     _check_frik(bench)
+    left_handed = pytestconfig.getoption("--left-handed")
+    was_left_handed = set_left_handed(bench, left_handed)
+    REPORT.notes.append("Ran left-handed." if left_handed else "Ran right-handed.")
     files = backup.take(bench)
     RUN["log_start"] = log_line_count(bench)
     yield bench
     try:
-        Flashlight(bench).clear()
-        Flashlight(bench).two_handed_grip(on=False)
+        try:
+            Flashlight(bench).clear()
+            Flashlight(bench).two_handed_grip(on=False)
+        finally:
+            set_left_handed(bench, was_left_handed)
     finally:
         written, deleted = backup.restore(bench)
         REPORT.notes.append(f"Backed up {files} config files, and put them back after: {len(written)} written again, {len(deleted)} the run made deleted.")

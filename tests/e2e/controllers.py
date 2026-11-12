@@ -11,6 +11,7 @@ import os
 import time
 
 from devbench import DevbenchError
+from flashlight import physical_hand
 from report import REPORT
 
 # the hold and its presses belong to this owner
@@ -41,11 +42,11 @@ class Controllers:
 
     def physical(self, hand):
         """The controller (left|right) of a logical hand (offhand|primaryHand), from the mod's handedness."""
-        return "left" if (hand == "offhand") != self.left_handed else "right"
+        return physical_hand(hand, self.left_handed)
 
     def start(self):
         """Take over the HMD and both controllers in devbench's ready pose."""
-        self.left_handed = self.flashlight.zones().get("leftHanded", False)
+        self.left_handed = self.flashlight.left_handed()
         self._pose()
 
     def stop(self):
