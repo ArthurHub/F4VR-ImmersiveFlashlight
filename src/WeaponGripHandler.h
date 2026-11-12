@@ -5,26 +5,6 @@
 
 #include "vrcf/VRControllersManager.h"
 
-namespace rock::api
-{
-    namespace core
-    {
-        struct ApiV1;
-    }
-    namespace input
-    {
-        struct ApiV1;
-    }
-    namespace weapon
-    {
-        struct ApiV1;
-    }
-    namespace weaponparts
-    {
-        struct ApiV1;
-    }
-}
-
 namespace ImFl
 {
     /**
@@ -34,7 +14,9 @@ namespace ImFl
      * FRIK reports a two-handed grip (the offhand on the weapon). ROCK, when installed, takes over weapon
      * handling and disables FRIK's two-handed grip: it reports its own two-handed grip, and can also make the
      * offhand the firing hand — one-handed that leaves the primary hand free — or detach the firing hand and let
-     * the offhand carry the weapon it can't fire (a rifle). A grip reported by either mod counts.
+     * the offhand carry the weapon it can't fire (a rifle). A grip reported by either mod counts. ROCK can also
+     * put a second weapon in the other hand: the light follows the game's weapon (ROCK's slot 0) and only treats
+     * the hand holding the second one as busy.
      *
      * ROCK also moves the weapon itself (e.g. solving a two-handed rifle to point between the hands) after this
      * mod's frame update has run, so anything anchored to the weapon node must be re-applied once that pose is
@@ -59,17 +41,7 @@ namespace ImFl
 
     private:
         static void initializeRock();
-        static void registerRockWeaponSolvedCallback(const rock::api::core::ApiV1* coreApi);
         static void registerRockPhysicalTriggerRestore();
-        static bool queryRockGripState(bool& twoHanded, bool& firingHandLeft);
-        static bool isRockHandCarryingWeapon(bool left);
-
-        // ROCK-issued consumer token, non-zero once registered and bound to ROCK's Weapon interface.
-        inline static std::uint64_t _rockOwnerToken = 0;
-        // ROCK interface tables bound to the owner; null when ROCK is absent or doesn't offer the interface.
-        inline static const rock::api::weapon::ApiV1* _rockWeapon = nullptr;
-        inline static const rock::api::weaponparts::ApiV1* _rockWeaponParts = nullptr;
-        inline static const rock::api::input::ApiV1* _rockInput = nullptr;
 
         // Invoked after a weapon-handling mod has written this frame's final weapon transform.
         inline static std::function<void()> _weaponTransformFinalizedListener;
@@ -78,6 +50,9 @@ namespace ImFl
         inline static bool _twoHandedGripActive = false;
         inline static bool _weaponInOffhand = false;
         inline static bool _weaponCarriedByOffhand = false;
+        // A hand holds ROCK's second weapon (slot 1), so it isn't free for the light.
+        inline static bool _secondWeaponInPrimaryHand = false;
+        inline static bool _secondWeaponInOffhand = false;
         // ROCK is remapping the trigger between the hands for OpenVR readers (the physical left hand fires).
         inline static bool _rockTriggerRemapActive = false;
     };

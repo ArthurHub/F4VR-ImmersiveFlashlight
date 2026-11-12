@@ -14,6 +14,11 @@ namespace rock::api {
         Left = 2,
     };
 
+    // A weapon slot is the native equipment index: 0 is the first equipped
+    // weapon, 1 the second. Which hand fires or supports a weapon is data in
+    // its slot's state, never implied by the slot.
+    inline constexpr std::uint32_t kMaxWeaponSlots = 2;
+
     enum class Status : std::uint32_t
     {
         Ok = 0,
@@ -60,7 +65,7 @@ namespace rock::api {
         float z{ 0.0f };
     };
 
-    enum class PowerArmorPointV1 : std::uint32_t
+    enum class PowerArmorPoint : std::uint32_t
     {
         None = 0,
         LeftArmorHand = 1,
@@ -78,8 +83,11 @@ namespace rock::api {
     using OwnerToken = std::uint64_t;
     enum class InterfaceId : std::uint32_t {
         Core=1, Hands=2, Collision=3, Grab=4, Touch=5, Weapon=6,
-        WeaponParts=7, Animation=8, Input=9, References=10,
-        PlayerController=11, Diagnostics=12, Configuration=13
+        WeaponParts=7, Animation=8, Input=9,
+        // 10 (References) is retired: its queries are part of Grab. Never reuse.
+        References=10,
+        // 12 (Diagnostics) is retired: other mods draw through RPS UI Framework. Never reuse.
+        PlayerController=11, Diagnostics=12, Configuration=13, NativeInteraction=14, Storage=15
     };
     struct ReferenceKey {
         std::uint32_t referenceFormId{};
@@ -88,21 +96,13 @@ namespace rock::api {
         std::uint32_t skeletonGeneration{};
         std::uint32_t providerGeneration{};
     };
-    struct SampleV1 {
+    struct Sample {
         std::uint64_t frameIndex{};
         std::uint64_t publicationSequence{};
         std::uint32_t worldGeneration{};
         std::uint32_t skeletonGeneration{};
         std::uint32_t providerGeneration{};
         std::uint32_t collisionGeneration{};
-    };
-    struct StreamV1 {
-        std::uint64_t oldestSequence{};
-        std::uint64_t latestSequence{};
-        std::uint64_t nextSequence{};
-        std::uint64_t lostCount{};
-        std::uint32_t copiedCount{};
-        std::uint32_t remainingCount{};
     };
     static_assert(sizeof(void*) == 8, "ROCK requires a 64-bit consumer");
     static_assert(sizeof(Hand) == 4 && sizeof(Status) == 4);

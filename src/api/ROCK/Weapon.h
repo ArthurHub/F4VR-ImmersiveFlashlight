@@ -1,23 +1,139 @@
 #pragma once
 #include "Abi.h"
 
+// Equipped weapons, addressed by weapon slot (see kMaxWeaponSlots): state and
+// hand assignment, grip, classification, emitters, composition, authored grip,
+// scope sight, the handling authority lease and inventory equips.
 #pragma pack(push, 8)
 namespace rock::api::weapon {
     inline constexpr InterfaceId kInterfaceId = InterfaceId::Weapon;
-    inline constexpr std::uint32_t kMajor = 1;
+    inline constexpr std::uint32_t kMajor = 2;
     inline constexpr std::uint32_t kMinor = 0;
     inline constexpr std::uint32_t kMaxEmitters = 32;
     inline constexpr std::uint32_t kMaxCompositionEntries = 64;
     inline constexpr std::uint32_t kMaxHandlingLeaseFrames = 120;
-    inline constexpr std::uint32_t kEventCapacityPerOwner = 256;
+    inline constexpr std::uint32_t kFingerLocalTransformCount = 15;
 
+    // ------------------------------------------------------------------
+    // Weapon state
+    // ------------------------------------------------------------------
 
-    enum class EquippedWeaponGripStateFlagV1 : std::uint32_t
+    enum class WeaponStateFlag : std::uint32_t
     {
         None = 0,
         Valid = 1u << 0,
-        TwoHandGripActive = 1u << 1,
-        FiringHandLeft = 1u << 2,
+        IdentityPending = 1u << 1,
+        DrawPending = 1u << 2,
+        BridgePresented = 1u << 3,
+        NativeRenderable = 1u << 4,
+        HandPoseHandoffComplete = 1u << 5,
+        RecoveryExhausted = 1u << 6,
+        TransitionActive = 1u << 7,
+        // The weapon is in the hand. On slot 1, ROCK has placed it: this frame or,
+        // for a reader before this frame's placement (frame callbacks), the last.
+        WeaponPresent = 1u << 8,
+        WeaponDrawn = 1u << 9,
+        PresentationKnown = 1u << 10,
+        WeaponEquipped = 1u << 11,
+        // 12 retired (one bipod reservation without its hand); never reuse.
+        // loadedRounds and reserveRounds hold the weapon's ammo counter.
+        AmmoKnown = 1u << 13,
+        // The weapon is seated and scaled from the player's own FRIK weapon
+        // offset file, with dynamic support grabs only. Animation authored
+        // for ROCK's grip of this weapon does not fit its hands.
+        UserWeaponOffset = 1u << 14,
+        // Slot 1 only: ROCK's private graph of this weapon is in its reload.
+        // Slot 0's reload is the player's own graph.
+        SecondaryReloadActive = 1u << 15,
+        // Slot 0: the bipod takes that hand's stick click while the weapon
+        // touches a fixed surface or rests latched on one. Its hand is the
+        // firing hand while both hands hold the weapon, the hand holding it
+        // otherwise, and the last such hand while it stands hands-free. The
+        // other hand's click stays free.
+        BipodRightInputReserved = 1u << 16,
+        BipodLeftInputReserved = 1u << 17,
+    };
+
+    enum class HandlingStateFlag : std::uint32_t
+    {
+        None = 0,
+        // A hand holds the weapon's firing grip.
+        FiringGripHeld = 1u << 0,
+        // Grips follow the hands' own grab ownership.
+        ManualOwnership = 1u << 1,
+        // The firing hand carries the weapon by a part, vacating the firing grip.
+        PartCarry = 1u << 2,
+        // The left hand can take the firing grip.
+        LeftFiringAvailable = 1u << 3,
+    };
+
+    enum class TransitionSource : std::uint32_t
+    {
+        Unknown = 0,
+        ObservedEquip = 1,
+        HeldTriggerEquip = 2,
+        HeldGripZoneEquip = 3,
+        MenuExit = 4,
+        WorkbenchExit = 5,
+    };
+
+    enum class TransitionResult : std::uint32_t
+    {
+        None = 0,
+        Completed = 1,
+        WeaponUnequipped = 2,
+        IdentityLost = 3,
+        ExpectedIdentityTimeout = 4,
+        NativeAnimationHandoff = 5,
+        WeaponNoLongerDrawn = 6,
+        RecoveryExhausted = 7,
+        ProviderLost = 8,
+        Shutdown = 9,
+        // 10 retired (shoulder sheath removed); never reuse.
+    };
+
+    /*
+     * One weapon slot. firingHand is the hand assigned the weapon's firing
+     * role (FiringGripHeld says whether it holds the grip now); supportHand
+     * holds its support grip, or None. Both are None without a weapon. The
+     * transition fields follow the slot's latest equip transition and its
+     * last terminal result.
+     */
+    struct WeaponState
+    {
+        std::uint32_t size{ sizeof(WeaponState) };
+        std::uint32_t version{ 1 };
+        Sample sample{};
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t flags{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        Hand firingHand{ Hand::None };
+        Hand supportHand{ Hand::None };
+        std::uint32_t handlingFlags{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        std::uint64_t transitionSequence{ 0 };
+        std::uint64_t terminalSequence{ 0 };
+        TransitionSource transitionSource{ TransitionSource::Unknown };
+        TransitionResult terminalResult{ TransitionResult::None };
+        TransitionSource terminalSource{ TransitionSource::Unknown };
+        std::uint32_t transitionWeaponFormId{ 0 };
+        std::uint32_t terminalWeaponFormId{ 0 };
+        // The native counter's rule for this slot; reserve excludes rounds
+        // loaded in the other slot's weapon. Valid with AmmoKnown.
+        std::uint32_t loadedRounds{ 0 };
+        std::uint32_t reserveRounds{ 0 };
+    };
+
+    // ------------------------------------------------------------------
+    // Grip
+    // ------------------------------------------------------------------
+
+    // Bits 1 (two-hand grip) and 2 (left firing hand) are retired: the hands
+    // are in WeaponState. Never reuse.
+    enum class GripFlag : std::uint32_t
+    {
+        None = 0,
+        Valid = 1u << 0,
         WeaponTransformOwned = 1u << 3,
         WeaponWorldValid = 1u << 4,
         RightHandInWeaponValid = 1u << 5,
@@ -25,56 +141,28 @@ namespace rock::api::weapon {
         MuzzleWorldValid = 1u << 7,
     };
 
-    enum class EquippedWeaponHandlingFlagV1 : std::uint32_t
+    // The weapon's solved world transform, each hand's grip in weapon space and
+    // the projectile origin.
+    struct Grip
     {
-        None = 0,
-        FiringGripOwnership = 1u << 0,
-        PrimaryDetach = 1u << 1,
-        AmbidextrousHandoff = 1u << 2,
-        GripZoneEquip = 1u << 3,
-        GripZoneHoverHaptics = 1u << 4,
-        FiringGripProximitySupport = 1u << 5,
+        std::uint32_t size{ sizeof(Grip) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t flags{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        Transform weaponWorld{};
+        Transform rightHandInWeapon{};
+        Transform leftHandInWeapon{};
+        Point3 muzzleOriginGame{};
+        Point3 muzzleDirectionGame{};
     };
 
-    enum class EquippedWeaponHandlingRuntimeFlagV1 : std::uint32_t
-    {
-        None = 0,
-        AuthorityActive = 1u << 0,
-        FiringHandLeft = 1u << 2,
-        LeftFiringInfrastructureAvailable = 1u << 3,
-        ManualOwnershipActive = 1u << 4,
-        PartCarryActive = 1u << 5,
-        FiringGripOccupied = 1u << 6,
-        WeaponPresent = 1u << 7,
-    };
+    // ------------------------------------------------------------------
+    // Classification
+    // ------------------------------------------------------------------
 
-    enum class WeaponEmitterKindV1 : std::uint32_t
-    {
-        Unknown = 0,
-        Flashlight = 1,
-        Laser = 2,
-        Reticle = 3,
-    };
-
-    enum class WeaponEmitterSourceV1 : std::uint32_t
-    {
-        Unknown = 0,
-        EffectGeometry = 1,
-        AddOnNode = 2,
-    };
-
-    enum class WeaponEmitterFlagV1 : std::uint32_t
-    {
-        None = 0,
-        TransformValid = 1u << 0,
-        DirectionValid = 1u << 1,
-        EffectStateKnown = 1u << 2,
-        HasAddOnNodeValue = 1u << 3,
-        HasOmod = 1u << 4,
-        HasAttachPoint = 1u << 5,
-    };
-
-    enum class WeaponSizeClassV1 : std::uint32_t
+    enum class SizeClass : std::uint32_t
     {
         Melee = 0,
         Pistol = 1,
@@ -82,7 +170,7 @@ namespace rock::api::weapon {
         Heavy = 3,
     };
 
-    enum class WeaponClassificationSourceV1 : std::uint32_t
+    enum class ClassificationSource : std::uint32_t
     {
         None = 0,
         Keyword = 1,
@@ -90,7 +178,7 @@ namespace rock::api::weapon {
         EquipSlot = 3,
     };
 
-    enum class WeaponKeywordFlagV1 : std::uint64_t
+    enum class KeywordFlag : std::uint64_t
     {
         None = 0,
         Pistol = 1ull << 0,
@@ -130,50 +218,169 @@ namespace rock::api::weapon {
         Automatic = 1ull << 34,
     };
 
-    enum class EquippedWeaponTransitionSourceV1 : std::uint32_t
-    {
-        Unknown = 0,
-        ObservedEquip = 1,
-        HeldTriggerEquip = 2,
-        HeldGripZoneEquip = 3,
-        MenuExit = 4,
-        WorkbenchExit = 5,
-    };
-
-    enum class EquippedWeaponTransitionResultV1 : std::uint32_t
+    enum class ClassificationProvenanceFlag : std::uint32_t
     {
         None = 0,
-        Completed = 1,
-        WeaponUnequipped = 2,
-        IdentityLost = 3,
-        ExpectedIdentityTimeout = 4,
-        NativeAnimationHandoff = 5,
-        WeaponNoLongerDrawn = 6,
-        RecoveryExhausted = 7,
-        ProviderLost = 8,
-        Shutdown = 9,
-        IntentionalShoulderSheathe = 10,
+        KeywordEvidence = 1u << 0,
+        EffectiveInstanceKeywordEvidence = 1u << 1,
+        WeaponDataEvidence = 1u << 2,
+        EquipSlotEvidence = 1u << 3,
+        GenerationBound = 1u << 4,
     };
 
-    enum class EquippedWeaponStateFlagV1 : std::uint32_t
+    struct Classification
+    {
+        std::uint32_t size{ sizeof(Classification) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t valid{ 0 };
+        std::uint64_t keywordFlags{ 0 };
+        SizeClass sizeClass{ SizeClass::Rifle };
+        ClassificationSource source{ ClassificationSource::None };
+        std::uint32_t weaponFormId{ 0 };
+        float confidence{ 0.0f };
+        std::uint64_t weaponGenerationKey{ 0 };
+        std::uint32_t provenanceFlags{ 0 };
+    };
+
+    // ------------------------------------------------------------------
+    // Emitters
+    // ------------------------------------------------------------------
+
+    enum class EmitterKind : std::uint32_t
+    {
+        Unknown = 0,
+        Flashlight = 1,
+        Laser = 2,
+        Reticle = 3,
+    };
+
+    enum class EmitterSource : std::uint32_t
+    {
+        Unknown = 0,
+        EffectGeometry = 1,
+        AddOnNode = 2,
+    };
+
+    enum class EmitterFlag : std::uint32_t
+    {
+        None = 0,
+        TransformValid = 1u << 0,
+        DirectionValid = 1u << 1,
+        EffectStateKnown = 1u << 2,
+        HasAddOnNodeValue = 1u << 3,
+        HasOmod = 1u << 4,
+        HasAttachPoint = 1u << 5,
+    };
+
+    struct Emitter
+    {
+        std::uint32_t size{ sizeof(Emitter) };
+        std::uint32_t version{ 1 };
+        EmitterKind kind{ EmitterKind::Unknown };
+        EmitterSource source{ EmitterSource::Unknown };
+        std::uint32_t flags{ 0 };
+        std::uint32_t active{ 0 };
+        std::uint32_t visible{ 0 };
+        std::uint32_t addOnNodeValue{ 0 };
+        std::uint32_t omodFormId{ 0 };
+        std::uint32_t attachPointFormId{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        Transform weaponLocalTransform{};
+        Point3 forwardWeaponLocal{};
+        char sourceName[64]{};
+    };
+
+    // ------------------------------------------------------------------
+    // Composition
+    // ------------------------------------------------------------------
+
+    enum class CompositionFlag : std::uint32_t
+    {
+        None = 0,
+        Active = 1u << 0,
+        Disabled = 1u << 1,
+        AttachPointResolved = 1u << 2,
+        SemanticEvidenceMatched = 1u << 3,
+    };
+
+    struct CompositionState
+    {
+        std::uint32_t size{ sizeof(CompositionState) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        std::uint64_t compositionSignature{ 0 };
+        std::uint64_t semanticCoverageMask{ 0 };
+        std::uint64_t missingCoverageMask{ 0 };
+        std::uint64_t publicationSequence{ 0 };
+        std::uint32_t entryCount{ 0 };
+    };
+
+    // One installed mod (OMOD) and the attach point it occupies.
+    struct CompositionEntry
+    {
+        std::uint32_t size{ sizeof(CompositionEntry) };
+        std::uint32_t version{ 1 };
+        std::uint32_t omodFormId{ 0 };
+        std::uint32_t attachPointFormId{ 0 };
+        std::uint32_t stableIndex{ 0 };
+        std::uint32_t flags{ 0 };
+        std::uint64_t semanticCoverageMask{ 0 };
+    };
+
+    // ------------------------------------------------------------------
+    // Authored grip
+    // ------------------------------------------------------------------
+
+    enum class AuthoredGripSource : std::uint32_t
+    {
+        Unknown = 0,
+        LiveEquippedGraph = 1,
+        NativeIdlePreharvest = 2,
+        RuntimeCanonical = 3,
+    };
+
+    enum class AuthoredGripPoseFlag : std::uint32_t
     {
         None = 0,
         Valid = 1u << 0,
-        IdentityPending = 1u << 1,
-        DrawPending = 1u << 2,
-        BridgePresented = 1u << 3,
-        NativeRenderable = 1u << 4,
-        HandPoseHandoffComplete = 1u << 5,
-        RecoveryExhausted = 1u << 6,
-        TransitionActive = 1u << 7,
-        WeaponPresent = 1u << 8,
-        WeaponDrawn = 1u << 9,
-        PresentationKnown = 1u << 10,
-        WeaponEquipped = 1u << 11,
-        BipodInputReserved = 1u << 12,
+        RightHandValid = 1u << 1,
+        LeftHandValid = 1u << 2,
+        RightFingersValid = 1u << 3,
+        LeftFingersValid = 1u << 4,
     };
 
-    enum class ScopeActivationSourceV1 : std::uint32_t
+    // The authored hand and finger poses ROCK selected for the weapon. The
+    // generations are those at capture.
+    struct AuthoredGripPose
+    {
+        std::uint32_t size{ sizeof(AuthoredGripPose) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        std::uint64_t variantKey{ 0 };
+        std::uint64_t captureSequence{ 0 };
+        AuthoredGripSource source{ AuthoredGripSource::Unknown };
+        std::uint32_t flags{ 0 };
+        std::uint16_t rightFingerLocalTransformMask{ 0 };
+        std::uint16_t leftFingerLocalTransformMask{ 0 };
+        Transform rightHandInWeapon{};
+        Transform leftHandInWeapon{};
+        Transform rightFingerLocalTransforms[kFingerLocalTransformCount]{};
+        Transform leftFingerLocalTransforms[kFingerLocalTransformCount]{};
+        std::uint32_t worldGeneration{ 0 };
+        std::uint32_t skeletonGeneration{ 0 };
+        std::uint32_t providerGeneration{ 0 };
+    };
+
+    // ------------------------------------------------------------------
+    // Scope sight
+    // ------------------------------------------------------------------
+
+    enum class ScopeActivationSource : std::uint32_t
     {
         None = 0,
         NativeGeometry = 1,
@@ -181,7 +388,7 @@ namespace rock::api::weapon {
         ManualInput = 3,
     };
 
-    enum class ScopeSightFlagV1 : std::uint32_t
+    enum class ScopeSightFlag : std::uint32_t
     {
         None = 0,
         Available = 1u << 0,
@@ -193,63 +400,50 @@ namespace rock::api::weapon {
         ManualDirectTransitionRequired = 1u << 6,
     };
 
-    enum class WeaponClassificationProvenanceFlagV1 : std::uint32_t
+    struct ScopeSightState
     {
-        None = 0,
-        KeywordEvidence = 1u << 0,
-        EffectiveInstanceKeywordEvidence = 1u << 1,
-        WeaponDataEvidence = 1u << 2,
-        EquipSlotEvidence = 1u << 3,
-        GenerationBound = 1u << 4,
-    };
-
-    enum class WeaponCompositionFlagV1 : std::uint32_t
-    {
-        None = 0,
-        Active = 1u << 0,
-        Disabled = 1u << 1,
-        AttachPointResolved = 1u << 2,
-        SemanticEvidenceMatched = 1u << 3,
-    };
-
-    enum class AuthoredGripSourceV1 : std::uint32_t
-    {
-        Unknown = 0,
-        LiveEquippedGraph = 1,
-        NativeIdlePreharvest = 2,
-        RuntimeCanonical = 3,
-    };
-
-    enum class AuthoredGripPoseFlagV1 : std::uint32_t
-    {
-        None = 0,
-        Valid = 1u << 0,
-        RightHandValid = 1u << 1,
-        LeftHandValid = 1u << 2,
-        RightFingersValid = 1u << 3,
-        LeftFingersValid = 1u << 4,
-    };
-
-    struct EquippedWeaponGripStateV1
-    {
-        std::uint32_t size{ sizeof(EquippedWeaponGripStateV1) };
+        std::uint32_t size{ sizeof(ScopeSightState) };
         std::uint32_t version{ 1 };
+        Sample sample{};
+        std::uint32_t weaponSlot{ 0 };
         std::uint32_t flags{ 0 };
-        std::uint32_t weaponFormId{ 0 };
         std::uint64_t weaponGenerationKey{ 0 };
-        Transform weaponWorld{};
-        Transform rightHandInWeapon{};
-        Transform leftHandInWeapon{};
-        Point3 muzzleOriginGame{};
-        Point3 muzzleDirectionGame{};
-        std::uint32_t reserved[2]{};
+        std::uint32_t weaponFormId{ 0 };
+        ScopeActivationSource activationSource{ ScopeActivationSource::None };
+        std::uint32_t nativeScopeOverlayIndex{ 0 };
+        Point3 anchorWeaponLocal{};
+        Bounds3 sightBoundsWeaponLocal{};
+        std::uint32_t sightBodyCount{ 0 };
+        std::uint32_t sightBodyId{ 0x7FFF'FFFF };
+        std::uint32_t omodFormId{ 0 };
+        std::uint32_t attachPointFormId{ 0 };
     };
 
-    struct EquippedWeaponHandlingRequestV1
+    // ------------------------------------------------------------------
+    // Handling authority
+    // ------------------------------------------------------------------
+
+    enum class HandlingFeature : std::uint32_t
     {
-        std::uint32_t size{ sizeof(EquippedWeaponHandlingRequestV1) };
+        None = 0,
+        FiringGripOwnership = 1u << 0,
+        PrimaryDetach = 1u << 1,
+        AmbidextrousHandoff = 1u << 2,
+        GripZoneEquip = 1u << 3,
+        GripZoneHoverHaptics = 1u << 4,
+        FiringGripProximitySupport = 1u << 5,
+        // The firing-grip zone becomes one cylinder per side along the
+        // weapon's lateral axis instead of ROCK's default quarter sector.
+        FiringGripCylinderZone = 1u << 6,
+    };
+
+    // One owner at a time overrides ROCK's weapon handling tuning for
+    // 1..kMaxHandlingLeaseFrames frames; renew to keep it.
+    struct HandlingRequest
+    {
+        std::uint32_t size{ sizeof(HandlingRequest) };
         std::uint32_t version{ 1 };
-        std::uint32_t flags{ 0 };
+        std::uint32_t features{ 0 };
         std::uint32_t leaseFrames{ 0 };
         float gripZoneEquipRadiusGameUnits{ 3.0f };
         float gripZoneEquipSettleSeconds{ 0.15f };
@@ -260,7 +454,6 @@ namespace rock::api::weapon {
         float firingGripAttachHapticIntensity{ 0.85f };
         float firingGripDetachHapticIntensity{ 0.30f };
         float supportGripHapticIntensity{ 0.50f };
-        float firingGripPromotionRadiusGameUnits{ 5.0f };
         float leftFiringAimYawDegrees{ 0.0f };
         float leftFiringAimPitchDegrees{ 0.0f };
         float leftFiringAimOffsetGameUnits[3]{};
@@ -269,196 +462,233 @@ namespace rock::api::weapon {
         std::uint32_t worldGeneration{ 0 };
         std::uint32_t skeletonGeneration{ 0 };
         std::uint32_t providerGeneration{ 0 };
-        std::uint32_t reserved[8]{};
     };
 
-    struct EquippedWeaponHandlingStateV1
+    struct HandlingAuthority
     {
-        std::uint32_t size{ sizeof(EquippedWeaponHandlingStateV1) };
+        std::uint32_t size{ sizeof(HandlingAuthority) };
         std::uint32_t version{ 1 };
-        std::uint32_t authorityFlags{ 0 };
-        std::uint32_t runtimeFlags{ 0 };
-        std::uint64_t ownerToken{ 0 };
-        std::uint64_t expiresAfterFrame{ 0 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        std::uint32_t weaponFormId{ 0 };
-        Hand currentFiringHand{ Hand::Right };
-        std::uint32_t reserved[9]{};
-    };
-
-    struct WeaponCompositionStateV1
-    {
-        std::uint32_t size{ sizeof(WeaponCompositionStateV1) };
-        std::uint32_t version{ 1 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        std::uint64_t compositionSignature{ 0 };
-        std::uint32_t weaponFormId{ 0 };
-        std::uint32_t entryCount{ 0 };
-        std::uint64_t semanticCoverageMask{ 0 };
-        std::uint64_t missingCoverageMask{ 0 };
-        std::uint64_t publicationSequence{ 0 };
-        std::uint32_t reserved[6]{};
-    };
-
-    struct WeaponCompositionEntryV1
-    {
-        std::uint32_t size{ sizeof(WeaponCompositionEntryV1) };
-        std::uint32_t version{ 1 };
-        std::uint32_t omodFormId{ 0 };
-        std::uint32_t attachPointFormId{ 0 };
-        std::uint32_t stableIndex{ 0 };
-        std::uint32_t flags{ 0 };
-        std::uint64_t semanticCoverageMask{ 0 };
-        std::uint32_t reserved[6]{};
-    };
-
-    struct WeaponClassificationV1
-    {
-        std::uint32_t size{ sizeof(WeaponClassificationV1) };
-        std::uint32_t valid{ 0 };
-        std::uint64_t keywordFlags{ 0 };
-        WeaponSizeClassV1 sizeClass{ WeaponSizeClassV1::Rifle };
-        WeaponClassificationSourceV1 source{ WeaponClassificationSourceV1::None };
-        std::uint32_t formId{ 0 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        float confidence{ 0.0f };
-        std::uint32_t provenanceFlags{ 0 };
-    };
-
-    struct WeaponEmitterV1
-    {
-        std::uint32_t size{ sizeof(WeaponEmitterV1) };
-        std::uint32_t version{ 1 };
-        WeaponEmitterKindV1 kind{ WeaponEmitterKindV1::Unknown };
-        WeaponEmitterSourceV1 source{ WeaponEmitterSourceV1::Unknown };
-        std::uint32_t flags{ 0 };
         std::uint32_t active{ 0 };
-        std::uint32_t visible{ 0 };
-        std::uint32_t addOnNodeValue{ 0 };
-        std::uint32_t omodFormId{ 0 };
-        std::uint32_t attachPointFormId{ 0 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        Transform weaponLocalTransform{};
-        Point3 forwardWeaponLocal{};
-        char sourceName[64]{};
-        std::uint32_t reserved[8]{};
+        std::uint32_t features{ 0 };
+        OwnerToken owner{ 0 };
+        std::uint64_t expiresAfterFrame{ 0 };
     };
 
-    struct EquippedWeaponStateV1
+    // ------------------------------------------------------------------
+    // Inventory equip
+    // ------------------------------------------------------------------
+
+    // An inventory weapon stack captured on the frame owner immediately before
+    // use. The keys are opaque comparison witnesses, never pointers or saved
+    // identities; stackIndex is the native inventory stack index.
+    struct InventoryWeapon
     {
-        std::uint32_t size{ sizeof(EquippedWeaponStateV1) };
+        std::uint32_t size{ sizeof(InventoryWeapon) };
         std::uint32_t version{ 1 };
+        std::uint32_t baseFormId{ 0 };
+        std::uint32_t stackIndex{ 0 };
+        std::uint32_t count{ 0 };
+        std::uint64_t stackKey{ 0 };
+        std::uint64_t instanceKey{ 0 };
         std::uint64_t frameIndex{ 0 };
-        std::uint32_t flags{ 0 };
-        std::uint32_t weaponFormId{ 0 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        std::uint64_t transitionSequence{ 0 };
-        std::uint64_t terminalSequence{ 0 };
-        EquippedWeaponTransitionSourceV1 transitionSource{
-            EquippedWeaponTransitionSourceV1::Unknown
-        };
-        EquippedWeaponTransitionResultV1 terminalResult{
-            EquippedWeaponTransitionResultV1::None
-        };
         std::uint32_t worldGeneration{ 0 };
         std::uint32_t skeletonGeneration{ 0 };
         std::uint32_t providerGeneration{ 0 };
-        std::uint32_t transitionWeaponFormId{ 0 };
-        std::uint32_t terminalWeaponFormId{ 0 };
-        EquippedWeaponTransitionSourceV1 terminalSource{
-            EquippedWeaponTransitionSourceV1::Unknown
-        };
-        std::uint32_t reserved[4]{};
     };
 
-    struct ScopeSightStateV1
+    // setWarmInventoryWeapons: every owner's sets together.
+    inline constexpr std::uint32_t kMaxWarmInventoryWeapons = 8;
+
+    struct EquipRequest
     {
-        std::uint32_t size{ sizeof(ScopeSightStateV1) };
+        std::uint32_t size{ sizeof(EquipRequest) };
         std::uint32_t version{ 1 };
-        std::uint64_t frameIndex{ 0 };
-        std::uint64_t publicationSequence{ 0 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        std::uint32_t weaponFormId{ 0 };
-        std::uint32_t flags{ 0 };
-        ScopeActivationSourceV1 activationSource{
-            ScopeActivationSourceV1::None
-        };
-        std::uint32_t nativeScopeOverlayIndex{ 0 };
-        Point3 anchorWeaponLocal{};
-        Bounds3 sightBoundsWeaponLocal{};
-        std::uint32_t sightBodyCount{ 0 };
-        std::uint32_t sightBodyId{ 0x7FFF'FFFF };
-        std::uint32_t omodFormId{ 0 };
-        std::uint32_t attachPointFormId{ 0 };
-        std::uint32_t worldGeneration{ 0 };
-        std::uint32_t skeletonGeneration{ 0 };
-        std::uint32_t providerGeneration{ 0 };
-        std::uint32_t reserved[5]{};
+        Hand hand{ Hand::None };
+        InventoryWeapon item{};
     };
 
-    struct AuthoredGripPoseV1
+    enum class EquipState : std::uint32_t
     {
-        std::uint32_t size{ sizeof(AuthoredGripPoseV1) };
+        Unknown = 0,
+        Queued = 1,
+        Switching = 2,
+        Succeeded = 3,
+        Failed = 4,
+        Cancelled = 5,
+    };
+
+    enum class EquipFailure : std::uint32_t
+    {
+        None = 0,
+        LifecycleLost = 1,
+        OwnerLost = 2,
+        HandUnavailable = 3,
+        HandBusy = 4,
+        InventoryChanged = 5,
+        InfrastructureUnavailable = 6,
+        // 7 (OutgoingTransferFailed) is retired. Never reuse.
+        NativeEquipFailed = 8,
+        GripOrPresentationFailed = 9,
+        CancelledBeforeCommit = 10,
+        EquippedWeaponChanged = 11,
+        MenuBlocked = 12,
+    };
+
+    // Bits 0 and 1 (outgoing removed/retained) are retired. Never reuse.
+    enum class EquipResultFlag : std::uint32_t
+    {
+        IncomingEquipAccepted = 1u << 2,
+        IncomingGripAcquired = 1u << 3,
+        IncomingPresented = 1u << 4,
+    };
+
+    struct EquipResult
+    {
+        std::uint32_t size{ sizeof(EquipResult) };
         std::uint32_t version{ 1 };
-        std::uint64_t weaponGenerationKey{ 0 };
-        std::uint32_t weaponFormId{ 0 };
-        AuthoredGripSourceV1 source{ AuthoredGripSourceV1::Unknown };
-        std::uint64_t variantKey{ 0 };
-        std::uint64_t captureSequence{ 0 };
+        std::uint64_t commandId{ 0 };
+        std::uint64_t transferSequence{ 0 };
+        EquipState state{ EquipState::Unknown };
+        EquipFailure failure{ EquipFailure::None };
         std::uint32_t flags{ 0 };
-        std::uint16_t rightFingerLocalTransformMask{ 0 };
-        std::uint16_t leftFingerLocalTransformMask{ 0 };
-        Transform rightHandInWeapon{};
-        Transform leftHandInWeapon{};
-        Transform rightFingerLocalTransforms[15]{};
-        Transform leftFingerLocalTransforms[15]{};
+        Hand hand{ Hand::None };
+        std::uint32_t incomingFormId{ 0 };
+        std::uint32_t outgoingFormId{ 0 };
+        // The weapon slot the incoming weapon was equipped into.
+        std::uint32_t weaponSlot{ 0 };
         std::uint32_t worldGeneration{ 0 };
         std::uint32_t skeletonGeneration{ 0 };
         std::uint32_t providerGeneration{ 0 };
-        std::uint32_t reserved[5]{};
     };
 
+    // What a consumer that tracks a weapon's chamber says it holds. ROCK draws
+    // it as a cartridge beside that weapon's ammo counter, in every counter style.
+    enum class ChamberMarker : std::uint32_t
+    {
+        None = 0,
+        // Hollow and dim: no round in the chamber.
+        Empty = 1,
+        // Solid: a round in the chamber.
+        Chambered = 2,
+    };
+    inline constexpr std::uint32_t kMaxChamberMarkerLeaseFrames = 4;
+    // setInventoryDrawPose: how old a reported pose may be when ROCK reveals
+    // the weapon.
+    inline constexpr std::uint32_t kMaxDrawPoseAgeFrames = 3;
 
     // Permission bits are local to this interface major. Discovery grants none.
-    enum class PermissionV1 : std::uint32_t { Read=1, Write=2 };
+    enum class Permission : std::uint32_t { Read = 1, Write = 2 };
     inline constexpr std::uint32_t kSupportedPermissions = 3;
 
-    struct EventV1 {
-        std::uint32_t size{sizeof(EventV1)};
-        std::uint32_t kind{};
-        std::uint64_t sequence{};
-        std::uint64_t frameIndex{};
-        std::uint64_t ownerToken{};
-        std::uint32_t worldGeneration{};
-        std::uint32_t skeletonGeneration{};
-        std::uint32_t providerGeneration{};
-        Hand hand{Hand::None}; std::uint32_t formId{}; std::uint64_t weaponGenerationKey{}; std::uint64_t transitionSequence{}; std::uint32_t source{}; std::uint32_t terminalResult{}; std::uint32_t flags{}; std::uint32_t authority{}; std::uint32_t reason{};
-    };
-    enum class EventKindV1 : std::uint32_t { TransitionCompleted=1, AuthorityLost=2 };
-
-    struct ApiV1 {
-        static constexpr InterfaceId interfaceId=kInterfaceId;
-        static constexpr std::uint32_t majorVersion=kMajor;
-        static constexpr std::uint32_t minorVersion=kMinor;
-        Status(ROCK_CALL* getPrimaryHandV1)(OwnerToken ownerToken, Hand* outValue) noexcept;
-        Status(ROCK_CALL* getOffhandHandV1)(OwnerToken ownerToken, Hand* outValue) noexcept;
-        Status(ROCK_CALL* queryEquippedWeaponClassificationV1)(OwnerToken ownerToken, WeaponClassificationV1* outResult) noexcept;
-        Status(ROCK_CALL* getWeaponEmitterCountV1)(OwnerToken ownerToken, std::uint32_t* outValue) noexcept;
-        Status(ROCK_CALL* copyWeaponEmittersV1)(OwnerToken ownerToken, WeaponEmitterV1* outEmitters, std::uint32_t maxEmitters, std::uint32_t* outCopied) noexcept;
-        Status(ROCK_CALL* getEquippedWeaponGripStateV1)(std::uint64_t ownerToken, EquippedWeaponGripStateV1* outState) noexcept;
-        Status(ROCK_CALL* setEquippedWeaponHandlingAuthorityV1)(std::uint64_t ownerToken, const EquippedWeaponHandlingRequestV1* request) noexcept;
-        Status(ROCK_CALL* clearEquippedWeaponHandlingAuthorityV1)(std::uint64_t ownerToken) noexcept;
-        Status(ROCK_CALL* getEquippedWeaponHandlingStateV1)(OwnerToken ownerToken, EquippedWeaponHandlingStateV1* outState) noexcept;
-        // Any-thread synchronized value snapshot; grants no mutation authority.
-        Status(ROCK_CALL* getEquippedWeaponStateV1)(std::uint64_t ownerToken, EquippedWeaponStateV1* outState) noexcept;
-        Status(ROCK_CALL* getScopeSightStateV1)(std::uint64_t ownerToken, ScopeSightStateV1* outState) noexcept;
-        Status(ROCK_CALL* getWeaponCompositionStateV1)(std::uint64_t ownerToken, WeaponCompositionStateV1* outState) noexcept;
-        Status(ROCK_CALL* copyWeaponCompositionEntriesV1)(std::uint64_t ownerToken, WeaponCompositionEntryV1* outEntries, std::uint32_t maxEntries, std::uint32_t* outEntryCount) noexcept;
-        Status(ROCK_CALL* getSelectedAuthoredGripPoseV1)(std::uint64_t ownerToken, AuthoredGripPoseV1* outPose) noexcept;
-        // Family-local publication identity; compare before combining readbacks.
-        Status(ROCK_CALL* getSample)(OwnerToken owner, SampleV1* outSample) noexcept;
-        Status(ROCK_CALL* copyEvents)(OwnerToken, std::uint64_t afterSequence, EventV1*, std::uint32_t capacity, StreamV1*) noexcept;
+    /*
+     * Per-weapon calls take weaponSlot < kMaxWeaponSlots (InvalidArgument
+     * otherwise). A slot ROCK does not publish yet returns TargetUnavailable.
+     * Slot 1 serves weapon state, grip, classification and emitters.
+     * Game thread unless noted.
+     */
+    struct Api
+    {
+        static constexpr InterfaceId interfaceId = kInterfaceId;
+        static constexpr std::uint32_t majorVersion = kMajor;
+        static constexpr std::uint32_t minorVersion = kMinor;
+        // Read.
+        Status(ROCK_CALL* getWeaponState)(OwnerToken owner, std::uint32_t weaponSlot, WeaponState* outState) noexcept;
+        Status(ROCK_CALL* getGrip)(OwnerToken owner, std::uint32_t weaponSlot, Grip* outGrip) noexcept;
+        Status(ROCK_CALL* getClassification)(OwnerToken owner, std::uint32_t weaponSlot, Classification* outClassification) noexcept;
+        // Read. outCount is the weapon's emitter count; min(capacity, count)
+        // records are copied.
+        Status(ROCK_CALL* copyEmitters)(OwnerToken owner, std::uint32_t weaponSlot, Emitter* outEmitters, std::uint32_t capacity, std::uint32_t* outCount) noexcept;
+        Status(ROCK_CALL* getCompositionState)(OwnerToken owner, std::uint32_t weaponSlot, CompositionState* outState) noexcept;
+        Status(ROCK_CALL* copyCompositionEntries)(OwnerToken owner, std::uint32_t weaponSlot, CompositionEntry* outEntries, std::uint32_t capacity, std::uint32_t* outCount) noexcept;
+        Status(ROCK_CALL* getAuthoredGripPose)(OwnerToken owner, std::uint32_t weaponSlot, AuthoredGripPose* outPose) noexcept;
+        Status(ROCK_CALL* getScopeSightState)(OwnerToken owner, std::uint32_t weaponSlot, ScopeSightState* outState) noexcept;
+        // Write to set or clear the owner's lease (OwnerConflict while another
+        // owner holds it); Read for the current authority.
+        Status(ROCK_CALL* setHandlingAuthority)(OwnerToken owner, const HandlingRequest* request) noexcept;
+        Status(ROCK_CALL* clearHandlingAuthority)(OwnerToken owner) noexcept;
+        Status(ROCK_CALL* getHandlingAuthority)(OwnerToken owner, HandlingAuthority* outAuthority) noexcept;
+        // Read. Capture immediately before requestInventoryEquip.
+        Status(ROCK_CALL* captureInventoryWeapon)(OwnerToken owner, std::uint32_t baseFormId, std::uint32_t stackIndex, InventoryWeapon* outItem) noexcept;
+        // Write. Equips into the requested physical hand, replacing the weapon
+        // that hand fires or carries (it returns to the inventory); a weapon
+        // the other hand holds stays there. A destination busy with anything
+        // else is refused. One switch may be outstanding; RequestQueued is
+        // admission, not success.
+        Status(ROCK_CALL* requestInventoryEquip)(OwnerToken owner, const EquipRequest* request, std::uint64_t* outCommandId) noexcept;
+        // Read. The latest 64 terminal results are kept; inspect flags even
+        // when the switch fails.
+        Status(ROCK_CALL* getInventoryEquipResult)(OwnerToken owner, std::uint64_t commandId, EquipResult* outResult) noexcept;
+        // Write. Accepted only before the outgoing removal or native equip;
+        // AlreadyCommitted afterwards, and ROCK finishes the cleanup.
+        Status(ROCK_CALL* cancelInventoryEquip)(OwnerToken owner, std::uint64_t commandId) noexcept;
+        // Read, any thread; for a native pickup interceptor. outMatches is 1
+        // only while ROCK acquires exactly this reference and count for an
+        // equip, on the acquiring thread. It is intent, not a promise that
+        // the equip succeeds.
+        Status(ROCK_CALL* isEquipPickup)(OwnerToken owner, std::uint32_t referenceFormId, std::uint32_t count, std::uint32_t* outMatches) noexcept;
+        // Any thread.
+        Status(ROCK_CALL* getSample)(OwnerToken owner, Sample* outSample) noexcept;
+        // Write. Returns the weapon in weaponSlot to the inventory from its own
+        // hand, synchronously; the other slot's weapon stays in its hand (a
+        // slot-1 weapon then moves to slot 0). expectedFormId must name the
+        // slot's weapon (TargetInvalid otherwise); an empty slot returns
+        // TargetUnavailable and Busy waits for an equip switch to finish.
+        Status(ROCK_CALL* unequipWeapon)(OwnerToken owner, std::uint32_t weaponSlot, std::uint32_t expectedFormId) noexcept;
+        // Read. Where a firearm held by hand sits this frame: ROCK's fixed
+        // controller-to-weapon aim basis on that hand's filtered controller,
+        // the same for every firearm and independent of what is equipped.
+        // Scale is 1. TargetUnavailable while the controller frame is unknown.
+        Status(ROCK_CALL* getFiringAimWorld)(OwnerToken owner, Hand hand, Transform* outWorld) noexcept;
+        // Write. Replaces this owner's set of inventory weapons kept ready to
+        // equip: ROCK keeps each firearm's native animation subgraph loaded,
+        // so requestInventoryEquip of it does not wait on the engine's
+        // first-use load (about half a second per weapon after a game load).
+        // items are captureInventoryWeapon records; count 0 clears the set.
+        // Other weapon types are accepted and need no warming. ROCK loads one
+        // weapon at a time in the background, reloads after a race or
+        // power-armor change, and drops the set when the owner unregisters
+        // or physics shuts down: send it again when the Sample's world,
+        // skeleton or provider generation changes. TargetUnavailable (nothing changed) when an item no longer
+        // matches its inventory stack; CapacityFull above
+        // kMaxWarmInventoryWeapons across owners. Game thread.
+        Status(ROCK_CALL* setWarmInventoryWeapons)(OwnerToken owner, const InventoryWeapon* items, std::uint32_t count) noexcept;
+        // Write. requestInventoryEquip for a weapon the consumer shows in
+        // the hand at getFiringAimWorld until ROCK reveals it (a holster
+        // draw): when ROCK seats the firearm in that hand, the weapon
+        // continues from that pose and the hand from its tracked pose, and
+        // both ease into the grip instead of snapping. A consumer whose
+        // stand-in is elsewhere reports it with setInventoryDrawPose. Results
+        // as requestInventoryEquip.
+        Status(ROCK_CALL* requestInventoryDraw)(OwnerToken owner, const EquipRequest* request, std::uint64_t* outCommandId) noexcept;
+        // Write. While an owner holds the block (blocked nonzero), an empty
+        // slot-1 weapon dry-fires on its trigger instead of starting a reload;
+        // its reload button still reloads. One owner at a time (OwnerConflict
+        // otherwise); it ends with 0 or the owner's loss. The game's own
+        // automatic reload call sites are not ROCK's and stay untouched.
+        Status(ROCK_CALL* setAutomaticReloadBlocked)(OwnerToken owner, std::uint32_t blocked) noexcept;
+        // Write. Shows marker beside the ammo counter of the weapon in
+        // weaponSlot for 1 to kMaxChamberMarkerLeaseFrames frames; renew it
+        // each frame. It ends with the lease, so it goes away by itself when
+        // the owner stops. None clears it. One owner per slot (OwnerConflict
+        // otherwise, until the holder clears it or its lease runs out).
+        Status(ROCK_CALL* setChamberMarker)(OwnerToken owner, std::uint32_t weaponSlot, ChamberMarker marker, std::uint32_t leaseFrames) noexcept;
+        // Read. The key for the weapon's sources, drives, part targets, grab points
+        // and input gestures, 0 with no weapon. WeaponState's generation key names the
+        // weapon's colliders, so it is 0 until they are built, about a second after an
+        // equip; this one works from the moment the weapon is drawn, and it changes to
+        // the generation key when they arrive. On that change source keys stay valid
+        // and what you registered follows; name the new key from then on.
+        Status(ROCK_CALL* getInteractionKey)(OwnerToken owner, std::uint32_t weaponSlot, std::uint64_t* outKey) noexcept;
+        // Write. For the owner's requestInventoryDraw command whose firearm
+        // ROCK has not revealed yet: where the consumer shows the weapon this
+        // frame (world units; scale is ignored). Send it every frame while the
+        // stand-in is shown. The reveal then continues from the latest pose
+        // sent within the last kMaxDrawPoseAgeFrames frames, carried with the
+        // hand, instead of from the firing aim, so a stand-in still on its way
+        // from a holster hands over without a jump. RequestNotFound once ROCK
+        // has revealed the weapon, for melee and for any other command;
+        // TargetUnavailable while the hand's controller frame is unknown.
+        Status(ROCK_CALL* setInventoryDrawPose)(OwnerToken owner, std::uint64_t commandId, const Transform* weaponWorld) noexcept;
     };
 }
-
 #pragma pack(pop)

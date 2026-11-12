@@ -84,15 +84,16 @@ Power armor poses the hands differently, so the model placement, hand poses and 
 
 ### Weapons in the offhand (ROCK)
 
-With [ROCK](https://github.com/brunocatani/ROCK) v0.9 or newer handling your weapons, the light follows how the weapon is held:
+With [ROCK](https://github.com/brunocatani/ROCK) v1.0 or newer handling your weapons, the light follows how the weapon is held:
 
 - **Two-handed grip:** the light goes on the weapon.
 - **Pistol fired from the offhand:** the light goes to your free primary hand.
 - **Rifle carried by the offhand without firing:** the light stays on the weapon, unless you put it into the free hand with a gesture.
+- **A weapon in each hand:** the light stays on the first weapon or your head, never in the hand holding the second weapon.
 
 While the offhand holds the weapon, your primary hand takes over the head gesture and the belt grab. The move-to-hand gesture is off then, and so is the two-handed toggle while the offhand fires.
 
-Known limitation: while ROCK fires from the left hand, the mod's primary-hand haptics are felt in the offhand.
+ROCK replaces the game's left-handed mode with its own firing hand setting, so with ROCK your primary hand is always the right one. Firing from the left hand counts as the weapon being in the offhand.
 
 ## Gestures
 

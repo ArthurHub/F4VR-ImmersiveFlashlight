@@ -194,9 +194,7 @@ Run one flashlight replacement at a time: other mods that drive the Pip-Boy ligh
   <summary>Does it work with ROCK?</summary>
 &#10240;
 
-Yes, with **ROCK v0.9 or newer**. The light follows how ROCK has you hold the weapon: on the weapon in a two-handed grip, in your free primary hand with a pistol fired from the offhand, and on the weapon for a rifle the offhand carries. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
-
-Known limitation: while ROCK fires from your left hand, the mod's primary-hand haptics are felt in the offhand.
+Yes, with **ROCK v1.0 or newer**. ROCK 1.0 closes the game at the main menu with an error naming any mod built for its older API, so update this mod together with ROCK. The light follows how ROCK has you hold the weapon: on the weapon in a two-handed grip, in your free primary hand with a pistol fired from the offhand, and on the weapon for a rifle the offhand carries. See [Weapons in the offhand (ROCK)](README.md#weapons-in-the-offhand-rock).
 
 </details>
 

@@ -56,6 +56,7 @@ What the tests don't reach, checked in the headset before a release:
 
 - [ ] Gestures by hand: the zones' look, icons and haptics (`test_controllers.py` covers the zones and buttons)
 - [ ] The two-handed toggle with the offhand on the weapon for real (the tests set FRIK's grip), and with ROCK's grip; ROCK weapon in the offhand
+- [ ] ROCK 1.0: no update error box at the main menu, and the log shows `Registered with ROCK` with no interface warnings; a weapon in each hand keeps the light out of the second weapon's hand
 - [ ] Pip-Boy open: the light stays on
 - [ ] Power armor: the light on the PA head looks right through the step-in animation
 - [ ] A weapon with a modeled lamp: the beam leaves the lamp, the glow cone lines up

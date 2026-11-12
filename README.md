@@ -41,7 +41,7 @@ Install the [Nexus Mods](https://www.nexusmods.com/fallout4/mods/99342) package 
 
 ### Compatibility
 
-- [ROCK](https://github.com/brunocatani/ROCK) v0.9+ is supported: the light follows its two-handed grips and offhand weapons.
+- [ROCK](https://github.com/brunocatani/ROCK) v1.0+ is supported: the light follows its two-handed grips and offhand weapons. Older ROCK versions are not.
 - Run only one flashlight replacement at a time.
 - Don't run [Flashlight Stealth Fix](https://www.nexusmods.com/fallout4/mods/76586) together with NPC light detection.
 - [VR FPS Stabilizer](https://www.nexusmods.com/fallout4/mods/65961) lowers the shadow quality, which breaks the beam's shadows.

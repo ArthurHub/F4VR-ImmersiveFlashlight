@@ -53,7 +53,7 @@ Explore the wasteland at night with a powerful, long-range flashlight for visibi
 [\*][size=3]Primary hand to weapon-mounted when a weapon is drawn.[/size][*]
 [\*][size=3]Off-hand to weapon-mounted when gripping a weapon two-handed.[/size][*]
 [\*][size=3]When a restriction rules its place out, the light moves to the next free place (head, a free hand, the weapon) and returns once allowed. Can be turned off, so the light turns off instead.[/size][*]
-[\*][size=3]ROCK v0.9+ support: the light follows two-handed grips and weapons held in the off-hand, moving to your free primary hand when needed.[/size][*]
+[\*][size=3]ROCK v1.0+ support: the light follows two-handed grips and weapons held in the off-hand, moving to your free primary hand when needed.[/size][*]
 [/list]
 [*]
 [/list]

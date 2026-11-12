@@ -1,3 +1,8 @@
+## v1.4.2
+
+- ROCK: Updated to ROCK 1.0's API. ROCK 1.0 refuses mods built for its old API and closes the game, so ROCK 0.9x is no longer supported. With a weapon in each hand, the light stays out of the hand holding the second weapon.
+- ROCK: Firing from the left hand no longer moves the mod's primary-hand haptics to the offhand (fixed in ROCK 1.0).
+
 ## v1.4.1
 
 - Config: A gesture zone's sphere shows in the world while you point at its settings in Mods Config, so you see which zone they set. A zone's row shows it only while that zone is the one in use, in power armor or not. Needs Mods Config FO4 VR 0.11 or later.

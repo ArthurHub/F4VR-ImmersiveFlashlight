@@ -49,7 +49,8 @@ cmake --build --preset package  # versioned .7z of the DLL + data/mod in build/p
 | [LiveLight](src/LiveLight.cpp) | Refreshes the live engine light in place, or re-creates it. See [pipboy-light-internals.md](docs/tech/pipboy-light-internals.md). |
 | [FlashlightMesh](src/FlashlightMesh.cpp) / [BodyFlashlightMesh](src/BodyFlashlightMesh.cpp) / [OnWeaponBeamMesh](src/OnWeaponBeamMesh.cpp) / [BeamGlowMesh](src/BeamGlowMesh.cpp) | Node lifecycles: the in-hand model (roots the light at its lens), the stowed belt model, the glow at the weapon's lamp, and the visible beam cone. |
 | [RestrictionHandler](src/RestrictionHandler.cpp) | The headgear and weapon-lamp gates, Pip-Boy availability, and `enforceRestrictions()` turning the light off. |
-| [WeaponGripHandler](src/WeaponGripHandler.cpp) | Which hand holds the weapon (FRIK / ROCK), ROCK's post-solve callback and trigger remap. The ROCK SDK headers in [src/api/ROCK/](src/api/ROCK/) are copied as-is. |
+| [WeaponGripHandler](src/WeaponGripHandler.cpp) | Which hand holds the weapon (FRIK / ROCK), ROCK's post-solve callback and trigger remap. |
+| [RockBridge](src/api/RockBridge.cpp) | The only code that includes ROCK's API: connection and per-physical-hand facts in the mod's own types. ROCK 1.0+ only: its headers in [src/api/ROCK/](src/api/ROCK/) are copied as-is from ROCK's `include/ROCK/` at a release tag. |
 | [NpcDetectionHandler](src/NpcDetectionHandler.cpp) | NPCs react to the beam. See [npc-light-detection.md](docs/tech/npc-light-detection.md). |
 | [BeamScreen](src/config-mode/BeamScreen.cpp) | In-world beam tuning per location, built from framework `vrui` panels. Hands its edits to Mods Config. |
 | [Config](src/Config.cpp) | Typed TOML values, per-location beam settings, hot-reload. |

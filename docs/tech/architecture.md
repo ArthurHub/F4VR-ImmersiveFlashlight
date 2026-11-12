@@ -119,18 +119,20 @@ How each feature behaves, the rules behind it, and the traps in it. [CLAUDE.md](
 - `Flashlight::onFrameUpdate()` consumes it and applies the values on the game thread (`applyConfigChange()`): restriction caches, the vanilla-toggle and Pip-Boy patches, the location and the light values.
 - The constructor consumes it once. The mod's own saves (`Config::setFlashlightLocation`) don't reload.
 
-## ROCK integration (`WeaponGripHandler`)
+## ROCK integration (`WeaponGripHandler`, `RockBridge`)
 
-- It answers which hand holds the weapon, so nothing else names FRIK or ROCK:
-  - `isTwoHandedGripActive()`: FRIK or ROCK
-  - `isWeaponInOffhand()`: ROCK's firing hand is the offhand
-  - `isWeaponCarriedByOffhand()`: WeaponParts `gripKind == PartCarry`
+- **Split:** `RockBridge` is the only code that includes ROCK's headers. It reports a few facts per physical hand in the mod's own types: each hand's weapon slot and grip role, the game weapon's firing hand, the raw trigger, and the after-solve hook. `WeaponGripHandler` turns them into the light's rules (handedness, FRIK, the second weapon). A ROCK API change should only touch `src/api/RockBridge.cpp`, unless ROCK changes what a grip means. It lives beside `src/api/ROCK/`, not in it, so that folder stays a byte-identical copy of upstream.
+- `WeaponGripHandler` answers which hand holds the weapon, so nothing else names FRIK or ROCK. ROCK's side comes from Hands `getRoles()`: per physical hand, the weapon slot it holds and whether by the `Firing` grip or a `Support` grip (support, or a part carried with the firing grip vacated). Slot 0 is the game's weapon, the one the light mounts on.
+  - `isTwoHandedGripActive()`: FRIK, or both hands on slot 0
+  - `isWeaponInOffhand()`: the offhand fires slot 0
+  - `isWeaponCarriedByOffhand()`: the offhand holds slot 0 by a `Support` grip and the primary hand isn't on it (part carry)
   - and the derived `isOffhandHoldingWeapon()` / `isPrimaryHandFreeOfWeapon()`
-- **API:** `initialize()` discovers ROCK, registers an owner, and binds Weapon, WeaponParts and Input as Read. Interfaces are negotiated forward-compatibly by `queryRockInterface()` (major 1, minimum minor 0, the table extent up to the last slot called), so ROCK appending calls doesn't break it. The headers in `src/api/ROCK/` are copied as-is from `brunocatani/RPS_SDK` and excluded from clang-format.
-- **Threading:** it samples once per frame on the game thread, where ROCK answers.
-- **Weapon pose:** ROCK solves the two-handed weapon pose after this mod's frame. The handler forwards ROCK's `AfterRock` phase callback, and `Flashlight::onWeaponTransformFinalized()` re-applies the on-weapon light then.
-- **Trigger remap:** while the physical left hand fires, ROCK presents its trigger on the right controller. A `VRControllers.setControllerStateAdjuster()` restores both triggers from ROCK's raw input. `adjustBindingForInputRemap()` clears `suppress` on trigger bindings then, as ROCK already hides the free hand's trigger.
-- **Known limitation:** during left-hand firing ROCK retargets this mod's right-controller haptics to the left controller. It is to be fixed in ROCK.
+- **Second weapon:** ROCK can put a second weapon (slot 1) in the other hand. The light ignores it except that its hand counts as busy: `isOffhandHoldingWeapon()` turns true, `isPrimaryHandFreeOfWeapon()` false.
+- **Handedness:** ROCK holds the game's `bLeftHandedMode:VR` off and uses its own `[FiringHand] DefaultHand`. With ROCK the primary hand is therefore the right hand, and a player firing from the left shows up as a weapon one-handed in the offhand.
+- **API:** ROCK 1.0+ only (provider API 2). `RockBridge::initialize()` connects through `rock::api::Client`, then binds Hands (required), Weapon and Input as Read and Animation as Callbacks. `acquireRockInterface()` asks for exactly the copied header's major, minor and `sizeof(Api)`: ROCK only appends calls, and a refused query makes ROCK close the game naming this DLL, so it never probes. The headers in `src/api/ROCK/` are copied as-is from `brunocatani/ROCK` `include/ROCK/` at the release tag shipped against, and excluded from clang-format.
+- **Threading:** it samples once per frame on the game thread, where ROCK answers (Weapon `getWeaponState` and the Input reads are game-thread only).
+- **Weapon pose:** ROCK solves the two-handed weapon pose after this mod's frame. The bridge registers an Animation phase callback for `AfterRock`, the handler forwards it to its listener, and `Flashlight::onWeaponTransformFinalized()` re-applies the on-weapon light then.
+- **Trigger remap:** while the physical left hand is the game weapon's firing hand (Weapon `getWeaponState(0).firingHand`), ROCK presents its trigger on the right controller. A `VRControllers.setControllerStateAdjuster()` restores both triggers from ROCK's raw input. `adjustBindingForInputRemap()` clears `suppress` on trigger bindings then, as ROCK already hides the free hand's trigger.
 
 ## devbench tool
 

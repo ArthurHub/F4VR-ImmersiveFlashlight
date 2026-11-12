@@ -4,14 +4,13 @@
 #pragma pack(push, 8)
 namespace rock::api::input {
     inline constexpr InterfaceId kInterfaceId = InterfaceId::Input;
-    inline constexpr std::uint32_t kMajor = 1;
+    inline constexpr std::uint32_t kMajor = 2;
     inline constexpr std::uint32_t kMinor = 0;
     inline constexpr std::uint32_t kMaxSuppressions = 32;
     inline constexpr std::uint32_t kMaxSuppressionLeaseFrames = 120;
-    inline constexpr std::uint32_t kEventCapacityPerOwner = 256;
+    inline constexpr std::uint32_t kMaxWeaponInputLeaseFrames = 120;
 
-
-    enum class HandInputSuppressionFlagV1 : std::uint32_t
+    enum class HandInputSuppressionFlag : std::uint32_t
     {
         None = 0,
         SuppressNormalGrabPress = 1u << 0,
@@ -31,7 +30,7 @@ namespace rock::api::input {
             static_cast<std::uint32_t>(SuppressGameplayCandidates),
     };
 
-    enum class InputAvailabilityReasonV1 : std::uint32_t
+    enum class InputAvailabilityReason : std::uint32_t
     {
         Available = 0,
         HookNotSampled = 1,
@@ -40,12 +39,16 @@ namespace rock::api::input {
         InvalidButton = 4,
     };
 
-    enum class LogicalInputActionV1 : std::uint32_t
+    enum class LogicalInputAction : std::uint32_t
     {
         Jump = 1,
+        // RobCo PALM's wheel: held while the primary stick click ROCK presents
+        // is PALM's under the player's [Bindings] (Palm), never while it is a
+        // bipod, placement or Favorites click bound elsewhere.
+        PalmWheel = 2,
     };
 
-    enum class SuppressionInvalidationReasonV1 : std::uint32_t
+    enum class SuppressionInvalidationReason : std::uint32_t
     {
         None = 0,
         Expired = 1,
@@ -56,9 +59,19 @@ namespace rock::api::input {
         CallbackFault = 6,
     };
 
-    struct HandInputSuppressionRequestV1
+    enum class NativeInputContextFlag : std::uint32_t
     {
-        std::uint32_t size{ sizeof(HandInputSuppressionRequestV1) };
+        Available = 1u << 0,
+        MenuActive = 1u << 1,
+        PrimaryActivationTarget = 1u << 2,
+    };
+
+    // chordButtons[0] is the left wand, [1] the right: OpenVR button bits
+    // (1, 2, 7, 32, 33) reserved by ReserveButtonChord. The generations guard
+    // the request; zero skips that guard.
+    struct HandInputSuppressionRequest
+    {
+        std::uint32_t size{ sizeof(HandInputSuppressionRequest) };
         std::uint32_t version{ 1 };
         Hand hand{ Hand::None };
         std::uint32_t flags{ 0 };
@@ -66,106 +79,192 @@ namespace rock::api::input {
         std::uint32_t worldGeneration{ 0 };
         std::uint32_t skeletonGeneration{ 0 };
         std::uint32_t providerGeneration{ 0 };
-        std::uint32_t chordButtonsLow[2]{};
-        std::uint32_t chordButtonsHigh[2]{};
-        std::uint32_t reserved[4]{};
+        std::uint64_t chordButtons[2]{};
     };
 
-    enum class NativeInputContextFlagV1 : std::uint32_t
+    // leaseFrameIndex is the lease clock callerExpiresAfterFrame counts
+    // against; sample identifies the publication.
+    struct HandInputSuppressionState
     {
-        Available = 1u << 0,
-        MenuActive = 1u << 1,
-        PrimaryActivationTarget = 1u << 2,
-    };
-
-    struct RawWandButtonStateV1
-    {
-        std::uint32_t size{ sizeof(RawWandButtonStateV1) };
+        std::uint32_t size{ sizeof(HandInputSuppressionState) };
         std::uint32_t version{ 1 };
-        std::uint32_t available{ 0 };
-        std::uint32_t held{ 0 };
-        std::uint64_t sampleSequence{ 0 };
-        std::uint32_t sampleAgeMilliseconds{ 0 };
-        InputAvailabilityReasonV1 availabilityReason{
-            InputAvailabilityReasonV1::HookNotSampled
-        };
-    };
-
-    struct LogicalInputActionStateV1
-    {
-        std::uint32_t size{ sizeof(LogicalInputActionStateV1) };
-        std::uint32_t version{ 1 };
-        LogicalInputActionV1 action{
-            LogicalInputActionV1::Jump
-        };
-        std::uint32_t available{ 0 };
-        std::uint32_t held{ 0 };
-        InputAvailabilityReasonV1 availabilityReason{
-            InputAvailabilityReasonV1::HookNotSampled
-        };
-        std::uint64_t sampleSequence{ 0 };
-        std::uint64_t pressSequence{ 0 };
-        std::uint64_t frameIndex{ 0 };
-        std::uint32_t sampleAgeMilliseconds{ 0 };
-        std::uint32_t worldGeneration{ 0 };
-        std::uint32_t skeletonGeneration{ 0 };
-        std::uint32_t providerGeneration{ 0 };
-        std::uint32_t reserved[4]{};
-    };
-
-    struct HandInputSuppressionStateV1
-    {
-        std::uint32_t size{ sizeof(HandInputSuppressionStateV1) };
-        std::uint32_t version{ 1 };
-        std::uint64_t frameIndex{ 0 };
+        Sample sample{};
+        std::uint64_t leaseFrameIndex{ 0 };
+        std::uint64_t callerExpiresAfterFrame{ 0 };
         Hand hand{ Hand::None };
         std::uint32_t callerFlags{ 0 };
         std::uint32_t effectiveFlags{ 0 };
         std::uint32_t callerLeaseActive{ 0 };
-        std::uint64_t callerExpiresAfterFrame{ 0 };
         std::uint32_t callerRemainingFrames{ 0 };
-        SuppressionInvalidationReasonV1 lastInvalidationReason{
-            SuppressionInvalidationReasonV1::None
-        };
-        std::uint32_t worldGeneration{ 0 };
-        std::uint32_t skeletonGeneration{ 0 };
-        std::uint32_t providerGeneration{ 0 };
-        std::uint32_t reserved[5]{};
+        SuppressionInvalidationReason lastInvalidationReason{ SuppressionInvalidationReason::None };
     };
 
+    // Level state of one physical button. sampleSequence and
+    // sampleAgeMilliseconds describe the controller input sample.
+    struct RawWandButtonState
+    {
+        std::uint32_t size{ sizeof(RawWandButtonState) };
+        std::uint32_t version{ 1 };
+        std::uint32_t available{ 0 };
+        std::uint32_t held{ 0 };
+        std::uint64_t sampleSequence{ 0 };
+        std::uint32_t sampleAgeMilliseconds{ 0 };
+        InputAvailabilityReason availabilityReason{ InputAvailabilityReason::HookNotSampled };
+    };
+
+    struct LogicalInputActionState
+    {
+        std::uint32_t size{ sizeof(LogicalInputActionState) };
+        std::uint32_t version{ 1 };
+        Sample sample{};
+        std::uint64_t sampleSequence{ 0 };
+        std::uint64_t pressSequence{ 0 };
+        LogicalInputAction action{ LogicalInputAction::Jump };
+        std::uint32_t available{ 0 };
+        std::uint32_t held{ 0 };
+        InputAvailabilityReason availabilityReason{ InputAvailabilityReason::HookNotSampled };
+        std::uint32_t sampleAgeMilliseconds{ 0 };
+    };
+
+    // Bits 0 and 1 (one shared stick click) are retired; never reuse them.
+    enum class PlacementClickFlag : std::uint32_t { RightInputReserved = 4, LeftInputReserved = 8 };
+
+    // A reserved stick click belongs to an add-on's held placement action for
+    // the object in that hand, including its release; other users of that
+    // hand's click yield. The other hand's click stays free.
+    struct PlacementClickState
+    {
+        std::uint32_t size{ sizeof(PlacementClickState) };
+        std::uint32_t version{ 1 };
+        std::uint32_t flags{ 0 };
+        Sample sample{};
+    };
+
+    enum class ReloadGestureFlag : std::uint32_t
+    {
+        // Suppress only that hand's native trigger button, axis and actions
+        // while the lease holds; firing resumes after a physical release.
+        BlockFire = 1u << 0,
+        // ROCK's gameplay activation keeps priority: a workbench, use or take
+        // target of the primary wand owns the whole press and release, and no
+        // tap or scope hold is published for it. Without this flag, Accept is
+        // masked from the game for the lease.
+        GameplayPriority = 1u << 1,
+        // Accept stays entirely with the game: no mask, tap or scope hold, so
+        // its native reload and activation keep working and the lease only
+        // carries BlockFire. Not valid with GameplayPriority.
+        KeepAcceptNative = 1u << 2,
+    };
+
+    /*
+     * Reload gesture lease on the firing hand of the weapon in weaponSlot. One
+     * owner at a time; the request names that weapon (slot, form, generation
+     * key) and the sample (current or previous frame). ROCK classifies the Accept button
+     * (X left, A right) with Scopes.ManualScopeHoldSeconds: a short release adds one
+     * to tapSequence; a hold stays ROCK scope input and never becomes a tap.
+     * Menus, input loss, hand changes and changing the lease (including its
+     * flags) cancel an unfinished gesture and require a release before
+     * rearming. UI suppression wins. weaponGenerationKey is the weapon's
+     * interaction key (Weapon getInteractionKey); the lease stays held when
+     * the colliders arrive and that key changes.
+     */
+    struct ReloadGestureRequest
+    {
+        std::uint32_t size{ sizeof(ReloadGestureRequest) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        Sample sample{};
+        Hand hand{ Hand::None };
+        std::uint32_t leaseFrames{ 2 };
+        std::uint32_t flags{ 0 };
+    };
+
+    struct ReloadGestureState
+    {
+        std::uint32_t size{ sizeof(ReloadGestureState) };
+        std::uint32_t version{ 1 };
+        OwnerToken owner{ 0 };
+        std::uint64_t tapSequence{ 0 };
+        std::uint64_t expiresAfterFrame{ 0 };
+        Sample sample{};
+        std::uint32_t active{ 0 };
+        Hand hand{ Hand::None };
+        std::uint32_t held{ 0 };
+        std::uint32_t scopeHeld{ 0 };
+        std::uint32_t weaponSlot{ 0 };
+    };
+
+    /*
+     * Support-trigger lease: the physical trigger of the supporting hand of the
+     * active two-hand grip on the weapon in weaponSlot. Suppresses only that trigger's game button, axis
+     * and native action. A new claim or unavailable input requires a release
+     * before a fresh press; pressSequence is monotonic across leases, so read
+     * a baseline after acquiring. Clearing, expiry, hand changes and owner
+     * loss drain a held trigger before returning it to gameplay. UI capture
+     * wins and cancels pending input. weaponGenerationKey is the weapon's
+     * interaction key (Weapon getInteractionKey); the lease stays held when
+     * the colliders arrive and that key changes.
+     */
+    struct SupportTriggerRequest
+    {
+        std::uint32_t size{ sizeof(SupportTriggerRequest) };
+        std::uint32_t version{ 1 };
+        std::uint32_t weaponSlot{ 0 };
+        std::uint32_t weaponFormId{ 0 };
+        std::uint64_t weaponGenerationKey{ 0 };
+        Sample sample{};
+        Hand hand{ Hand::None };
+        std::uint32_t leaseFrames{ 2 };
+    };
+
+    struct SupportTriggerState
+    {
+        std::uint32_t size{ sizeof(SupportTriggerState) };
+        std::uint32_t version{ 1 };
+        OwnerToken owner{ 0 };
+        std::uint64_t pressSequence{ 0 };
+        std::uint64_t expiresAfterFrame{ 0 };
+        Sample sample{};
+        std::uint32_t active{ 0 };
+        Hand hand{ Hand::None };
+        std::uint32_t held{ 0 };
+        std::uint32_t weaponSlot{ 0 };
+    };
 
     // Permission bits are local to this interface major. Discovery grants none.
-    enum class PermissionV1 : std::uint32_t { Read=1, Write=2 };
+    enum class Permission : std::uint32_t { Read = 1, Write = 2 };
     inline constexpr std::uint32_t kSupportedPermissions = 3;
 
-    struct EventV1 {
-        std::uint32_t size{sizeof(EventV1)};
-        std::uint32_t kind{};
-        std::uint64_t sequence{};
-        std::uint64_t frameIndex{};
-        std::uint64_t ownerToken{};
-        std::uint32_t worldGeneration{};
-        std::uint32_t skeletonGeneration{};
-        std::uint32_t providerGeneration{};
-        std::uint32_t authority{}; std::uint32_t reason{};
-    };
-    enum class EventKindV1 : std::uint32_t { AuthorityLost=1 };
-
-    struct ApiV1 {
-        static constexpr InterfaceId interfaceId=kInterfaceId;
-        static constexpr std::uint32_t majorVersion=kMajor;
-        static constexpr std::uint32_t minorVersion=kMinor;
-        Status(ROCK_CALL* setHandInputSuppressionV1)(std::uint64_t ownerToken, const HandInputSuppressionRequestV1* request) noexcept;
-        Status(ROCK_CALL* clearHandInputSuppressionV1)(std::uint64_t ownerToken, Hand hand) noexcept;
-        Status(ROCK_CALL* getRawWandButtonStateV1)(OwnerToken ownerToken, Hand hand, std::uint32_t buttonId, RawWandButtonStateV1* outState) noexcept;
-        Status(ROCK_CALL* isNativePipboyInputSuppressedV1)(OwnerToken ownerToken, std::uint32_t* outValue) noexcept;
-        Status(ROCK_CALL* getHandInputSuppressionStateV1)(std::uint64_t ownerToken, Hand hand, HandInputSuppressionStateV1* outState) noexcept;
-        Status(ROCK_CALL* getLogicalInputActionStateV1)(std::uint64_t ownerToken, LogicalInputActionV1 action, LogicalInputActionStateV1* outState) noexcept;
-        Status(ROCK_CALL* getRawWandThumbstickV1)(OwnerToken ownerToken, Hand hand, float* outX, float* outY) noexcept;
-        Status(ROCK_CALL* getNativeInputContextV1)(OwnerToken ownerToken, std::uint32_t* outValue) noexcept;
-        // Family-local publication identity; compare before combining readbacks.
-        Status(ROCK_CALL* getSample)(OwnerToken owner, SampleV1* outSample) noexcept;
-        Status(ROCK_CALL* copyEvents)(OwnerToken, std::uint64_t afterSequence, EventV1*, std::uint32_t capacity, StreamV1*) noexcept;
+    struct Api
+    {
+        static constexpr InterfaceId interfaceId = kInterfaceId;
+        static constexpr std::uint32_t majorVersion = kMajor;
+        static constexpr std::uint32_t minorVersion = kMinor;
+        // Game thread (Write); lease up to kMaxSuppressionLeaseFrames.
+        Status(ROCK_CALL* setHandInputSuppression)(OwnerToken owner, const HandInputSuppressionRequest* request) noexcept;
+        // Hand::None clears both hands.
+        Status(ROCK_CALL* clearHandInputSuppression)(OwnerToken owner, Hand hand) noexcept;
+        // Game thread (Read).
+        Status(ROCK_CALL* getHandInputSuppressionState)(OwnerToken owner, Hand hand, HandInputSuppressionState* outState) noexcept;
+        Status(ROCK_CALL* getRawWandButtonState)(OwnerToken owner, Hand hand, std::uint32_t buttonId, RawWandButtonState* outState) noexcept;
+        Status(ROCK_CALL* getRawWandThumbstick)(OwnerToken owner, Hand hand, float* outX, float* outY) noexcept;
+        Status(ROCK_CALL* isNativePipboyInputSuppressed)(OwnerToken owner, std::uint32_t* outValue) noexcept;
+        // NativeInputContextFlag bits; 0 when the input hook is unavailable.
+        Status(ROCK_CALL* getNativeInputContext)(OwnerToken owner, std::uint32_t* outValue) noexcept;
+        Status(ROCK_CALL* getLogicalInputActionState)(OwnerToken owner, LogicalInputAction action, LogicalInputActionState* outState) noexcept;
+        Status(ROCK_CALL* getPlacementClickState)(OwnerToken owner, PlacementClickState* outState) noexcept;
+        // Game thread; Write for set/clear, Read for get. Lease 1 to
+        // kMaxWeaponInputLeaseFrames frames.
+        Status(ROCK_CALL* setReloadGesture)(OwnerToken owner, const ReloadGestureRequest* request) noexcept;
+        Status(ROCK_CALL* clearReloadGesture)(OwnerToken owner) noexcept;
+        Status(ROCK_CALL* getReloadGesture)(OwnerToken owner, ReloadGestureState* outState) noexcept;
+        Status(ROCK_CALL* setSupportTrigger)(OwnerToken owner, const SupportTriggerRequest* request) noexcept;
+        Status(ROCK_CALL* clearSupportTrigger)(OwnerToken owner) noexcept;
+        Status(ROCK_CALL* getSupportTrigger)(OwnerToken owner, SupportTriggerState* outState) noexcept;
+        // Any thread. Identity of the current publication.
+        Status(ROCK_CALL* getSample)(OwnerToken owner, Sample* outSample) noexcept;
     };
 }
 
