@@ -1,13 +1,13 @@
 # End-to-end tests
 
-pytest tests that drive the running game through devbench's REST port and check the light, the gestures, the restrictions and the mod's health. Run by hand before a release; CI has no game. The layout follows Mods Config's `tests/e2e`.
+pytest tests that drive the running game through devbench's REST port and check the light, the gestures, the restrictions and the mod's health. Run by hand before a release; CI has no game. devbench's Python client (`devbench-client`) and its pytest plugin (`devbench.testing`, configured by `DEVBENCH` in `conftest.py`) do the game setup, the mod check, the config backup and the report.
 
 ## Requirements
 
 - The game running with [devbench](https://github.com/ArthurHub/devbench) (a build with its `files` and `player` tools, and `input` with its `pose` action and its head presets), at the main menu or already in QASmoke. The tests `coc qasmoke` so nothing reaches a save; any other loaded game is refused.
 - This checkout's build deployed: a run stops at start when the game's mod version or devbench actions don't match.
 - FRIK 0.79 or later, whose devbench `probe` sets the two-handed grip: a run stops at start without it.
-- `pip install -r tests/e2e/requirements.txt`
+- `pip install -r tests/e2e/requirements.txt`: the client at the devbench commit it pins. Working on devbench too: `pip install -e <devbench>/clients/python` after it.
 
 QASmoke's player has a working Pip-Boy, and frames stand there for the power armor test. The run adds and equips the rest through the console: the allow-listed helmet (`000F6D86`) and the test weapon (the assault rifle), which devbench's `player` tool draws and sheathes.
 
@@ -27,12 +27,12 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 - The run is right-handed, or left-handed with `--left-handed`: it sets the game's `bLeftHandedMode:VR` through the console at start (the game, FRIK and the mod follow it live) and puts it back after. The tests name the hands offhand and primary hand, and drive the controller of each by the handedness. Run both before a release.
 - Each test starts the same (the `flashlight` fixture): no menu, no config UI, out of power armor, no weapon drawn, the helmet on, and the light off on the head.
 - No two-handed grip: a test that needs one sets it through FRIK's devbench `probe` (`op: grip`, its `setOffHandGripping` API, as a weapon mod reports one), cleared after it.
-- Settings a result depends on are pinned as session overrides (`BASELINE` in `conftest.py`): restriction fallback on, the Immersive headgear rule, no weapon-lamp requirement, the body stow shown. A test overrides one again to try another value.
+- Settings a result depends on are pinned as session overrides (`BASELINE` in `conftest.py`): restriction fallback on, the Immersive headgear rule, no weapon-lamp requirement, the body stow shown, the activation spheres' binding icons as shipped. A test overrides one again to try another value.
 - A location switch saves to the config file, so the run backs up `My Games\Fallout4VR\Mods_Config\ImmersiveFlashlightVR\` through devbench into `tests/e2e/.backup/manifest.json` and puts it back after. A crashed run leaves the manifest, and the next run (or `--e2e-restore`) restores it first; the game must be running.
 
 ## Report
 
-`build/e2e/<date>-<time>/index.html`: totals, failures, per-area results and times, and the game dialogs the run closed.
+`build/e2e/<date>-<time>/index.html`: totals, failures (each with the mod's log lines from the test and a picture of the frame), per-area results and times, the controller placements, and the game dialogs the run closed.
 
 ## Tests
 
@@ -48,7 +48,7 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 | `test_power_armor.py` | In and out of a frame through devbench's `player`: at once, with the PA head and its beam, the head gestures in PA and the location restored; and stepping in and out through the controllers, the light restored at each side. A refused scripted exit (KabutoVR) skips the rest of its test, and the exit gesture gets the player out. |
 | `test_health.py` | The stowed model in the scene, `Flashlight::onFrameUpdate` p95 with the light in hand, no error in the log over the run. Runs last. |
 
-Helpers: `devbench.py` (client, kept close to Mods Config's), `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `controllers.py` (devbench's pose and press, zone aiming, and a log of each placement), `backup.py`, `report.py`.
+Helpers: `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `controllers.py` (devbench's `Hands` for the logical hands, zone aiming, and a log of each placement).
 
 ## Manual checklist
 

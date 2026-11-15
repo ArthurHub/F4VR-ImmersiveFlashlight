@@ -18,14 +18,18 @@ HEAD_CONTROLLER = {"pitch": 123, "yaw": 14}
 
 
 @pytest.fixture(scope="module")
-def held(game, loadout):
-    """devbench's input holding the ready pose for the module, handed back to the physical devices after it."""
+def held(game, loadout, report):
+    """devbench's input holding the ready pose for the module, handed back to the physical devices after it; the
+    placements it made go in the report."""
     controllers = Controllers(game, loadout.flashlight)
     if not controllers.ready():
         pytest.fail("devbench's input tool is not ready (no OpenVR, or its hooks are not in place)")
     controllers.start()
-    yield controllers
-    controllers.stop()
+    try:
+        yield controllers
+    finally:
+        controllers.stop()
+        controllers.write_section(report)
 
 
 @pytest.fixture

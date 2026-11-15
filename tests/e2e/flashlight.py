@@ -3,7 +3,7 @@ player's loadout the tests need (a helmet, a weapon; QASmoke's player has the Pi
 
 import time
 
-from devbench import DevbenchError
+from devbench import ModTool, close_menus, console, console_number
 
 # Fallout4.esm forms
 # in the shipped Immersive headgear allow list, so the head is allowed whatever the keywords say
@@ -12,6 +12,9 @@ HELMET = "000F6D86"
 DENIED_HAT = "000316D4"
 # a ranged weapon without a modeled lamp: the assault rifle
 WEAPON = "0000463F"
+
+# the mod's devbench tool, and the prefix of its events
+MOD_TOOL = "immersiveflashlightvr"
 
 # FRIK's devbench tool, whose probe sets a two-handed grip
 FRIK_TOOL = "frik"
@@ -33,9 +36,9 @@ def physical_hand(hand, left_handed):
 
 def set_left_handed(bench, left_handed):
     """Set the game's handedness, and wait until the mod reads it; answers whether it was left-handed before."""
-    was = bench.console_number(f'getini "{LEFT_HANDED_INI}"') == 1
+    was = console_number(bench, f'getini "{LEFT_HANDED_INI}"') == 1
     if was != left_handed:
-        bench.console(f'setini "{LEFT_HANDED_INI}" {int(left_handed)}')
+        console(bench, f'setini "{LEFT_HANDED_INI}" {int(left_handed)}')
     flashlight = Flashlight(bench)
     flashlight.wait(lambda s: flashlight.left_handed() == left_handed, 5, f"the mod reading {LEFT_HANDED_INI} {int(left_handed)}")
     return was
@@ -52,9 +55,10 @@ class Flashlight:
 
     def __init__(self, bench):
         self.bench = bench
+        self.mod = ModTool(bench, MOD_TOOL)
 
     def state(self):
-        return self.bench.mod("state")
+        return self.mod.call("state")
 
     def wait(self, condition, timeout=5.0, what="the state"):
         """Poll the state until condition(state) holds and return it; fail with the last state after timeout seconds."""
@@ -70,11 +74,11 @@ class Flashlight:
     def light(self, location=None, op=None):
         """Switch the configured location (head|offhand|primaryHand) and/or turn the light on|off|toggle."""
         args = {key: value for key, value in (("location", location), ("op", op)) if value}
-        return self.bench.mod("light", **args)
+        return self.mod.call("light", **args)
 
     def gesture(self, gesture, press="tap", hand="offhand"):
         """Fire a gesture through its real gating, without its zone and button: answers fired, inert, lightOn, location."""
-        return self.bench.mod("gesture", gesture=gesture, press=press, hand=hand)
+        return self.mod.call("gesture", gesture=gesture, press=press, hand=hand)
 
     def two_handed_grip(self, on=True):
         """Set or drop a two-handed grip through FRIK's devbench probe (its setOffHandGripping API, as a weapon mod
@@ -98,7 +102,7 @@ class Flashlight:
     def config(self, key, section=None):
         """A config value as the mod has it, override included, as its text."""
         args = {"key": key, **({"section": section} if section else {})}
-        return self.bench.mod("config", **args)["value"]
+        return self.mod.call("config", **args)["value"]
 
     def config_int(self, key, section=None):
         return int(float(self.config(key, section)))
@@ -109,29 +113,29 @@ class Flashlight:
     def set(self, key, value, section=None):
         """Override a config value for the session (not written to the file)."""
         args = {"key": key, "value": str(value), **({"section": section} if section else {})}
-        self.bench.mod("set", **args)
+        self.mod.call("set", **args)
 
     def clear(self, key=None):
         """Drop one session override, or all of them."""
-        self.bench.mod("clear", **({"key": key} if key else {"all": True}))
+        self.mod.call("clear", **({"key": key} if key else {"all": True}))
 
     def overrides(self):
-        return self.bench.mod("overrides")["overrides"]
+        return self.mod.call("overrides")["overrides"]
 
     def restrictions(self):
-        return self.bench.mod("restrictions")
+        return self.mod.call("restrictions")
 
     def zones(self):
-        return self.bench.mod("zones")
+        return self.mod.call("zones")
 
     def ui(self, op):
-        return self.bench.mod("ui", op=op)
+        return self.mod.call("ui", op=op)
 
     def perf(self, reset=False):
-        return self.bench.mod("perf", format="flat", reset=reset)
+        return self.mod.call("perf", format="flat", reset=reset)
 
     def health(self):
-        return self.bench.mod("health")
+        return self.mod.call("health")
 
 
 class Loadout:
@@ -142,16 +146,16 @@ class Loadout:
         self.flashlight = flashlight
 
     def item_count(self, form):
-        return int(self.bench.console_number(f"player.getitemcount {form}"))
+        return int(console_number(self.bench, f"player.getitemcount {form}"))
 
     def equip(self, form):
         """Equip an item, adding one first when the player has none."""
         if self.item_count(form) == 0:
-            self.bench.console(f"player.additem {form} 1")
-        self.bench.console(f"player.equipitem {form}")
+            console(self.bench, f"player.additem {form} 1")
+        console(self.bench, f"player.equipitem {form}")
 
     def unequip(self, form):
-        self.bench.console(f"player.unequipitem {form}")
+        console(self.bench, f"player.unequipitem {form}")
 
     def wear_helmet(self, form=HELMET):
         self.equip(form)
@@ -210,8 +214,4 @@ class Loadout:
 
 def close_game_menus(bench):
     """Close the menus a test may have left open."""
-    for name in ("PauseMenu",):
-        try:
-            bench.tool("menu", action="close", name=name)
-        except DevbenchError:
-            pass
+    close_menus(bench, ["PauseMenu"])

@@ -6,8 +6,6 @@ import time
 
 import pytest
 
-from conftest import LOG_FILE, RUN, log_line_count
-
 pytestmark = pytest.mark.health
 
 # the mod's whole frame on the game thread, and its budget at p95 with the light held in the offhand (the model
@@ -32,11 +30,9 @@ def test_frame_cost(flashlight):
     assert site["p95Ms"] <= FRAME_P95_BUDGET_MS, f"p95 {site['p95Ms']:.3f} ms over {perf['frames']} frames"
 
 
-def test_no_errors_in_log(game):
-    new_lines = log_line_count(game) - RUN["log_start"]
-    lines = game.tool("log", action="tail", file=LOG_FILE, tail=min(new_lines, 5000))["lines"] if new_lines > 0 else []
-    errors = [line for line in lines if re.match(r"^\S+ (error|critical) ", line)]
-    warnings = [line for line in lines if re.match(r"^\S+ warn(ing)? ", line)]
+def test_no_errors_in_log(log_mark):
+    errors = log_mark.errors()
+    warnings = [line for line in log_mark.lines() if re.match(r"^\S+ warn(ing)? ", line)]
     if warnings:
         print("log warnings:", *warnings[:5], sep="\n  ")
     assert not errors, "\n".join(errors[:5])
