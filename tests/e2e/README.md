@@ -4,7 +4,7 @@ pytest tests that drive the running game through devbench's REST port and check 
 
 ## Requirements
 
-- The game running with [devbench](https://github.com/ArthurHub/devbench) (a build with its `files` and `player` tools, and `input` with its `pose` action and its head presets), at the main menu or already in QASmoke. The tests `coc qasmoke` so nothing reaches a save; any other loaded game is refused.
+- The game running with [devbench](https://github.com/ArthurHub/devbench) (a build with its `files` and `player` tools, and `input` with its `pose` and `handedness` actions and its head presets), at the main menu or already in QASmoke. The tests `coc qasmoke` so nothing reaches a save; any other loaded game is refused.
 - This checkout's build deployed: a run stops at start when the game's mod version or devbench actions don't match.
 - FRIK 0.79 or later, whose devbench `probe` sets the two-handed grip: a run stops at start without it.
 - `pip install -r tests/e2e/requirements.txt`: the client at the devbench commit it pins. Working on devbench too: `pip install -e <devbench>/clients/python` after it.
@@ -17,14 +17,14 @@ QASmoke's player has a working Pip-Boy, and frames stand there for the power arm
 pytest tests/e2e                          # all
 pytest tests/e2e -m gestures              # one area: light, gestures, overrides, headgear, menus, weapon, controllers, powerarmor, health
 pytest tests/e2e --left-handed            # all, left-handed
-pytest tests/e2e --e2e-restore            # only restore a crashed run's backup
+pytest tests/e2e --e2e-restore            # only restore a crashed run's backup and handedness
 ```
 
 The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-armor-radius` sets how far to look for a frame (default 2000 units: the nearest QASmoke frame is about 1350 from where the run starts).
 
 ## State
 
-- The run is right-handed, or left-handed with `--left-handed`: it sets the game's `bLeftHandedMode:VR` through the console at start (the game, FRIK and the mod follow it live) and puts it back after. The tests name the hands offhand and primary hand, and drive the controller of each by the handedness. Run both before a release.
+- The run is right-handed, or left-handed with `--left-handed`: devbench's plugin sets the game's handedness at start (devbench confirms the game's wands swapped; FRIK and the mod follow it live, and the run waits for the mod) and puts the player's back after, also after a crashed run (next start or `--e2e-restore`). The tests name the hands offhand and primary hand; presses and placements pass devbench the role (`offhand` / `primary`), which it resolves to a controller. Run both before a release.
 - Each test starts the same (the `flashlight` fixture): no menu, no config UI, out of power armor, no weapon drawn, the helmet on, and the light off on the head.
 - No two-handed grip: a test that needs one sets it through FRIK's devbench `probe` (`op: grip`, its `setOffHandGripping` API, as a weapon mod reports one), cleared after it.
 - Settings a result depends on are pinned as session overrides (`BASELINE` in `conftest.py`): restriction fallback on, the Immersive headgear rule, no weapon-lamp requirement, the body stow shown, the activation spheres' binding icons as shipped. A test overrides one again to try another value.

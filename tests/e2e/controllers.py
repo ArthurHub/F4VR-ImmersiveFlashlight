@@ -23,9 +23,12 @@ COOLDOWN_SECONDS = 0.5
 # times a zone that moved with the arm is aimed at again
 AIMS = 3
 
+# devbench's role name of each of the mod's logical hands, which devbench resolves to a controller by the handedness
+ROLE = {"offhand": "offhand", "primaryHand": "primary"}
+
 
 class Controllers:
-    """devbench's Hands for the mod: logical hands (offhand|primaryHand) mapped to the controllers, hands placed into
+    """devbench's Hands for the mod: logical hands (offhand|primaryHand) passed to devbench as roles, hands placed into
     zones and back, presses on top, and a log of each placement for the report."""
 
     def __init__(self, bench, flashlight):
@@ -77,7 +80,7 @@ class Controllers:
             aim = self._aim(entry, edge, side)
             if aims and math.dist(wand, aim) < entry["radius"] * margin:
                 break
-            answer = self.hands.place(side, aim, pitch=pitch, yaw=yaw)
+            answer = self.hands.place(ROLE[hand], aim, pitch=pitch, yaw=yaw)
             aims += 1
         entry, _ = self._zone(zone, hand)
         self._log(f"{hand} into {zone}", started, aims, answer.get("corrections"), entry["wands"][hand]["distance"], entry["radius"])
@@ -87,7 +90,7 @@ class Controllers:
     def press(self, hand, duration_ms=TAP_MS, buttons=("trigger",)):
         """Hold buttons on a logical hand's controller for duration_ms, on top of the held pose, and wait until they are
         released."""
-        self.hands.press(self.physical(hand), buttons, duration_ms)
+        self.hands.press(ROLE[hand], buttons, duration_ms)
 
     def tap(self, hand):
         self.press(hand, TAP_MS)

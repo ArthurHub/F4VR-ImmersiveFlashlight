@@ -1,1 +1,1 @@
-devbench-client @ git+https://github.com/ArthurHub/devbench@1093265a04e7c89785e568f22c37595bd2109671#subdirectory=clients/python
+devbench-client @ git+https://github.com/ArthurHub/devbench@1b9661d062475fb00fe528f004ae14cf43884ded#subdirectory=clients/python

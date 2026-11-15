@@ -22,9 +22,6 @@ FRIK_TOOL = "frik"
 # the light action's location argument for each configured location
 LOCATION_ARG = {"OnHead": "head", "InOffhand": "offhand", "InPrimaryHand": "primaryHand"}
 
-# the game's handedness setting: the offhand is the right controller while it is 1
-LEFT_HANDED_INI = "bLeftHandedMode:VR"
-
 # the node the light hangs from while it is in a hand
 LIGHT_NODE = "ImmersiveFlashlight"
 
@@ -32,16 +29,6 @@ LIGHT_NODE = "ImmersiveFlashlight"
 def physical_hand(hand, left_handed):
     """The controller (left|right) of a logical hand (offhand|primaryHand) for the player's handedness."""
     return "left" if (hand == "offhand") != left_handed else "right"
-
-
-def set_left_handed(bench, left_handed):
-    """Set the game's handedness, and wait until the mod reads it; answers whether it was left-handed before."""
-    was = console_number(bench, f'getini "{LEFT_HANDED_INI}"') == 1
-    if was != left_handed:
-        console(bench, f'setini "{LEFT_HANDED_INI}" {int(left_handed)}')
-    flashlight = Flashlight(bench)
-    flashlight.wait(lambda s: flashlight.left_handed() == left_handed, 5, f"the mod reading {LEFT_HANDED_INI} {int(left_handed)}")
-    return was
 
 
 def summary(state):

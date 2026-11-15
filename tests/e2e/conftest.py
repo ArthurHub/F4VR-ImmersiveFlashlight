@@ -1,6 +1,6 @@
 """The session the end-to-end tests run in. devbench's pytest plugin enters the game in QASmoke, checks the mod's build,
-backs up its config and writes the report; this conftest adds the mod's own setup (FRIK, the handedness), the player's
-loadout and a light reset before each test."""
+backs up its config, sets the handedness and writes the report; this conftest adds the mod's own setup (FRIK, the mod
+following the handedness), the player's loadout and a light reset before each test."""
 
 import re
 from pathlib import Path
@@ -9,7 +9,7 @@ import pytest
 
 from devbench import DevbenchError, wait_until
 from devbench.testing import Config
-from flashlight import FRIK_TOOL, HELMET, MOD_TOOL, Flashlight, Loadout, close_game_menus, set_left_handed
+from flashlight import FRIK_TOOL, HELMET, MOD_TOOL, Flashlight, Loadout, close_game_menus
 
 pytest_plugins = ["devbench.testing"]
 
@@ -49,6 +49,8 @@ DEVBENCH = Config(
     title="Immersive Flashlight VR",
     # the lit frame, dumped when a test fails
     picture=6,
+    # right-handed unless --left-handed; the player's handedness is put back after
+    handedness="right",
 )
 
 # the settings every test starts with, as session overrides, so a result doesn't depend on the player's config file:
@@ -67,7 +69,6 @@ BASELINE = [
 
 
 def pytest_addoption(parser):
-    parser.addoption("--left-handed", action="store_true", help="run left-handed: the game's handedness set for the run, and put back after")
     parser.addoption("--power-armor-radius", type=float, default=2000.0, help="how far to look for a power armor frame, in game units")
 
 
@@ -82,20 +83,16 @@ def _check_frik(game, report):
 
 
 @pytest.fixture(scope="session")
-def game(game, pytestconfig, report):
-    """The plugin's game, with the flashlight up, FRIK checked, and the run right-handed or with --left-handed. The
-    handedness is put back after the run, before the plugin puts the config backup back."""
-    wait_until(lambda: Flashlight(game).state()["liveness"]["ready"], 30, interval=0.5, what="the flashlight up (the player's 3D)")
+def game(game, left_handed, report):
+    """The plugin's game (in the run's handedness, which the plugin set and puts back), with the flashlight up, the mod
+    following the handedness, and FRIK checked."""
+    flashlight = Flashlight(game)
+    wait_until(lambda: flashlight.state()["liveness"]["ready"], 30, interval=0.5, what="the flashlight up (the player's 3D)")
+    wait_until(lambda: flashlight.left_handed() == left_handed, 5, what=f"the mod reading the game {'left' if left_handed else 'right'}-handed")
     _check_frik(game, report)
-    left_handed = pytestconfig.getoption("--left-handed")
-    was_left_handed = set_left_handed(game, left_handed)
-    report.note("Ran left-handed." if left_handed else "Ran right-handed.")
     yield game
-    try:
-        Flashlight(game).clear()
-        Flashlight(game).two_handed_grip(on=False)
-    finally:
-        set_left_handed(game, was_left_handed)
+    flashlight.clear()
+    flashlight.two_handed_grip(on=False)
 
 
 @pytest.fixture(scope="session")
