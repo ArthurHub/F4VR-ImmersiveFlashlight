@@ -7,21 +7,19 @@ import time
 import pytest
 
 from controllers import COOLDOWN_SECONDS, Controllers
-from devbench import DevbenchError
-
-pytestmark = pytest.mark.controllers
+from devbench import DevbenchError, message_box_text
 
 # the head gesture as recorded in the headset: the wand at the head zone's offhand side (fractions of its radius:
 # outward, forward, up), the controller tilted back past vertical and turned in toward the face
 HEAD_EDGE = (0.8, -0.1, -0.15)
-HEAD_CONTROLLER = {"pitch": 123, "yaw": 14}
+HEAD_CONTROLLER = {"pitch": 123, "yaw_in": -14}
 
 
 @pytest.fixture(scope="module")
 def held(game, loadout, report):
     """devbench's input holding the ready pose for the module, handed back to the physical devices after it; the
     placements it made go in the report."""
-    controllers = Controllers(game, loadout.flashlight)
+    controllers = Controllers(game, loadout.flashlight, report)
     if not controllers.ready():
         pytest.fail("devbench's input tool is not ready (no OpenVR, or its hooks are not in place)")
     controllers.start()
@@ -62,8 +60,8 @@ def blocked_by(flashlight):
     menu = flashlight.state()["gating"]["blockingMenu"]
     if menu == "MessageBoxMenu":
         try:
-            box = flashlight.bench.tool("menu", action="describe")
-            menu += f": {box.get('headerText') or ''} {box.get('bodyText') or ''}".rstrip()
+            text = message_box_text(flashlight.bench)
+            menu += f": {text}" if text else ""
         except DevbenchError as error:
             menu += f" (not read: {error})"
     return menu

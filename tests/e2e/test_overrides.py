@@ -3,10 +3,6 @@ back to the file's value."""
 
 import json
 
-import pytest
-
-pytestmark = pytest.mark.overrides
-
 
 def test_override_applies_live_and_clears(flashlight):
     radius = flashlight.config_int("iFlashlightOnHeadRadius")

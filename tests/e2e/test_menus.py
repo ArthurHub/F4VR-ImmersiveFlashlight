@@ -1,10 +1,6 @@
 """Game menus that take the controllers block the gestures and leave the light on; the mod's config UI opens and
 closes."""
 
-import pytest
-
-pytestmark = pytest.mark.menus
-
 
 def test_pause_menu_blocks_gestures(game, flashlight):
     flashlight.light(location="head", op="on")

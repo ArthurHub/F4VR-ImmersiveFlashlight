@@ -5,8 +5,6 @@ import pytest
 
 from flashlight import DENIED_HAT
 
-pytestmark = pytest.mark.headgear
-
 SECTION = "ImFl_HeadgearRestriction"
 
 

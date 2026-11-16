@@ -6,8 +6,6 @@ import pytest
 
 from flashlight import LOCATION_ARG
 
-pytestmark = pytest.mark.gestures
-
 # (start on, start location, gesture, press, hand) -> (fired, on, location)
 CASES = {
     "head tap: on at the head from off": ((False, "OnHead", "head", "tap", "offhand"), (True, True, "OnHead")),

@@ -7,7 +7,6 @@ with the arm (FRIK leans the body) is aimed at again.
 """
 
 import math
-import os
 import time
 
 from devbench import Hands
@@ -29,11 +28,13 @@ ROLE = {"offhand": "offhand", "primaryHand": "primary"}
 
 class Controllers:
     """devbench's Hands for the mod: logical hands (offhand|primaryHand) passed to devbench as roles, hands placed into
-    zones and back, presses on top, and a log of each placement for the report."""
+    zones and back, presses on top, and a log of each placement for the report, tagged with the test record (the run's
+    report) says is running."""
 
-    def __init__(self, bench, flashlight):
+    def __init__(self, bench, flashlight, record):
         self.bench = bench
         self.flashlight = flashlight
+        self.record = record
         self.hands = Hands(bench, OWNER)
         self.left_handed = False
         # each hand placed in a gesture zone: its time, aims, corrections and landing
@@ -64,23 +65,26 @@ class Controllers:
         to head, a devbench head preset ("ready", "down") or {pitch, yaw, lookAt}, as FRIK leans the body with it;
         then the hand is aimed at the zone as it is now, again while it misses.
         edge (outward, forward, up) puts the wand off the center by those fractions of the radius, in the head's frame
-        with outward toward the hand's own side; controller {pitch, yaw} points the controller (the yaw as for the left
-        one, mirrored for the right)."""
+        with outward toward the hand's own side (devbench resolves it); controller {pitch, yaw_in} points the controller,
+        yaw_in turning it toward the body for either hand."""
         started = time.monotonic()
         if head is not None:
             self.hands.head(head)
         side = self.physical(hand)
-        pitch, yaw = (controller or {}).get("pitch"), (controller or {}).get("yaw")
-        if side == "right" and yaw is not None:
-            yaw = -yaw
+        pitch, yaw_in = (controller or {}).get("pitch"), (controller or {}).get("yaw_in")
         margin = 1 - (math.hypot(*edge) if edge else 0.0)
         aims = 0
         while aims < AIMS:
             entry, wand = self._zone(zone, hand)
-            aim = self._aim(entry, edge, side)
-            if aims and math.dist(wand, aim) < entry["radius"] * margin:
-                break
-            answer = self.hands.place(ROLE[hand], aim, pitch=pitch, yaw=yaw)
+            if aims:
+                # the point devbench aimed at, moved with the zone since; the head stays, so its offset holds
+                target = answer["hands"][side]["target"]
+                aim = [t + now - then for t, now, then in zip(target, entry["center"], placed_center)]
+                if math.dist(wand, aim) < entry["radius"] * margin:
+                    break
+            offset = [entry["radius"] * e for e in edge] if edge else None
+            answer = self.hands.place(ROLE[hand], entry["center"], head_offset=offset, pitch=pitch, yaw_in=yaw_in)
+            placed_center = entry["center"]
             aims += 1
         entry, _ = self._zone(zone, hand)
         self._log(f"{hand} into {zone}", started, aims, answer.get("corrections"), entry["wands"][hand]["distance"], entry["radius"])
@@ -113,28 +117,12 @@ class Controllers:
             ],
         )
 
-    def _aim(self, entry, edge, side):
-        """The point a hand aims at in a zone: its center, moved by edge (outward, forward, up) fractions of the radius
-        along the head's axes (the HMD node's rotation rows: right, forward, up), outward toward the side's own side."""
-        if not edge:
-            return entry["center"]
-        hmd = self.bench.tool("nodes", action="get", root="hmdNode")
-        right, forward, up = hmd.get("node", hmd)["world"]["rot"]
-        outward = -1.0 if side == "left" else 1.0
-        weights = (outward * edge[0], edge[1], edge[2])
-        return [c + entry["radius"] * sum(w * axis[i] for w, axis in zip(weights, (right, forward, up))) for i, c in enumerate(entry["center"])]
-
     def _zone(self, zone, hand):
         zones = self.flashlight.zones()
         return zones["zones"][zone], zones["wands"][hand]
 
     def _log(self, what, started, aims, corrections, distance, radius):
         """Keep a placement for the report and print it."""
-        record = {"test": _current_test(), "what": what, "seconds": time.monotonic() - started, "aims": aims, "corrections": corrections, "distance": distance, "radius": radius}
+        record = {"test": self.record.current_test, "what": what, "seconds": time.monotonic() - started, "aims": aims, "corrections": corrections, "distance": distance, "radius": radius}
         self.moves.append(record)
         print(f"place {what}: {record['seconds']:.1f}s, {aims} aims, {corrections} devbench corrections, {distance:.1f} / r {radius:.1f} from the center")
-
-
-def _current_test():
-    """The running test's name, as pytest sets it."""
-    return os.environ.get("PYTEST_CURRENT_TEST", "").split("::")[-1].rsplit(" ", 1)[0]

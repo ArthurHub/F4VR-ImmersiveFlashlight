@@ -1,12 +1,7 @@
 """The mod's health: the stowed model in the scene, its per-frame cost, and no error in its log over the run. Runs
 last (conftest orders the areas), so the log check covers every test before it."""
 
-import re
 import time
-
-import pytest
-
-pytestmark = pytest.mark.health
 
 # the mod's whole frame on the game thread, and its budget at p95 with the light held in the offhand (the model
 # shown, the light placed every frame)
@@ -32,7 +27,7 @@ def test_frame_cost(flashlight):
 
 def test_no_errors_in_log(log_mark):
     errors = log_mark.errors()
-    warnings = [line for line in log_mark.lines() if re.match(r"^\S+ warn(ing)? ", line)]
+    warnings = log_mark.warnings()
     if warnings:
         print("log warnings:", *warnings[:5], sep="\n  ")
     assert not errors, "\n".join(errors[:5])

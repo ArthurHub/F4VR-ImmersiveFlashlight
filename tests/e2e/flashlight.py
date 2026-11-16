@@ -1,9 +1,8 @@
 """The mod through its devbench tool: the light, the gestures, the config's session overrides, its state, and the
 player's loadout the tests need (a helmet, a weapon; QASmoke's player has the Pip-Boy)."""
 
-import time
-
-from devbench import ModTool, close_menus, console, console_number
+from devbench import ModTool, close_menus, wait_for
+from devbench.games import fallout4
 
 # Fallout4.esm forms
 # in the shipped Immersive headgear allow list, so the head is allowed whatever the keywords say
@@ -48,15 +47,9 @@ class Flashlight:
         return self.mod.call("state")
 
     def wait(self, condition, timeout=5.0, what="the state"):
-        """Poll the state until condition(state) holds and return it; fail with the last state after timeout seconds."""
-        deadline = time.monotonic() + timeout
-        while True:
-            state = self.state()
-            if condition(state):
-                return state
-            if time.monotonic() > deadline:
-                raise AssertionError(f"{what} did not hold within {timeout} s: {summary(state)}")
-            time.sleep(0.1)
+        """Poll the state until condition(state) holds and return it; fail with the light's last state after timeout
+        seconds."""
+        return wait_for(self.state, condition, timeout, what=what, describe=summary)
 
     def light(self, location=None, op=None):
         """Switch the configured location (head|offhand|primaryHand) and/or turn the light on|off|toggle."""
@@ -126,26 +119,15 @@ class Flashlight:
 
 
 class Loadout:
-    """What the player wears and holds, set through the console. Nothing reaches a save: the run is in QASmoke."""
+    """What the player wears and holds, through devbench's Fallout 4 helpers, each change waited on until the mod sees
+    it. Nothing reaches a save: the run is in QASmoke."""
 
     def __init__(self, bench, flashlight):
         self.bench = bench
         self.flashlight = flashlight
 
-    def item_count(self, form):
-        return int(console_number(self.bench, f"player.getitemcount {form}"))
-
-    def equip(self, form):
-        """Equip an item, adding one first when the player has none."""
-        if self.item_count(form) == 0:
-            console(self.bench, f"player.additem {form} 1")
-        console(self.bench, f"player.equipitem {form}")
-
-    def unequip(self, form):
-        console(self.bench, f"player.unequipitem {form}")
-
     def wear_helmet(self, form=HELMET):
-        self.equip(form)
+        fallout4.equip(self.bench, form)
         return self.flashlight.wait(lambda s: self.worn_headgear() == form, 5, f"the headgear {form} worn")
 
     def worn_headgear(self):
@@ -156,46 +138,24 @@ class Loadout:
     def remove_headgear(self):
         worn = self.worn_headgear()
         if worn:
-            self.unequip(worn)
+            fallout4.unequip(self.bench, worn)
             self.flashlight.wait(lambda s: self.worn_headgear() is None, 5, "the headgear off")
-
-    def _switch_weapon(self, action):
-        """Draw or sheathe through devbench's player tool (the engine's own call). It repeats a call the engine
-        ignored and waits for the weapon state, so refused means the switch did not happen."""
-        answer = self.bench.tool("player", action=action, timeoutMs=5000)
-        assert answer["outcome"] in ("switched", "already"), f"{action}: {answer['outcome']}, the weapon is {answer['weaponState']} ({answer.get('note')})"
-        return answer
 
     def draw_weapon(self, form=WEAPON):
         """Equip the weapon and draw it."""
-        self.equip(form)
-        self._switch_weapon("drawWeapon")
+        fallout4.equip(self.bench, form)
+        fallout4.draw_weapon(self.bench)
         return self.flashlight.wait(lambda s: s["restrictions"]["weaponEquipped"], 5, "the weapon drawn")
 
     def holster_weapon(self):
         """Sheathe what is drawn, fists included (the mod counts drawn fists as a weapon). The weapon stays equipped."""
-        self._switch_weapon("sheatheWeapon")
+        fallout4.sheathe_weapon(self.bench)
         self.flashlight.wait(lambda s: not s["restrictions"]["weaponEquipped"], 5, "the weapon holstered")
 
-    def power_armor_frame(self, radius):
-        """The nearest power armor frame in the player's cell within radius game units, as devbench's player tool
-        lists it ({ formId, baseFormId, name, distance }), or None."""
-        frames = self.bench.tool("player", action="findPowerArmor", radius=radius, limit=1)["frames"]
-        return frames[0] if frames else None
-
-    def power_armor(self, action, **args):
-        """A power armor switch through devbench's player tool: enterPowerArmor / exitPowerArmor at once (setup), or
-        stepIn / stepOut through the controllers. It waits for the engine state and answers its outcome (switched,
-        already, refused, notAimed)."""
-        return self.bench.tool("player", action=action, **args)
-
     def leave_power_armor(self):
-        """Get out of power armor, with the exit gesture when the scripted exit is refused (a mod such as KabutoVR
-        can block it), and wait until the mod sees it."""
-        answer = self.power_armor("exitPowerArmor")
-        if answer["outcome"] == "refused":
-            answer = self.power_armor("stepOut")
-        assert answer["outcome"] in ("switched", "already"), f"out of power armor: {answer['outcome']} ({answer.get('note')})"
+        """Get out of power armor (the exit gesture when a mod such as KabutoVR refuses the scripted exit), and wait
+        until the mod sees it."""
+        fallout4.leave_power_armor(self.bench)
         self.flashlight.wait(lambda s: not s["gating"]["inPowerArmor"], 5, "the mod out of power armor")
 
 

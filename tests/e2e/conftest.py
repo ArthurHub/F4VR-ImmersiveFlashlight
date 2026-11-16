@@ -1,14 +1,14 @@
 """The session the end-to-end tests run in. devbench's pytest plugin enters the game in QASmoke, checks the mod's build,
-backs up its config, sets the handedness and writes the report; this conftest adds the mod's own setup (FRIK, the mod
-following the handedness), the player's loadout and a light reset before each test."""
+backs up its config, sets the handedness, checks FRIK, waits for the flashlight and writes the report; this conftest
+adds the mod following the handedness, the player's loadout and a light reset before each test."""
 
 import re
 from pathlib import Path
 
 import pytest
 
-from devbench import DevbenchError, wait_until
-from devbench.testing import Config
+from devbench import wait_until
+from devbench.testing import Area, Config, Dependency
 from flashlight import FRIK_TOOL, HELMET, MOD_TOOL, Flashlight, Loadout, close_game_menus
 
 pytest_plugins = ["devbench.testing"]
@@ -34,18 +34,22 @@ DEVBENCH = Config(
     backup=[("mygames", "Mods_Config/ImmersiveFlashlightVR/*")],
     log="ImmersiveFlashlightVR.log",
     # the areas, by the file of their tests, in the order they run and the page shows them: power armor after the
-    # others, and health last, its log check covering the whole run
+    # others, and health last, its log check covering the whole run. Each file's tests carry its marker (-m <marker>)
     areas={
-        "test_light.py": "Light action",
-        "test_gestures.py": "Gestures (simulated)",
-        "test_overrides.py": "Config overrides",
-        "test_headgear.py": "Headgear restriction",
-        "test_menus.py": "Menus",
-        "test_weapon.py": "Weapon mount",
-        "test_controllers.py": "Gestures (controllers)",
-        "test_power_armor.py": "Power armor",
-        "test_health.py": "Health",
+        "test_light.py": Area("Light action", "light"),
+        "test_gestures.py": Area("Gestures (simulated)", "gestures"),
+        "test_overrides.py": Area("Config overrides", "overrides"),
+        "test_headgear.py": Area("Headgear restriction", "headgear"),
+        "test_menus.py": Area("Menus", "menus"),
+        "test_weapon.py": Area("Weapon mount", "weapon"),
+        "test_controllers.py": Area("Gestures (controllers)", "controllers"),
+        "test_power_armor.py": Area("Power armor", "powerarmor"),
+        "test_health.py": Area("Health", "health"),
     },
+    # FRIK's devbench probe sets the two-handed grip the weapon and controller tests need (its grip op: FRIK 0.79)
+    requires=[Dependency(FRIK_TOOL, actions=["probe"], min_version="0.79")],
+    # the flashlight up (the player's 3D) before the first test
+    ready=lambda mod: mod.call("state")["liveness"]["ready"],
     title="Immersive Flashlight VR",
     # the lit frame, dumped when a test fails
     picture=6,
@@ -72,24 +76,12 @@ def pytest_addoption(parser):
     parser.addoption("--power-armor-radius", type=float, default=2000.0, help="how far to look for a power armor frame, in game units")
 
 
-def _check_frik(game, report):
-    """FRIK answers its devbench probe's grip, which the two-handed tests set the grip through (FRIK 0.79 or later)."""
-    try:
-        version = game.tool(FRIK_TOOL, action="health")["version"]
-        Flashlight(game).two_handed_grip(on=False)
-    except DevbenchError as error:
-        pytest.exit(f"FRIK's devbench probe doesn't set a grip ({error}): the two-handed tests need FRIK 0.79 or later", returncode=2)
-    report.note(f"FRIK {version}.")
-
-
 @pytest.fixture(scope="session")
-def game(game, left_handed, report):
-    """The plugin's game (in the run's handedness, which the plugin set and puts back), with the flashlight up, the mod
-    following the handedness, and FRIK checked."""
+def game(game, left_handed):
+    """The plugin's game (in the run's handedness, which the plugin set and puts back, with the flashlight up and FRIK
+    checked), with the mod following the handedness."""
     flashlight = Flashlight(game)
-    wait_until(lambda: flashlight.state()["liveness"]["ready"], 30, interval=0.5, what="the flashlight up (the player's 3D)")
     wait_until(lambda: flashlight.left_handed() == left_handed, 5, what=f"the mod reading the game {'left' if left_handed else 'right'}-handed")
-    _check_frik(game, report)
     yield game
     flashlight.clear()
     flashlight.two_handed_grip(on=False)

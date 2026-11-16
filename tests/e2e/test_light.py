@@ -7,8 +7,6 @@ import pytest
 
 from devbench import wait_until
 
-pytestmark = pytest.mark.light
-
 # how far the light may hang from its hand's wand, in game units (FRIK's hand bone follows the wand)
 HAND_REACH = 20
 

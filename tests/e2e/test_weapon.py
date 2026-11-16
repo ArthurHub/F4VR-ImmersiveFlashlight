@@ -3,10 +3,7 @@ and off the weapon, and the lamp requirement keeps it off a weapon without one."
 
 import pytest
 
-pytestmark = [
-    pytest.mark.weapon,
-    pytest.mark.usefixtures("weapon"),
-]
+pytestmark = pytest.mark.usefixtures("weapon")
 
 SECTION = "ImFl_WeaponMount"
 

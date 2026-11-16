@@ -48,7 +48,7 @@ The devbench port comes from its `runtime.json`, or `--devbench-port`. `--power-
 | `test_power_armor.py` | In and out of a frame through devbench's `player`: at once, with the PA head and its beam, the head gestures in PA and the location restored; and stepping in and out through the controllers, the light restored at each side. A refused scripted exit (KabutoVR) skips the rest of its test, and the exit gesture gets the player out. |
 | `test_health.py` | The stowed model in the scene, `Flashlight::onFrameUpdate` p95 with the light in hand, no error in the log over the run. Runs last. |
 
-Helpers: `flashlight.py` (the mod's actions, the loadout through the console and devbench's `player`), `controllers.py` (devbench's `Hands` for the logical hands, zone aiming, and a log of each placement).
+Helpers: `flashlight.py` (the mod's actions, the loadout on devbench's Fallout 4 player helpers), `controllers.py` (devbench's `Hands` for the logical hands, zone aiming, and a log of each placement).
 
 ## Manual checklist
 
